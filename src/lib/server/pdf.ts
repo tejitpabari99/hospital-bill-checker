@@ -116,7 +116,8 @@ If no CPT/ICD codes found, set errorMessage to "This looks like a summary bill. 
     })
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+    // Try code fence first, fall back to first {...} block, then raw text
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? text.match(/(\{[\s\S]*\})/)
     const parsed = JSON.parse(jsonMatch ? jsonMatch[1] : text)
 
     if (parsed.errorMessage) {
@@ -148,7 +149,7 @@ If no CPT/ICD codes found, set errorMessage to "This looks like a summary bill. 
       cptCodesFound: [],
       pageCount,
       usedVision: true,
-      parseWarning: 'Audit failed — please try again. Your file was not saved.',
+      parseWarning: "We couldn't read this file. Try a clearer scan or a different page.",
     }
   }
 }
