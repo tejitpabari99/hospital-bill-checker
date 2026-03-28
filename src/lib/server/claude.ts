@@ -20,9 +20,12 @@ function isRefusal(text: string): boolean {
 }
 
 function extractJSON(text: string): string {
-  // Strip markdown code blocks if present
-  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-  return match ? match[1].trim() : text.trim()
+  // Try code fence first, then outermost {...} block, then raw text
+  const codeFence = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+  if (codeFence) return codeFence[1].trim()
+  const jsonBlock = text.match(/(\{[\s\S]*\})/)
+  if (jsonBlock) return jsonBlock[1].trim()
+  return text.trim()
 }
 
 // Pre-compute NCCI and MPFS context to inject into prompt
