@@ -48,6 +48,11 @@ function buildDataContext(lineItems: BillInput['lineItems']): string {
 export async function auditBill(input: BillInput): Promise<AuditResult> {
   const dataContext = buildDataContext(input.lineItems)
 
+  const stubAmounts = input.lineItems.every(li => li.billedAmount === 0)
+  const rawTextSection = (input.rawText && stubAmounts)
+    ? `\nRaw bill text (extract amounts and descriptions from this since line item amounts are missing):\n${input.rawText.slice(0, 8000)}\n`
+    : ''
+
   const prompt = `You are a medical billing auditor helping a patient review their hospital bill for errors.
 
 IMPORTANT: Focus only on billing codes and amounts. Do not request or reference any personal health information beyond what is provided.
@@ -56,7 +61,7 @@ Bill details:
 Hospital: ${input.hospitalName ?? 'Unknown'}
 Date of service: ${input.dateOfService ?? 'Unknown'}
 Account: ${input.accountNumber ?? 'Unknown'}
-
+${rawTextSection}
 Line items:
 ${JSON.stringify(input.lineItems, null, 2)}
 
