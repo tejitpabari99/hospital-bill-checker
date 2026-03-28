@@ -80,7 +80,7 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
   try {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [{
         role: 'user',
         content: [
@@ -94,10 +94,10 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
           } as any,
           {
             type: 'text',
-            text: `Extract all billing information from this hospital bill. Return a JSON object with:
+            text: `Extract billing information from this hospital bill. Return ONLY valid JSON (no prose before or after):
 {
-  "rawText": "all text content from the bill",
-  "cptCodes": ["list", "of", "CPT", "HCPCS", "codes", "found"],
+  "rawText": "brief summary of the bill — hospital name, dates, total charges only (max 200 chars)",
+  "cptCodes": ["all", "standard", "CPT", "and", "HCPCS", "codes", "found"],
   "hospitalName": "hospital name or null",
   "accountNumber": "account number or null",
   "dateOfService": "date or null",
@@ -107,9 +107,11 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
   "errorMessage": null
 }
 
+IMPORTANT: Keep lineItems to the top 20 most expensive charges only.
+For UB-04 facility bills (with Revenue Codes), extract CPT/HCPCS codes from the CPT/HCPCS column if present; if only Revenue Codes are visible with no CPT codes, still list any CPT/HCPCS codes you can identify from the description column.
 If this is an EOB (Explanation of Benefits) not a hospital bill, set errorMessage to "This is an insurance EOB, not a hospital bill. Please upload your itemized hospital bill instead."
 If the image is too blurry to read, set errorMessage to "We couldn't read this clearly. Try a better-lit photo."
-If no CPT/ICD codes found, set errorMessage to "This looks like a summary bill. Request the itemized statement from your hospital."`,
+If no CPT/ICD codes found at all, set errorMessage to "This looks like a summary bill. Request the itemized statement from your hospital."`,
           },
         ],
       }],
