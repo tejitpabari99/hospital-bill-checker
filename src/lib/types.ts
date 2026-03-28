@@ -10,6 +10,7 @@ export interface LineItem {
 
 export interface BillInput {
   lineItems: LineItem[]
+  rawText?: string      // raw bill text; used when lineItems have $0 amounts (text PDF path)
   hospitalName?: string
   hospitalNpi?: string
   accountNumber?: string

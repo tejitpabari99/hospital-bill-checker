@@ -11,9 +11,9 @@ async function getKV() {
 }
 
 export const GET: RequestHandler = async () => {
-  const kv = await getKV()
-  if (!kv) return json({ total: null })
   try {
+    const kv = await getKV()
+    if (!kv) return json({ total: null })
     const total = await kv.get<number>('savings_total') ?? 0
     return json({ total })
   } catch {
@@ -22,9 +22,9 @@ export const GET: RequestHandler = async () => {
 }
 
 export const POST: RequestHandler = async ({ request }) => {
-  const kv = await getKV()
-  if (!kv) return json({ ok: false })
   try {
+    const kv = await getKV()
+    if (!kv) return json({ ok: false })
     const { amount } = await request.json()
     if (typeof amount !== 'number' || amount <= 0 || amount > 1_000_000) {
       return json({ ok: false })
