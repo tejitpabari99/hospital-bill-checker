@@ -1,0 +1,46 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 377 >>
+stream
+BT
+/F1 12 Tf
+50 750 Td
+(Hospital Bill - Valley General Hospital) Tj
+0 -20 Td
+(Account: VGH-2024-98741) Tj
+0 -20 Td
+(Date of Service: 2024-10-15) Tj
+0 -40 Td
+(ITEMIZED CHARGES) Tj
+0 -20 Td
+(99285 Emergency Dept Visit High Complexity $820.00  93010 ECG Interpretation $45.00  36415 Blood Collection $25.00  J0696 Ceftriaxone 250mg x4 $150.00) Tj
+0 -20 Td
+(Total: $1,040.00) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000669 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+739
+%%EOF
