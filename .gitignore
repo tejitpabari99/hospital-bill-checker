@@ -1,0 +1,12 @@
+node_modules/
+.svelte-kit/
+build/
+dist/
+.env
+.env.local
+*.local
+.DS_Store
+# CMS data files (regenerate with scripts/)
+src/lib/data/mpfs.json
+src/lib/data/ncci.json
+src/lib/data/asp.json
