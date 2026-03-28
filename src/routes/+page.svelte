@@ -108,11 +108,14 @@
             billedAmount: 0,
           }))
 
+      // Pass rawText when line items have no amounts (text-PDF path) so audit can extract them
+      const stubAmounts = lineItems.every((li: any) => li.billedAmount === 0)
       const auditBody = {
         lineItems,
-        hospitalName: parsed.extractedMeta?.hospitalName,
-        accountNumber: parsed.extractedMeta?.accountNumber,
-        dateOfService: parsed.extractedMeta?.dateOfService,
+        rawText: stubAmounts ? parsed.rawText : undefined,
+        hospitalName: parsed.extractedMeta?.hospitalName ?? undefined,
+        accountNumber: parsed.extractedMeta?.accountNumber ?? undefined,
+        dateOfService: parsed.extractedMeta?.dateOfService ?? undefined,
       }
 
       const auditRes = await fetch('/api/audit', {
