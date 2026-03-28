@@ -1,0 +1,25 @@
+{
+  "lineItems": [
+    {
+      "cpt": "99213",
+      "description": "Office visit, established patient, low complexity",
+      "units": 1,
+      "billedAmount": 180.00,
+      "serviceDate": "2024-11-03",
+      "modifiers": [],
+      "icd10Codes": ["M79.3"]
+    },
+    {
+      "cpt": "J9035",
+      "description": "Bevacizumab (Avastin) injection, 10mg",
+      "units": 40,
+      "billedAmount": 55000.00,
+      "serviceDate": "2024-11-03",
+      "modifiers": [],
+      "icd10Codes": ["C18.9"]
+    }
+  ],
+  "hospitalName": "Oncology Partners Clinic",
+  "accountNumber": "OPC-2024-11223",
+  "dateOfService": "2024-11-03"
+}

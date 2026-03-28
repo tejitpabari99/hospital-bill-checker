@@ -1,0 +1,25 @@
+{
+  "lineItems": [
+    {
+      "cpt": "99213",
+      "description": "Office visit, established patient, low complexity",
+      "units": 1,
+      "billedAmount": 175.00,
+      "serviceDate": "2024-09-10",
+      "modifiers": [],
+      "icd10Codes": ["Z00.00"]
+    },
+    {
+      "cpt": "85025",
+      "description": "Complete blood count with differential",
+      "units": 1,
+      "billedAmount": 28.00,
+      "serviceDate": "2024-09-10",
+      "modifiers": [],
+      "icd10Codes": ["Z00.00"]
+    }
+  ],
+  "hospitalName": "Riverside Family Medicine",
+  "accountNumber": "RFM-2024-55678",
+  "dateOfService": "2024-09-10"
+}

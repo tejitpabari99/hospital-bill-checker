@@ -1,0 +1,43 @@
+{
+  "lineItems": [
+    {
+      "cpt": "99285",
+      "description": "Emergency department visit, high complexity",
+      "units": 1,
+      "billedAmount": 820.00,
+      "serviceDate": "2024-10-15",
+      "modifiers": [],
+      "icd10Codes": ["S93.401A"]
+    },
+    {
+      "cpt": "93010",
+      "description": "Electrocardiogram, interpretation and report only",
+      "units": 1,
+      "billedAmount": 45.00,
+      "serviceDate": "2024-10-15",
+      "modifiers": [],
+      "icd10Codes": ["S93.401A"]
+    },
+    {
+      "cpt": "36415",
+      "description": "Collection of venous blood",
+      "units": 1,
+      "billedAmount": 25.00,
+      "serviceDate": "2024-10-15",
+      "modifiers": [],
+      "icd10Codes": ["S93.401A"]
+    },
+    {
+      "cpt": "J0696",
+      "description": "Ceftriaxone sodium injection, 250mg",
+      "units": 4,
+      "billedAmount": 150.00,
+      "serviceDate": "2024-10-15",
+      "modifiers": [],
+      "icd10Codes": ["S93.401A"]
+    }
+  ],
+  "hospitalName": "Valley General Hospital",
+  "accountNumber": "VGH-2024-98741",
+  "dateOfService": "2024-10-15"
+}
