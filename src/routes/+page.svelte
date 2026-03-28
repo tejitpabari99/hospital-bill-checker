@@ -1,5 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import ResultsSummary from '$lib/components/ResultsSummary.svelte'
+  import LineItemCard from '$lib/components/LineItemCard.svelte'
+  import DisputeLetter from '$lib/components/DisputeLetter.svelte'
+  import ShareButton from '$lib/components/ShareButton.svelte'
+  import type { AuditResult } from '$lib/types'
 
   type Screen = 'upload' | 'processing' | 'results'
   let screen: Screen = $state('upload')
@@ -10,6 +15,7 @@
   let errorMessage = $state('')
   let savingsTotal: number | null = $state(null)
   let auditResult: unknown = $state(null)
+  let auditLineItems: any[] = $state([])
 
   // Processing steps
   const STEPS = [
@@ -87,13 +93,23 @@
       }
 
       // Step 2: Audit
+      const lineItems = parsed.lineItems?.length
+        ? parsed.lineItems.map((li: any) => ({
+            cpt: li.code ?? li.cpt,
+            description: li.description ?? '',
+            units: li.units ?? 1,
+            billedAmount: li.amount ?? li.billedAmount ?? 0,
+            icd10Codes: li.icd10Codes ?? [],
+          }))
+        : parsed.cptCodesFound.map((cpt: string) => ({
+            cpt,
+            description: '',
+            units: 1,
+            billedAmount: 0,
+          }))
+
       const auditBody = {
-        lineItems: parsed.cptCodesFound.map((cpt: string) => ({
-          cpt,
-          description: '',
-          units: 1,
-          billedAmount: 0,
-        })),
+        lineItems,
         hospitalName: parsed.extractedMeta?.hospitalName,
         accountNumber: parsed.extractedMeta?.accountNumber,
         dateOfService: parsed.extractedMeta?.dateOfService,
@@ -113,6 +129,7 @@
       }
 
       auditResult = await auditRes.json()
+      auditLineItems = lineItems
 
       // Finish last step before showing results
       currentStep = STEPS.length - 1
@@ -134,6 +151,7 @@
     fileWarning = ''
     errorMessage = ''
     auditResult = null
+    auditLineItems = []
     currentStep = 0
     if (stepTimer) clearInterval(stepTimer)
   }
@@ -251,15 +269,56 @@
   </main>
 
 {:else if screen === 'results'}
-  <main class="container" style="padding-top: 48px; padding-bottom: 64px;">
-    <div style="display:flex; align-items:center; gap:12px; margin-bottom:32px;">
-      <button class="btn btn-secondary" onclick={reset}>← New bill</button>
-      <h2 style="margin:0; font-size:22px; font-weight:600;">Audit Complete</h2>
-    </div>
-    <div class="card" style="padding: 32px; text-align: center; color: var(--text-muted);">
-      Results view coming soon.
-    </div>
-  </main>
+  {#if auditResult !== null}
+    {@const result = auditResult as AuditResult}
+    <main class="container" style="padding-top: 48px; padding-bottom: 64px;">
+
+      <!-- Header row -->
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+        <button class="btn btn-secondary" onclick={reset}>← New bill</button>
+        <h2 style="margin:0; font-size:22px; font-weight:600;">Audit Results</h2>
+      </div>
+
+      <!-- Subtitle: hospital name / date of service -->
+      {#if result.extractedMeta?.hospitalName || result.extractedMeta?.dateOfService}
+        <p class="results-subtitle">
+          {#if result.extractedMeta.hospitalName}{result.extractedMeta.hospitalName}{/if}{#if result.extractedMeta.hospitalName && result.extractedMeta.dateOfService} · {/if}{#if result.extractedMeta.dateOfService}Service date: {result.extractedMeta.dateOfService}{/if}
+        </p>
+      {/if}
+
+      <!-- Summary strip -->
+      <div style="margin-top: 24px; margin-bottom: 32px;">
+        <ResultsSummary summary={result.summary} />
+      </div>
+
+      <!-- Line items section -->
+      <h3 class="section-heading">Billing Line Items</h3>
+      <div class="line-items-list">
+        {#each auditLineItems as lineItem, i}
+          {@const finding = result.findings.find(f => f.lineItemIndex === i) ?? null}
+          <LineItemCard item={lineItem} {finding} index={i} />
+        {/each}
+      </div>
+
+      <!-- Dispute letter -->
+      <div style="margin-top: 40px;">
+        <DisputeLetter letter={result.disputeLetter} />
+      </div>
+
+      <!-- Share button -->
+      <div style="margin-top: 24px; display: flex; justify-content: center;">
+        <ShareButton potentialOvercharge={result.summary.potentialOvercharge} />
+      </div>
+
+      <!-- Disclaimer -->
+      <p class="disclaimer">
+        This tool flags potential issues for your review. A flagged item does not mean you were
+        definitely overcharged — it means you have grounds to ask for an explanation.
+        This is not legal or medical advice.
+      </p>
+
+    </main>
+  {/if}
 {/if}
 
 <style>
@@ -370,4 +429,35 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .results-subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 4px 0 0 0;
+    padding-left: 2px;
+  }
+
+  .section-heading {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    color: var(--text-primary);
+  }
+
+  .line-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .disclaimer {
+    margin-top: 32px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.6;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 </style>
