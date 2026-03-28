@@ -86,3 +86,73 @@ curl -s -X POST http://localhost:5173/api/parse -F "file=@examples/test-images/r
 2. Check if scanned PDFs correctly route to Vision path
 3. Test with an image file (JPG/PNG) to verify Vision path works end-to-end
 4. Deploy to Vercel for production testing
+
+---
+
+## Session 2 Test Results — 2026-03-28 (API key unavailable)
+
+### Additional Bugs Found and Fixed
+
+### Bug 5: Set deduplication breaks duplicate billing detection (CRITICAL — FIXED commit e2f0fe9)
+**Symptom**: `cptCodesFound` used `[...new Set(matches)]` which collapsed duplicate CPT codes.
+A bill with 85025 billed twice would show only one instance, making duplicate detection impossible.
+**Fix**: Removed `new Set()` to preserve duplicates.
+**Verified**: `duplicate-billing.pdf` now returns `['85025', '85025', '80053']`.
+
+### Bug 6: Savings API returns 500 on page load without KV credentials (MEDIUM — FIXED commit e2f0fe9)
+**Symptom**: `GET /api/savings` crashed with 500 on every page load in non-Vercel environments.
+`@vercel/kv`'s `kv` getter throws when env vars are missing; the error escaped `getKV()`'s catch.
+**Fix**: Wrapped the full GET and POST handler bodies in try/catch.
+**Verified**: `GET /api/savings` now returns `{"total": null}` cleanly.
+
+### Parse Test Results (8 synthetic PDFs, no API key)
+
+| File | Codes Found | Vision Used | False Positives | Result |
+|------|-------------|-------------|-----------------|--------|
+| er-visit-with-cpt.pdf | 99285, 93010, 36415 | NO | 0 | PASS |
+| pharmacy-markup.pdf | 99213, J9035 | NO | 0 | PASS |
+| clean-bill.pdf | 99213, 85025 | NO | 0 | PASS |
+| ncci-unbundling.pdf | 27447, 27370, 36410 | NO | 0 | PASS |
+| summary-bill-no-cpt.pdf | (empty) | YES | 0 | PARTIAL* |
+| upcoding-scenario.pdf | 99285 | NO | 0 | PASS |
+| duplicate-billing.pdf | 85025, 85025, 80053 | NO | 0 | PASS |
+| icd10-mismatch.pdf | 73721, 99284 | NO | 0 | PASS |
+
+*PARTIAL: Vision fallback correctly triggered but fails without API key.
+Without an API key, Vision returns "Audit failed — please try again" which is misleading.
+
+### Edge Case Handling
+
+| Test | Expected | Actual | Result |
+|------|----------|--------|--------|
+| Empty lineItems | 400 "lineItems cannot be empty" | ✅ match | PASS |
+| Invalid JSON body | 400 "Invalid JSON body" | ✅ match | PASS |
+| No file field | 400 "file field required" | ✅ match | PASS |
+| 101 line items | 400 "Too many line items (max 100)" | ✅ match | PASS |
+| Savings API (no KV) | 200 {"total": null} | ✅ match (after fix) | PASS |
+
+### Remaining Issues (Require API Key to Test)
+
+1. **Vision error message** — When API key is missing, catch block returns "Audit failed —
+   please try again. Your file was not saved." This is misleading (it's a parse step, not audit,
+   and the failure is a server config issue). Recommend: distinguish auth errors from format errors.
+
+2. **JSON extraction fragility** — If Claude returns JSON with trailing prose (not in a code fence),
+   the fallback `JSON.parse(text)` fails. Recommend: find outermost `{...}` block as backup.
+
+3. **Limited reference data** — mpfs.json has only 23 CPT codes; asp.json has only 6 J-codes.
+   Most real bills will have codes not in the lookup tables, leaving Claude without Medicare
+   benchmark data for those lines.
+
+4. **Rate limiting not wired up** — `@upstash/ratelimit` is in dependencies but not used on
+   any endpoint. Both `/api/parse` (CPU) and `/api/audit` ($$) are unprotected.
+
+### Recommended Fixes (Prioritized)
+
+1. **[P0]** Add `ANTHROPIC_API_KEY` to `.env.example` with placeholder — required for any testing
+2. **[P1]** Fix Vision catch error message to be non-misleading
+3. **[P1]** Harden JSON extraction: `text.match(/\{[\s\S]*\}/)` fallback
+4. **[P1]** Wire up rate limiting on `/api/parse` and `/api/audit`
+5. **[P2]** Expand mpfs.json to full E&M code table (99202-99499) and top 50 drug J-codes
+6. **[P2]** Add real hospital PDFs (VVF Virginia samples) to test suite once network allows
+7. **[P3]** Fix test PDF truncation — use a proper PDF library so test content isn't cut off
