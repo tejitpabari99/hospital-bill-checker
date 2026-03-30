@@ -6,7 +6,13 @@ import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/type
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
 
-function callClaude(prompt: string, timeoutMs: number): Promise<{ text: string } | { error: string }> {
+type WorkerResult = { text: string } | { error: string }
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function runClaudeWorker(prompt: string, timeoutMs: number): Promise<WorkerResult & { rawOutput?: string }> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLAUDE_WORKER], {
       timeout: timeoutMs,
@@ -18,13 +24,31 @@ function callClaude(prompt: string, timeoutMs: number): Promise<{ text: string }
       try {
         resolve(JSON.parse(output))
       } catch {
-        resolve({ error: 'Worker process returned invalid output' })
+        resolve({ error: 'Worker process returned invalid output', rawOutput: output.slice(0, 500) })
       }
     })
     child.on('error', (err) => resolve({ error: err.message }))
     child.stdin.write(JSON.stringify({ prompt }))
     child.stdin.end()
   })
+}
+
+function isTransientWorkerError(error: string): boolean {
+  const lower = error.toLowerCase()
+  return lower.includes('503') || lower.includes('high demand') || lower.includes('temporarily') || lower.includes('invalid output')
+}
+
+async function callClaude(prompt: string, timeoutMs: number): Promise<WorkerResult> {
+  const first = await runClaudeWorker(prompt, timeoutMs)
+  if (!('error' in first) || !isTransientWorkerError(first.error)) return first
+
+  await sleep(1500)
+  const second = await runClaudeWorker(prompt, timeoutMs)
+  if (!('error' in second) || !isTransientWorkerError(second.error)) return second
+
+  return second.error.includes('invalid output')
+    ? { error: 'Worker process returned invalid output after retry' }
+    : second
 }
 
 // Static data — loaded once at module init, never per-request
@@ -40,6 +64,11 @@ try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).d
 function isRefusal(text: string): boolean {
   const refusalPhrases = ["i can't", "i cannot", "i'm unable", "i won't", "i am unable", "not able to", "cannot process", "cannot assist"]
   return refusalPhrases.some(p => text.toLowerCase().includes(p))
+}
+
+function isTransientModelFailure(text: string): boolean {
+  const lower = text.toLowerCase()
+  return lower.includes('503') || lower.includes('high demand') || lower.includes('invalid output')
 }
 
 function extractJSON(text: string): string {
@@ -174,6 +203,12 @@ Respond ONLY with valid JSON matching this exact schema:
     if (result1.error.includes('timed out') || result1.error.includes('timeout')) {
       throw new AuditTimeoutError()
     }
+    if (isTransientModelFailure(result1.error)) {
+      throw new AuditTimeoutError('Gemini is busy right now — please try again.')
+    }
+    if (result1.error.includes('invalid output')) {
+      throw new AuditParseError(result1.error)
+    }
     throw new Error(result1.error)
   }
 
@@ -221,6 +256,12 @@ Respond ONLY with valid JSON matching this exact schema:
   if ('error' in result2) {
     if (result2.error.includes('timed out') || result2.error.includes('timeout')) {
       throw new AuditTimeoutError()
+    }
+    if (isTransientModelFailure(result2.error)) {
+      throw new AuditTimeoutError('Gemini is busy right now — please try again.')
+    }
+    if (result2.error.includes('invalid output')) {
+      throw new AuditParseError(result2.error)
     }
     throw new Error(result2.error)
   }
