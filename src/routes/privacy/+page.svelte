@@ -36,24 +36,25 @@
       Those fields are used only to pre-fill the dispute letter on your screen.
     </p>
 
-    <h2>The Anthropic API</h2>
+    <h2>The Google Gemini API</h2>
     <p>
-      The analysis is powered by Claude, Anthropic's AI. Bill codes and dollar amounts are sent to the
-      <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener noreferrer">Anthropic API</a>.
-      Under Anthropic's standard terms, API inputs may be retained for up to 30 days for trust and safety review.
+      The analysis is powered by Google Gemini. Bill codes and dollar amounts are sent to the Gemini API for processing.
       We do not send patient name, date of birth, or medical record number to the API.
-    </p>
-    <p>
-      If that retention window concerns you, you can review
-      <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener noreferrer">Anthropic's privacy policy</a>
-      directly.
+      For details on how Google handles API data, see
+      <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google's privacy policy</a>.
     </p>
 
     <h2>The savings counter</h2>
     <p>
-      The one thing we do record: if you click "Share your savings," we increment an anonymous running total
-      by the dollar amount you found. No user identity, IP address, or bill data is attached to that number.
-      It is purely an aggregate counter — a single integer that goes up.
+      When an audit completes, we automatically increment an anonymous running total by the potential overcharge amount found. No user identity, IP address, or bill data is attached to that number. It is a single aggregate counter — nothing more.
+    </p>
+
+    <h2>Live user counter</h2>
+    <p>
+      To show how many people are currently using the tool, we track an anonymous session identifier
+      in your browser's sessionStorage (not localStorage — it is cleared when you close the tab).
+      This identifier is sent to our server as a heartbeat every 60 seconds and expires after 5 minutes
+      of inactivity. It is a random UUID with no connection to you, your bill, or any other data.
     </p>
 
     <h2>Cookies and analytics</h2>
@@ -65,7 +66,7 @@
     <p>
       This project is open source. If you have questions about how it works or want to audit the code yourself,
       open an issue on the
-      <a href="https://github.com/anthropics/hospital-bill-checker/issues" target="_blank" rel="noopener noreferrer">GitHub repository</a>.
+      <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub repository</a>.
     </p>
   </div>
 </main>

@@ -25,9 +25,9 @@ OUTPUT_PATH = Path(__file__).parent.parent / "src" / "lib" / "data" / "mpfs.json
 # Format varies by year — this targets the "MPFS Relative Value Files" download
 MPFS_URL = "https://downloads.cms.gov/medicare/physician-fee-schedule/2024/January/RVU24A.zip"
 
-def parse_mpfs_zip(zip_bytes: bytes) -> dict[str, float]:
-    """Parse MPFS ZIP file and extract CPT → par amount mapping."""
-    rates: dict[str, float] = {}
+def parse_mpfs_zip(zip_bytes: bytes) -> dict[str, dict]:
+    """Parse MPFS ZIP file and extract CPT → { rate, description } mapping."""
+    rates: dict[str, dict] = {}
 
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
         # Find the RVU CSV file inside the ZIP
@@ -57,6 +57,10 @@ def parse_mpfs_zip(zip_bytes: bytes) -> dict[str, float]:
                     amount_str = (cols.get('PAR_AMOUNT') or cols.get('PHYSICIAN_WORK_RVU') or
                                   cols.get('PAR_NONFACILITY_PRICE') or cols.get('NONFACILITY_PRICE') or '')
 
+                    # Description — try multiple column names
+                    description = (cols.get('DESCRIPTION') or cols.get('SHORT_DESCRIPTION') or
+                                   cols.get('LONG_DESCRIPTION') or cols.get('DESC') or '')
+
                     code = code.strip()
                     amount_str = amount_str.replace('$', '').replace(',', '').strip()
 
@@ -64,7 +68,10 @@ def parse_mpfs_zip(zip_bytes: bytes) -> dict[str, float]:
                         try:
                             amount = float(amount_str)
                             if amount > 0:
-                                rates[code] = round(amount, 2)
+                                entry: dict = {"rate": round(amount, 2)}
+                                if description:
+                                    entry["description"] = description
+                                rates[code] = entry
                         except ValueError:
                             pass
 
@@ -87,12 +94,30 @@ def main():
         print("Generating minimal fallback with common codes...")
         # Fallback: common E&M codes with approximate 2024 Medicare rates
         rates = {
-            "99202": 72.68, "99203": 111.57, "99204": 167.36, "99205": 211.93,
-            "99211": 24.76, "99212": 54.74, "99213": 92.31, "99214": 130.70, "99215": 171.89,
-            "99281": 22.00, "99282": 50.46, "99283": 84.73, "99284": 175.64, "99285": 225.87,
-            "99221": 113.91, "99222": 165.81, "99223": 218.12,
-            "73721": 120.00, "93005": 19.24, "85025": 8.06, "80053": 14.56,
-            "27447": 1250.00, "26410": 280.00, "27370": 90.00,
+            "99202": {"rate": 72.68, "description": "Office or other outpatient visit, new patient, low complexity"},
+            "99203": {"rate": 111.57, "description": "Office or other outpatient visit, new patient, moderate complexity"},
+            "99204": {"rate": 167.36, "description": "Office or other outpatient visit, new patient, moderate-high complexity"},
+            "99205": {"rate": 211.93, "description": "Office or other outpatient visit, new patient, high complexity"},
+            "99211": {"rate": 24.76, "description": "Office or other outpatient visit, established patient, minimal"},
+            "99212": {"rate": 54.74, "description": "Office or other outpatient visit, established patient, straightforward"},
+            "99213": {"rate": 92.31, "description": "Office or other outpatient visit, established patient, low complexity"},
+            "99214": {"rate": 130.70, "description": "Office or other outpatient visit, established patient, moderate complexity"},
+            "99215": {"rate": 171.89, "description": "Office or other outpatient visit, established patient, high complexity"},
+            "99281": {"rate": 22.00, "description": "Emergency department visit, self-limited or minor problem"},
+            "99282": {"rate": 50.46, "description": "Emergency department visit, low complexity"},
+            "99283": {"rate": 84.73, "description": "Emergency department visit, moderate complexity"},
+            "99284": {"rate": 175.64, "description": "Emergency department visit, high complexity"},
+            "99285": {"rate": 225.87, "description": "Emergency department visit, high medical decision making complexity"},
+            "99221": {"rate": 113.91, "description": "Initial hospital care, low complexity"},
+            "99222": {"rate": 165.81, "description": "Initial hospital care, moderate complexity"},
+            "99223": {"rate": 218.12, "description": "Initial hospital care, high complexity"},
+            "73721": {"rate": 120.00, "description": "Magnetic resonance imaging, any joint of lower extremity"},
+            "93005": {"rate": 19.24, "description": "Electrocardiogram, routine ECG with at least 12 leads; tracing only"},
+            "85025": {"rate": 8.06, "description": "Blood count; complete (CBC), automated"},
+            "80053": {"rate": 14.56, "description": "Comprehensive metabolic panel"},
+            "27447": {"rate": 1250.00, "description": "Arthroplasty, knee, condyle and plateau; medical and lateral compartments"},
+            "26410": {"rate": 280.00, "description": "Repair, extensor tendon, finger, primary or secondary; without free graft"},
+            "27370": {"rate": 90.00, "description": "Injection, contrast agent, for knee arthrography"},
         }
         OUTPUT_PATH.write_text(json.dumps(rates, indent=2))
         print(f"Wrote {len(rates)} fallback rates to {OUTPUT_PATH}")

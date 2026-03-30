@@ -35,7 +35,8 @@ src/
 │   ├── api/
 │   │   ├── audit/+server.ts  # POST /api/audit — main audit endpoint
 │   │   ├── parse/+server.ts  # POST /api/parse — PDF extraction
-│   │   └── savings/+server.ts # GET/POST /api/savings — anonymous counter
+│   │   ├── stats/+server.ts  # GET /api/stats — live counters
+│   │   └── live-users/+server.ts # GET /api/live-users — GA4 realtime fallback
 │   └── privacy/+page.svelte  # Privacy policy
 ├── lib/
 │   ├── types.ts              # Shared TypeScript types

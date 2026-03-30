@@ -1,12 +1,32 @@
-import { PDFParse } from 'pdf-parse'
-import Anthropic from '@anthropic-ai/sdk'
+import { spawn } from 'child_process'
+import { join } from 'path'
+import { GEMINI_API_KEY } from '$env/static/private'
 
-const client = new Anthropic()
+// All Anthropic API calls and pdf-parse are run in child processes so that
+// any fatal signal (SDK crash, pdfjs Worker crash) is isolated from the main server.
+// Paths are anchored to CWD (Vite dev runs from project root).
+const VISION_SCRIPT = join(process.cwd(), 'src/lib/server/vision-extract.mjs')
 
-// CPT/HCPCS code pattern: 5 digits, or J/G/A + 4 digits
-// Negative lookbehind: exclude numbers preceded by $, -, or digit (part of account/dollar amounts)
-// Negative lookahead: exclude numbers followed by . (decimal dollar amounts) or - (account number continuation)
-const CPT_PATTERN = /(?<![0-9$\-])(?<!\d)\b([0-9]{5}|[JGABC][0-9]{4})\b(?![.\-0-9])/g
+function callVision(base64: string): Promise<{ text: string } | { error: string }> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [VISION_SCRIPT], {
+      timeout: 60_000,
+      env: { ...process.env, GEMINI_API_KEY },
+    })
+    let output = ''
+    child.stdout.on('data', (chunk: Buffer) => { output += chunk.toString() })
+    child.on('close', () => {
+      try {
+        resolve(JSON.parse(output))
+      } catch {
+        resolve({ error: 'Vision process returned invalid output' })
+      }
+    })
+    child.on('error', (err) => resolve({ error: err.message }))
+    child.stdin.write(JSON.stringify({ base64 }))
+    child.stdin.end()
+  })
+}
 
 export interface ParsedLineItem {
   code: string
@@ -30,35 +50,17 @@ export interface ParsedBill {
 }
 
 export async function parsePDFBuffer(buffer: Buffer): Promise<ParsedBill> {
-  // Step 1: Try pdf-parse for embedded text
-  let rawText = ''
-  let pageCount = 1
-
-  try {
-    const parser = new PDFParse({ data: new Uint8Array(buffer) })
-    const result = await parser.getText()
-    rawText = result.text ?? ''
-    pageCount = result.pages?.length ?? 1
-  } catch {
-    // pdf-parse failed — will fall through to Vision
+  const base64 = buffer.toString('base64')
+  if (base64.length > 15_000_000) {
+    return {
+      rawText: '',
+      cptCodesFound: [],
+      pageCount: 1,
+      usedVision: true,
+      parseWarning: 'This file is too large to process. Try uploading just the itemized charges page.',
+    }
   }
-
-  // Warn if >8 pages
-  const parseWarning = pageCount > 8
-    ? 'Bills over 8 pages may not fully process — try uploading just the itemized charges page.'
-    : undefined
-
-  // Check if we found CPT codes in the text
-  // Preserve duplicates so the audit layer can detect duplicate billing
-  const codesFromText = rawText.match(CPT_PATTERN) ?? []
-
-  if (codesFromText.length > 0) {
-    // Text-based PDF: return rawText so audit can extract amounts directly
-    return { rawText, cptCodesFound: codesFromText, pageCount, usedVision: false, parseWarning }
-  }
-
-  // Step 2: No CPT codes found — route to Claude Vision
-  return await parseWithVision(buffer, pageCount, parseWarning)
+  return await parseWithVision(buffer, 1, undefined)
 }
 
 async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?: string): Promise<ParsedBill> {
@@ -77,47 +79,20 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     }
   }
 
+  const result = await callVision(base64)
+
+  if ('error' in result) {
+    return {
+      rawText: '',
+      cptCodesFound: [],
+      pageCount,
+      usedVision: true,
+      parseWarning: "We couldn't read this file. Try a clearer scan or a different page.",
+    }
+  }
+
   try {
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: 'application/pdf',
-              data: base64,
-            },
-          } as any,
-          {
-            type: 'text',
-            text: `Extract billing information from this hospital bill. Return ONLY valid JSON (no prose before or after):
-{
-  "rawText": "brief summary of the bill — hospital name, dates, total charges only (max 200 chars)",
-  "cptCodes": ["all", "standard", "CPT", "and", "HCPCS", "codes", "found"],
-  "hospitalName": "hospital name or null",
-  "accountNumber": "account number or null",
-  "dateOfService": "date or null",
-  "lineItems": [
-    { "code": "99285", "description": "ER visit", "units": 1, "amount": 800.00 }
-  ],
-  "errorMessage": null
-}
-
-IMPORTANT: Keep lineItems to the top 20 most expensive charges only.
-For UB-04 facility bills (with Revenue Codes), extract CPT/HCPCS codes from the CPT/HCPCS column if present; if only Revenue Codes are visible with no CPT codes, still list any CPT/HCPCS codes you can identify from the description column.
-If this is an EOB (Explanation of Benefits) not a hospital bill, set errorMessage to "This is an insurance EOB, not a hospital bill. Please upload your itemized hospital bill instead."
-If the image is too blurry to read, set errorMessage to "We couldn't read this clearly. Try a better-lit photo."
-If no CPT/ICD codes found at all, set errorMessage to "This looks like a summary bill. Request the itemized statement from your hospital."`,
-          },
-        ],
-      }],
-    })
-
-    const text = response.content[0].type === 'text' ? response.content[0].text : ''
+    const text = result.text
     // Try code fence first, fall back to first {...} block, then raw text
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? text.match(/(\{[\s\S]*\})/)
     const parsed = JSON.parse(jsonMatch ? jsonMatch[1] : text)
@@ -132,9 +107,18 @@ If no CPT/ICD codes found at all, set errorMessage to "This looks like a summary
       }
     }
 
+    // Sanitize Vision-extracted CPT codes:
+    // UB-04 bills often have Revenue Codes (4-digit, starts with 0) adjacent to CPT codes.
+    // Claude sometimes reads them as a 6-digit string (e.g. "070486" instead of "70486").
+    // Strip leading zeros to recover the real 5-char CPT/HCPCS code, then filter to valid format.
+    const rawCodes: string[] = parsed.cptCodes ?? []
+    const sanitizedCodes = rawCodes
+      .map((c: string) => c.trim().replace(/^0+(\d{5})$/, '$1').replace(/^0+([JGABC]\d{4})$/, '$1'))
+      .filter((c: string) => /^([0-9]{5}|[JGABC][0-9]{4})$/.test(c))
+
     return {
       rawText: parsed.rawText ?? text,
-      cptCodesFound: parsed.cptCodes ?? [],
+      cptCodesFound: sanitizedCodes,
       pageCount,
       usedVision: true,
       parseWarning,

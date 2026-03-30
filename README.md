@@ -19,9 +19,9 @@ Competitors in this space are closed products. You have to trust them. With this
 ## How it works
 
 ```
-PDF upload → text extraction → Claude API audit → dispute letter
-               (pdf-parse)      (MPFS + NCCI +     (with amber
-            (Vision fallback)    ASP + AI)          placeholders)
+PDF upload → Gemini Vision → Gemini audit → dispute letter
+               (reads PDF)    (MPFS + NCCI +  (with amber
+                               ASP + AI)       placeholders)
 ```
 
 1. You upload your itemized hospital bill (PDF or photo)
@@ -33,11 +33,11 @@ PDF upload → text extraction → Claude API audit → dispute letter
 ## Stack
 
 - **Frontend:** SvelteKit
-- **AI:** Claude API (`claude-sonnet-4-6`)
+- **AI:** Gemini API (`gemini-2.5-pro-exp-03-25` for audit, `gemini-2.0-flash` for vision)
 - **PDF parsing:** `pdf-parse` + Claude Vision fallback
 - **CMS data:** MPFS, NCCI, ASP (public datasets, rebuilt quarterly via Python scripts)
-- **Deploy:** Vercel
-- **Savings counter:** Vercel KV (anonymous aggregate only)
+- **Deploy:** Railway / traditional Node.js server
+- **Savings counter:** Local JSON file (persistent on traditional server)
 
 ## Quick start
 
@@ -45,7 +45,7 @@ PDF upload → text extraction → Claude API audit → dispute letter
 git clone https://github.com/YOUR_USERNAME/hospital-bill-checker
 cd hospital-bill-checker
 bun install
-cp .env.example .env  # add ANTHROPIC_API_KEY
+cp .env.example .env  # add GEMINI_API_KEY
 python3 scripts/build_mpfs.py && python3 scripts/build_ncci.py && python3 scripts/build_asp.py
 bun run dev
 ```

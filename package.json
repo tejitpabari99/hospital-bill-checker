@@ -28,8 +28,9 @@
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.80.0",
+		"@google-analytics/data": "^5.2.1",
+		"@google/generative-ai": "^0.21.0",
 		"@upstash/ratelimit": "^2.0.8",
-		"@vercel/kv": "^3.0.0",
 		"jspdf": "^4.2.1",
 		"pdf-parse": "^2.4.5"
 	}
