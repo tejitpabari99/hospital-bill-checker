@@ -111,6 +111,8 @@
       if (!auditRes.ok) {
         const err = await auditRes.json().catch(() => ({}))
         if (err.error === 'timeout') throw new Error('Audit timed out — please try again. Your file was not saved.')
+        if (err.error === 'rate_limited') throw new Error('Too many audit attempts. Please wait a minute and try again.')
+        if (err.error === 'parse_error') throw new Error('Our AI returned an unexpected response. Please try again.')
         if (err.error === 'refusal') throw new Error("Our AI couldn't process this bill — try removing personal information and re-uploading.")
         throw new Error('Audit failed — please try again.')
       }
