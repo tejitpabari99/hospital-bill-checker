@@ -35,6 +35,24 @@ export interface ParsedLineItem {
   amount: number
 }
 
+function normalizeCptHcpcsCode(code: string): string | null {
+  const trimmed = code.trim()
+  const normalized = trimmed
+    .replace(/^0+(\d{5})$/, '$1')
+    .replace(/^0+([JGABC]\d{4})$/, '$1')
+
+  return /^([0-9]{5}|[JGABC][0-9]{4})$/.test(normalized) ? normalized : null
+}
+
+function filterStandardLineItems(lineItems: ParsedLineItem[] | undefined): ParsedLineItem[] {
+  if (!lineItems) return []
+  return lineItems.flatMap((item) => {
+    const code = normalizeCptHcpcsCode(item.code)
+    if (!code) return []
+    return [{ ...item, code }]
+  })
+}
+
 export interface ParsedBill {
   rawText: string
   cptCodesFound: string[]
@@ -113,8 +131,8 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     // Strip leading zeros to recover the real 5-char CPT/HCPCS code, then filter to valid format.
     const rawCodes: string[] = parsed.cptCodes ?? []
     const sanitizedCodes = rawCodes
-      .map((c: string) => c.trim().replace(/^0+(\d{5})$/, '$1').replace(/^0+([JGABC]\d{4})$/, '$1'))
-      .filter((c: string) => /^([0-9]{5}|[JGABC][0-9]{4})$/.test(c))
+      .map((c: string) => normalizeCptHcpcsCode(c))
+      .filter((c: string | null): c is string => c !== null)
 
     return {
       rawText: parsed.rawText ?? text,
@@ -122,7 +140,7 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
       pageCount,
       usedVision: true,
       parseWarning,
-      lineItems: parsed.lineItems ?? [],
+      lineItems: filterStandardLineItems(parsed.lineItems),
       extractedMeta: {
         hospitalName: parsed.hospitalName ?? null,
         accountNumber: parsed.accountNumber ?? null,

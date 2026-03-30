@@ -29,7 +29,7 @@ process.stdin.on('end', async () => {
 }
 
 IMPORTANT: Keep lineItems to the top 20 most expensive charges only.
-For UB-04 facility bills (with Revenue Codes), extract ONLY standard 5-digit CPT codes or HCPCS Level II codes (letter J/G/A/B/C + 4 digits) from the CPT/HCPCS column. Do NOT include 4-digit Revenue Codes (e.g. 0730, 0450) in the cptCodes array — Revenue Codes are not CPT codes. If only Revenue Codes are visible with no CPT column, extract any CPT/HCPCS codes you can identify from the description column.
+For UB-04 facility bills (with Revenue Codes), extract ONLY standard 5-digit CPT codes or HCPCS Level II codes (letter J/G/A/B/C + 4 digits) from the CPT/HCPCS column. Do NOT include 4-digit Revenue Codes (e.g. 0730, 0450) or hospital-local/internal charge codes (e.g. 2000000001) in cptCodes or lineItems. If only Revenue Codes are visible with no CPT column, extract any CPT/HCPCS codes you can identify from the description column.
 If this is an EOB (Explanation of Benefits) not a hospital bill, set errorMessage to "This is an insurance EOB, not a hospital bill. Please upload your itemized hospital bill instead."
 If the image is too blurry to read, set errorMessage to "We couldn't read this clearly. Try a better-lit photo."
 If no CPT/ICD codes found at all, set errorMessage to "This looks like a summary bill. Request the itemized statement from your hospital."` },
