@@ -12,11 +12,27 @@ process.stdin.on('end', async () => {
   try {
     const { prompt } = JSON.parse(inputData.trim())
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' })
-    const result = await model.generateContent(prompt)
-    const text = result.response.text()
-    process.stdout.write(JSON.stringify({ text }))
-    process.exit(0)
+    const models = ['gemini-2.5-flash', 'gemini-2.5-pro']
+    let lastError = null
+
+    for (const modelName of models) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName })
+        const result = await model.generateContent(prompt)
+        const text = result.response.text()
+        process.stdout.write(JSON.stringify({ text, model: modelName }))
+        process.exit(0)
+      } catch (err) {
+        lastError = err
+        const message = err?.message ?? String(err)
+        const lower = message.toLowerCase()
+        if (!lower.includes('503') && !lower.includes('high demand') && !lower.includes('service unavailable')) {
+          throw err
+        }
+      }
+    }
+
+    throw lastError ?? new Error('Gemini returned no response')
   } catch (err) {
     process.stdout.write(JSON.stringify({ error: err?.message ?? String(err) }))
     process.exit(0)
