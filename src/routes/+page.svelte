@@ -17,6 +17,7 @@
   let errorMessage = $state('')
   let auditResult: unknown = $state(null)
   let auditLineItems: LineItem[] = $state([])
+  let usedVision = $state(false)
 
   // Processing steps
   const STEPS = [
@@ -79,6 +80,7 @@
       }
 
       const parsed = await parseRes.json()
+      usedVision = !!parsed.usedVision
 
       if (parsed.parseWarning && parsed.cptCodesFound.length === 0) {
         trackBillParseError('no_cpt_codes_found')
@@ -140,6 +142,7 @@
     errorMessage = ''
     auditResult = null
     auditLineItems = []
+    usedVision = false
     currentStep = 0
     if (stepTimer) clearInterval(stepTimer)
   }
@@ -324,6 +327,17 @@
         This is not legal or medical advice.
       </p>
 
+      {#if usedVision}
+        <div class="missing-codes-note card">
+          <h3>Missing codes?</h3>
+          <p>
+            Some itemized bills also include revenue codes like <code>0250</code> or <code>0301</code>,
+            and hospital-specific internal codes like <code>2000000001</code>. We intentionally omit
+            those because they are not standard CPT/HCPCS audit codes.
+          </p>
+        </div>
+      {/if}
+
       <!-- Feedback -->
       <div style="margin-top: 48px; padding-top: 40px; border-top: 1px solid var(--border);">
         <FeedbackForm />
@@ -478,5 +492,37 @@
     max-width: 560px;
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .missing-codes-note {
+    margin-top: 16px;
+    padding: 14px 18px;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid var(--border);
+  }
+
+  .missing-codes-note h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .missing-codes-note p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .missing-codes-note code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: #EEF2FF;
+    color: #3730A3;
+    padding: 0 4px;
+    border-radius: 4px;
   }
 </style>
