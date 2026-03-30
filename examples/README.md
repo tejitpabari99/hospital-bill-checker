@@ -2,6 +2,8 @@
 
 These are **synthetically generated** example bills for testing. They do not contain any real patient data.
 
+For the Drive-backed real-world validation inventory, see [validation-set-manifest.md](validation-set-manifest.md).
+
 ## Files
 
 | File | Description | Expected findings |

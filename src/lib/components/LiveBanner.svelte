@@ -24,7 +24,7 @@
       <span class="sep">·</span>
       <span class="notif-item"><strong>{billsChecked.toLocaleString()}</strong> bills checked</span>
     </div>
-    <a href="/stats" class="stats-link">Stats →</a>
+    <a href="/stats" class="stats-link" target="_blank" rel="noopener noreferrer">Stats →</a>
   </div>
 </div>
 
