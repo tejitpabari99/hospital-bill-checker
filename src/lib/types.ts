@@ -18,12 +18,16 @@ export interface BillInput {
   patientName?: string  // NOT sent to Claude — for letter placeholders only
 }
 
+export type ConfidenceLevel = 'high' | 'medium' | 'low'
+
 export interface AuditFinding {
   lineItemIndex: number
   cptCode: string
   severity: 'error' | 'warning' | 'info'
   errorType: 'upcoding' | 'unbundling' | 'pharmacy_markup' | 'icd10_mismatch' | 'duplicate' | 'other'
+  confidence?: ConfidenceLevel
   description: string        // plain English for patient
+  standardDescription?: string  // official CPT/HCPCS code name from standard references
   medicareRate?: number      // from MPFS
   markupRatio?: number       // billedAmount / medicareRate
   ncciBundledWith?: string   // the Column 1 CPT it's bundled into

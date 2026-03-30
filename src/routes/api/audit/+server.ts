@@ -2,8 +2,32 @@ import { json, error } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import { auditBill } from '$lib/server/claude'
 import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/types'
+import { incrementStats } from '$lib/server/stats'
+
+const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_WINDOW_MS = 60_000
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 
 export const POST: RequestHandler = async ({ request }) => {
+  const forwarded = request.headers.get('x-forwarded-for')
+  const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown'
+
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+
+  if (entry && now < entry.resetAt) {
+    if (entry.count >= RATE_LIMIT_MAX) {
+      return json(
+        { error: 'rate_limited', message: 'Too many requests. Please try again in a minute.' },
+        { status: 429 }
+      )
+    }
+    entry.count++
+  } else {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+  }
+
   let body: unknown
   try {
     body = await request.json()
@@ -28,6 +52,11 @@ export const POST: RequestHandler = async ({ request }) => {
 
   try {
     const result = await auditBill(input)
+    incrementStats({
+      potentialOvercharge: result.summary.potentialOvercharge,
+      errorCount: result.summary.errorCount,
+      warningCount: result.summary.warningCount,
+    }).catch((err) => console.error('stats increment failed:', err))
     return json(result)
   } catch (err) {
     if (err instanceof AuditRefusalError) {

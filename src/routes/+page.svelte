@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
   import ResultsSummary from '$lib/components/ResultsSummary.svelte'
   import LineItemCard from '$lib/components/LineItemCard.svelte'
   import DisputeLetter from '$lib/components/DisputeLetter.svelte'
   import ShareButton from '$lib/components/ShareButton.svelte'
-  import type { AuditResult } from '$lib/types'
+  import FeedbackForm from '$lib/components/FeedbackForm.svelte'
+  import type { AuditResult, LineItem } from '$lib/types'
+  import { trackAuditStarted, trackAuditCompleted, trackBillParseError, trackFileSelected, trackFileTooLarge, trackNewBill } from '$lib/analytics'
+  import { downloadResultReport } from '$lib/result-report'
 
   type Screen = 'upload' | 'processing' | 'results'
   let screen: Screen = $state('upload')
@@ -13,29 +15,21 @@
   let dragOver = $state(false)
   let fileWarning = $state('')
   let errorMessage = $state('')
-  let savingsTotal: number | null = $state(null)
   let auditResult: unknown = $state(null)
-  let auditLineItems: any[] = $state([])
+  let auditLineItems: LineItem[] = $state([])
 
   // Processing steps
   const STEPS = [
     'Reading your bill...',
-    'Identifying billing codes...',
+    'Extracting billing codes...',
     'Checking NCCI bundling rules...',
     'Comparing CMS Medicare rates...',
     'Checking pharmacy markup...',
+    'Analyzing findings...',
     'Generating dispute letter...',
   ]
   let currentStep = $state(0)
   let stepTimer: ReturnType<typeof setInterval> | null = null
-
-  onMount(async () => {
-    try {
-      const res = await fetch('/api/savings')
-      const data = await res.json()
-      if (typeof data.total === 'number') savingsTotal = data.total
-    } catch { /* hidden gracefully */ }
-  })
 
   function handleDrop(e: DragEvent) {
     e.preventDefault()
@@ -53,21 +47,18 @@
     file = f
     fileWarning = ''
     errorMessage = ''
+    trackFileSelected(f.type, +(f.size / 1024 / 1024).toFixed(2))
     // Warn about large PDFs (can't check page count without parsing, so warn on file size proxy)
     if (f.size > 8 * 1024 * 1024) {
       fileWarning = 'Large file detected. Bills over 8 pages may not fully process — try uploading just the itemized charges page.'
+      trackFileTooLarge(+(f.size / 1024 / 1024).toFixed(2))
     }
-  }
-
-  function formatSavings(n: number): string {
-    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-    if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
-    return `$${n.toLocaleString()}`
   }
 
   async function startAudit() {
     if (!file) return
     screen = 'processing'
+    trackAuditStarted()
     currentStep = 0
     errorMessage = ''
 
@@ -83,36 +74,27 @@
       const parseRes = await fetch('/api/parse', { method: 'POST', body: formData })
 
       if (!parseRes.ok) {
+        trackBillParseError('parse_request_failed')
         throw new Error('Failed to read your bill. Please try again.')
       }
 
       const parsed = await parseRes.json()
 
       if (parsed.parseWarning && parsed.cptCodesFound.length === 0) {
+        trackBillParseError('no_cpt_codes_found')
         throw new Error(parsed.parseWarning)
       }
 
       // Step 2: Audit
-      const lineItems = parsed.lineItems?.length
-        ? parsed.lineItems.map((li: any) => ({
-            cpt: li.code ?? li.cpt,
-            description: li.description ?? '',
-            units: li.units ?? 1,
-            billedAmount: li.amount ?? li.billedAmount ?? 0,
-            icd10Codes: li.icd10Codes ?? [],
-          }))
-        : parsed.cptCodesFound.map((cpt: string) => ({
-            cpt,
-            description: '',
-            units: 1,
-            billedAmount: 0,
-          }))
-
-      // Pass rawText when line items have no amounts (text-PDF path) so audit can extract them
-      const stubAmounts = lineItems.every((li: any) => li.billedAmount === 0)
+      const lineItems = (parsed.lineItems ?? []).map((li: any) => ({
+        cpt: li.code ?? li.cpt,
+        description: li.description ?? '',
+        units: li.units ?? 1,
+        billedAmount: li.amount ?? li.billedAmount ?? 0,
+        icd10Codes: li.icd10Codes ?? [],
+      }))
       const auditBody = {
         lineItems,
-        rawText: stubAmounts ? parsed.rawText : undefined,
         hospitalName: parsed.extractedMeta?.hospitalName ?? undefined,
         accountNumber: parsed.extractedMeta?.accountNumber ?? undefined,
         dateOfService: parsed.extractedMeta?.dateOfService ?? undefined,
@@ -132,6 +114,8 @@
       }
 
       auditResult = await auditRes.json()
+      const _r = auditResult as any
+      trackAuditCompleted(_r?.summary?.potentialOvercharge ?? 0, _r?.summary?.errorCount ?? 0)
       auditLineItems = lineItems
 
       // Finish last step before showing results
@@ -149,6 +133,7 @@
   }
 
   function reset() {
+    trackNewBill()
     screen = 'upload'
     file = null
     fileWarning = ''
@@ -157,6 +142,16 @@
     auditLineItems = []
     currentStep = 0
     if (stepTimer) clearInterval(stepTimer)
+  }
+
+  function downloadAuditReport() {
+    if (!auditResult) return
+    downloadResultReport({
+      result: auditResult as AuditResult,
+      lineItems: auditLineItems,
+      fileName: 'hospital-bill-audit-report.pdf',
+      generatedAt: new Date(),
+    })
   }
 </script>
 
@@ -170,20 +165,14 @@
     <header style="text-align: center; margin-bottom: 40px;">
       <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 8px;">Hospital Bill Checker</h1>
       <p style="color: var(--text-muted); margin: 0 0 16px; font-size: 16px;">
-        Find errors. Dispute overcharges. Free, forever.
+        Find errors. Dispute overcharges.
       </p>
-      <div class="trust-badge">
-        No login. No account. Never.
+      <div class="trust-badges">
+        <span class="trust-badge">No login</span>
+        <span class="trust-badge">No data stored</span>
+        <span class="trust-badge">Privacy first</span>
       </div>
     </header>
-
-    {#if savingsTotal !== null && savingsTotal > 0}
-      <div class="savings-counter card" style="text-align: center; padding: 12px; margin-bottom: 24px;">
-        <span style="color: var(--text-muted); font-size: 14px;">
-          Patients have identified <strong style="color: var(--success);">{formatSavings(savingsTotal)}</strong> in potential overcharges
-        </span>
-      </div>
-    {/if}
 
     {#if errorMessage}
       <div class="error-banner" style="margin-bottom: 16px;">
@@ -250,8 +239,14 @@
 
     <p class="privacy-note">
       🔒 Your bill is processed and immediately discarded. We store nothing.
-      <a href="/privacy" style="color: var(--accent);">Privacy policy</a>
+      <a href="/privacy" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">Privacy policy</a>
+      ·
+      <a href="/how-it-works" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">How it works</a>
     </p>
+
+    <div style="margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--border);">
+      <FeedbackForm showRating={false} />
+    </div>
   </main>
 
 {:else if screen === 'processing'}
@@ -280,6 +275,9 @@
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
         <button class="btn btn-secondary" onclick={reset}>← New bill</button>
         <h2 style="margin:0; font-size:22px; font-weight:600;">Audit Results</h2>
+        <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick={downloadAuditReport}>Download report</button>
+        </div>
       </div>
 
       <!-- Subtitle: hospital name / date of service -->
@@ -313,6 +311,12 @@
         <ShareButton potentialOvercharge={result.summary.potentialOvercharge} />
       </div>
 
+      <div style="text-align: center; margin-top: 12px;">
+        <a href="/how-it-works" target="_blank" rel="noopener noreferrer" style="font-size: 13px; color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px;">
+          How we check your bill — full transparency ↗
+        </a>
+      </div>
+
       <!-- Disclaimer -->
       <p class="disclaimer">
         This tool flags potential issues for your review. A flagged item does not mean you were
@@ -320,11 +324,23 @@
         This is not legal or medical advice.
       </p>
 
+      <!-- Feedback -->
+      <div style="margin-top: 48px; padding-top: 40px; border-top: 1px solid var(--border);">
+        <FeedbackForm />
+      </div>
+
     </main>
   {/if}
 {/if}
 
 <style>
+  .trust-badges {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
   .trust-badge {
     display: inline-block;
     background: #F0FDFA;
