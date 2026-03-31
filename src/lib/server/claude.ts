@@ -5,6 +5,14 @@ import type { BillInput, AuditResult, ConfidenceLevel } from '$lib/types'
 import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/types'
 import { lookupHospitalPrices } from './hospital-prices'
 import type { HospitalPriceResult } from './hospital-prices'
+import {
+  buildDataContext as _buildDataContext,
+  buildDeterministicFindings as _buildDeterministicFindings,
+  getMpfsRate,
+  CPT_DESCRIPTIONS,
+  getNcciEntry,
+} from './audit-rules'
+import type { NcciEntry, NcciData, MpfsData, AspData, ClfsData } from './audit-rules'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
 
@@ -54,14 +62,18 @@ async function callClaude(prompt: string, timeoutMs: number): Promise<WorkerResu
 }
 
 // Static data — loaded once at module init, never per-request
-let mpfs: Record<string, number | { rate: number; description?: string }> = {}
-let ncci: Record<string, string> = {}
-let asp: Record<string, number> = {}
+let mpfs: MpfsData = {}
+let ncci: NcciData = {}
+let asp: AspData = {}
+let clfs: ClfsData = {}
+
+// CPT_DESCRIPTIONS, getMpfsRate, getNcciEntry are re-exported from audit-rules.ts
 
 // Try to load static data — fail silently if not built yet
 try { mpfs = (await import('$lib/data/mpfs.json', { assert: { type: 'json' } })).default } catch {}
 try { ncci = (await import('$lib/data/ncci.json', { assert: { type: 'json' } })).default } catch {}
 try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
+try { clfs = (await import('$lib/data/clfs.json', { assert: { type: 'json' } })).default } catch {}
 
 function isRefusal(text: string): boolean {
   const refusalPhrases = ["i can't", "i cannot", "i'm unable", "i won't", "i am unable", "not able to", "cannot process", "cannot assist"]
@@ -80,12 +92,6 @@ function extractJSON(text: string): string {
   const jsonBlock = text.match(/(\{[\s\S]*\})/)
   if (jsonBlock) return jsonBlock[1].trim()
   return text.trim()
-}
-
-function getMpfsRate(entry: number | { rate: number; description?: string } | undefined): number | undefined {
-  if (entry === undefined) return undefined
-  if (typeof entry === 'number') return entry
-  return entry.rate
 }
 
 function normalizeConfidence(value: unknown): ConfidenceLevel | undefined {
@@ -149,29 +155,69 @@ function buildHospitalPriceContext(
   ].join('\n')
 }
 
-// Pre-compute NCCI and MPFS context to inject into prompt
-function buildDataContext(lineItems: BillInput['lineItems']): string {
-  const codes = lineItems.map(li => li.cpt)
-  const ncciHits: string[] = []
-  const mpfsRates: string[] = []
-  const aspRates: string[] = []
+/**
+ * For line items that have no existing finding, check whether the billed amount
+ * exceeds the hospital's own published gross charge and create a warning.
+ */
+function buildAboveListPriceFindings(
+  lineItems: BillInput['lineItems'],
+  hospitalPrices: HospitalPriceResult | null,
+  existingIndexes: Set<number>
+): AuditResult['findings'] {
+  if (!hospitalPrices) return []
 
-  for (const code of codes) {
-    if (ncci[code]) ncciHits.push(`${code} is bundled into ${ncci[code]} per NCCI rules`)
-    const mpfsRate = getMpfsRate(mpfs[code])
-    if (mpfsRate !== undefined) mpfsRates.push(`${code}: Medicare rate $${mpfsRate.toFixed(2)}`)
-    if (asp[code]) aspRates.push(`${code}: CMS ASP limit $${asp[code].toFixed(2)}`)
+  const findings: AuditResult['findings'] = []
+
+  for (let i = 0; i < lineItems.length; i++) {
+    if (existingIndexes.has(i)) continue
+
+    const lineItem = lineItems[i]
+    const code = lineItem.cpt.trim().toUpperCase()
+    const record = hospitalPrices.charges[code]
+    if (!record) continue
+
+    const grossCharge = record.grossCharge
+    if (grossCharge == null || lineItem.billedAmount <= grossCharge) continue
+
+    const overcharge = lineItem.billedAmount - grossCharge
+
+    findings.push({
+      lineItemIndex: i,
+      cptCode: code,
+      severity: 'warning',
+      errorType: 'above_hospital_list_price',
+      confidence: 'high',
+      description: `${code} was billed at $${lineItem.billedAmount.toFixed(2)}, but this hospital's own CMS-required price transparency file lists the gross charge as $${grossCharge.toFixed(2)} — a difference of $${overcharge.toFixed(2)}. The billed amount exceeds the hospital's own published rate.`,
+      standardDescription: CPT_DESCRIPTIONS[code] ?? lineItem.description,
+      recommendation: `Ask billing why the charge exceeds the hospital's published gross charge of $${grossCharge.toFixed(2)}. The hospital's own price transparency file (${hospitalPrices.mrfUrl}) is public record and can be cited in a dispute.`,
+      medicareRate: getMpfsRate(mpfs[code]) ?? clfs[code]?.rate,
+      markupRatio: undefined,
+      ncciBundledWith: undefined,
+      hospitalGrossCharge: grossCharge,
+      hospitalCashPrice: record.discountedCash ?? undefined,
+      hospitalPriceSource: hospitalPrices.mrfUrl || undefined,
+    })
   }
 
-  return [
-    ncciHits.length ? `NCCI bundling rules:\n${ncciHits.join('\n')}` : '',
-    mpfsRates.length ? `Medicare rates (MPFS):\n${mpfsRates.join('\n')}` : '',
-    aspRates.length ? `CMS ASP drug limits:\n${aspRates.join('\n')}` : '',
-  ].filter(Boolean).join('\n\n')
+  return findings
+}
+
+// Thin wrappers that bind module-level data to the pure functions in audit-rules.ts
+function buildDataContext(lineItems: BillInput['lineItems']): string {
+  return _buildDataContext(lineItems, ncci, mpfs, asp, clfs)
+}
+
+function buildDeterministicFindings(lineItems: BillInput['lineItems']): {
+  findings: AuditResult['findings']
+  promptNote: string
+} {
+  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs)
 }
 
 export async function auditBill(input: BillInput): Promise<AuditResult> {
   const dataContext = buildDataContext(input.lineItems)
+  const { findings: deterministicFindings, promptNote } = buildDeterministicFindings(input.lineItems)
+  const deterministicCodes = new Set(deterministicFindings.map(f => f.cptCode))
 
   // Call 1: findings + summary + extractedMeta
   const prompt1 = `You are a medical billing auditor helping a patient review their hospital bill for errors.
@@ -186,36 +232,34 @@ Account: ${input.accountNumber ?? 'Unknown'}
 Line items:
 ${JSON.stringify(input.lineItems, null, 2)}
 
-${dataContext ? `Reference data from CMS:\n${dataContext}` : ''}
+${dataContext ? `Reference data from CMS (only for codes on this bill):\n${dataContext}` : ''}${promptNote}
 
-Analyze this bill for the following error types:
+Analyze this bill for the following error types. NCCI unbundling, duplicates, and pharmacy markups above 4.5× ASP are already handled above — focus your analysis on:
 1. UPCODING: E&M code (99201-99285) that seems too high for the diagnosis codes present. Frame as "may be worth questioning" — you cannot confirm without clinical notes.
-2. UNBUNDLING: CPT codes billed separately that NCCI says must be bundled. Check the NCCI data above.
-3. PHARMACY MARKUP: J-code billed at >4.5x the CMS ASP limit above. Calculate markup ratio.
-4. ICD10 MISMATCH: Diagnosis codes that don't clinically justify the procedure.
-5. DUPLICATE: Same CPT + same date appearing more than once.
+2. UNBUNDLING: CPT codes billed separately that NCCI says must be bundled. Check the NCCI bundling rules above. IMPORTANT: If a modifier -59 (or X{EPSU} modifier) is present on the component code, the unbundling may be legitimate — flag it as "warning" rather than "error" and note the modifier in your description. Without modifier -59, flag as "error" with confidence "high" when NCCI data is explicit.
+3. ICD10 MISMATCH: Diagnosis codes that don't clinically justify the procedure.
 
-For each finding, add a \`confidence\` field with one of these exact values:
-- high: supported by explicit CMS data or a direct code-to-rule match
-- medium: likely issue, but some context is missing or inference is moderate
-- low: speculative or weakly supported; use sparingly
+For each finding, add a \`confidence\` field:
+- high: supported by explicit CMS data or direct code-to-rule match
+- medium: likely issue but some context missing
+- low: speculative; use sparingly
 
-For each finding, include \`standardDescription\` — the official clinical name of the CPT or HCPCS code from standard references (e.g. "99285 - Emergency department visit, high medical decision making complexity"). Use your knowledge of CPT codes. Do NOT copy from the bill's description field, which may be redacted or inaccurate.
+For each finding, include \`standardDescription\` — the official clinical name of the CPT/HCPCS code. Do NOT copy from the bill description field.
 
 For the summary:
-- totalBilled: sum of all line item billedAmounts
-- potentialOvercharge: sum of estimated savings across ALL findings:
-  - UPCODING: billedAmount minus Medicare rate (medicareRate) for that code
-  - UNBUNDLING: full billedAmount of the unbundled code (since it shouldn't be billed separately)
-  - PHARMACY_MARKUP: billedAmount minus (CMS ASP × units × 1.06 allowed markup)
-  - DUPLICATE: billedAmount of each extra duplicate occurrence
-  - ICD10_MISMATCH: full billedAmount of the mismatched procedure
-  If billedAmount is 0 for a line item, use the Medicare rate as a proxy for the overcharge estimate.
+- totalBilled: sum of ALL line item billedAmounts
+- potentialOvercharge: sum across ALL findings (including confirmed ones above):
+  - UPCODING: billedAmount minus Medicare rate for that code
+  - UNBUNDLING: full billedAmount of the bundled code
+  - PHARMACY_MARKUP: billedAmount minus (ASP × units × 1.06)
+  - DUPLICATE: billedAmount of each duplicate occurrence
+  - ICD10_MISMATCH: full billedAmount of mismatched procedure
+  If billedAmount is 0, use Medicare rate as proxy.
 - errorCount: count of findings with severity "error"
 - warningCount: count of findings with severity "warning"
 - cleanCount: count of line items with NO finding
 
-Respond ONLY with valid JSON matching this exact schema:
+Respond ONLY with valid JSON:
 {
   "findings": [
     {
@@ -271,6 +315,40 @@ Respond ONLY with valid JSON matching this exact schema:
     throw new AuditParseError(`Raw response: ${result1.text.slice(0, 200)}`)
   }
 
+  // Merge deterministic pre-findings with AI findings.
+  // De-duplicate: if AI already flagged a code the deterministic layer caught, prefer deterministic.
+  const aiFindings = call1Result.findings.filter(f => !deterministicCodes.has(f.cptCode))
+  call1Result.findings = [...deterministicFindings, ...aiFindings]
+
+  // Recompute summary counts to include deterministic findings
+  const totalBilled = input.lineItems.reduce((s, li) => s + li.billedAmount, 0)
+  const potentialOvercharge = call1Result.findings.reduce((s, f) => {
+    const li = input.lineItems[f.lineItemIndex]
+    const billedAmt = li?.billedAmount ?? 0
+    const mpfsRate = getMpfsRate(mpfs[f.cptCode]) ?? clfs[f.cptCode]?.rate ?? 0
+    if (f.errorType === 'upcoding') return s + Math.max(0, billedAmt - mpfsRate)
+    if (f.errorType === 'unbundling') return s + (billedAmt || mpfsRate)
+    if (f.errorType === 'pharmacy_markup') {
+      const aspRate = asp[f.cptCode] ?? 0
+      return s + Math.max(0, billedAmt - aspRate * (li?.units ?? 1) * 1.06)
+    }
+    if (f.errorType === 'duplicate') return s + (billedAmt || mpfsRate)
+    if (f.errorType === 'icd10_mismatch') return s + (billedAmt || mpfsRate)
+    if (f.errorType === 'above_hospital_list_price') {
+      const hosp = (f as typeof f & { hospitalGrossCharge?: number }).hospitalGrossCharge ?? 0
+      return s + Math.max(0, billedAmt - hosp)
+    }
+    return s
+  }, 0)
+  call1Result.summary = {
+    ...call1Result.summary,
+    totalBilled,
+    potentialOvercharge: Math.round(potentialOvercharge * 100) / 100,
+    errorCount: call1Result.findings.filter(f => f.severity === 'error').length,
+    warningCount: call1Result.findings.filter(f => f.severity === 'warning').length,
+    cleanCount: input.lineItems.length - new Set(call1Result.findings.map(f => f.lineItemIndex)).size,
+  }
+
   const hospitalName = input.hospitalName ?? call1Result.extractedMeta?.hospitalName ?? ''
   const state = extractStateFromHospitalName(hospitalName)
   const allCodes = input.lineItems.map((lineItem) => lineItem.cpt)
@@ -294,7 +372,15 @@ Respond ONLY with valid JSON matching this exact schema:
     }
   })
 
-  const hospitalPriceContext = buildHospitalPriceContext(hospitalPrices, enrichedFindings, input.lineItems)
+  const existingFindingIndexes = new Set(enrichedFindings.map(f => f.lineItemIndex))
+  const aboveListFindings = buildAboveListPriceFindings(
+    input.lineItems,
+    hospitalPrices,
+    existingFindingIndexes
+  )
+  const allFindings = [...enrichedFindings, ...aboveListFindings]
+
+  const hospitalPriceContext = buildHospitalPriceContext(hospitalPrices, allFindings, input.lineItems)
 
   // Call 2: dispute letter
   const prompt2 = `You are a medical billing auditor helping a patient write a dispute letter.
@@ -305,7 +391,7 @@ Date of service: ${input.dateOfService ?? call1Result.extractedMeta?.dateOfServi
 Account: ${input.accountNumber ?? call1Result.extractedMeta?.accountNumber ?? 'Unknown'}
 
 Findings from billing audit:
-${JSON.stringify(enrichedFindings, null, 2)}${hospitalPriceContext}
+${JSON.stringify(allFindings, null, 2)}${hospitalPriceContext}
 
 Generate a dispute letter for the patient. Use these EXACT placeholder strings (they will be highlighted in amber in the UI):
 - [Your Full Name]
@@ -349,7 +435,7 @@ Respond ONLY with valid JSON matching this exact schema:
     throw new AuditParseError(`Raw response: ${result2.text.slice(0, 200)}`)
   }
 
-  const aboveHospitalListCount = enrichedFindings.reduce((count, finding) => {
+  const aboveHospitalListCount = allFindings.reduce((count, finding) => {
     const record = finding as typeof finding & { hospitalGrossCharge?: number }
     const lineItem = input.lineItems[finding.lineItemIndex]
     if (record.hospitalGrossCharge != null && lineItem && lineItem.billedAmount > record.hospitalGrossCharge) {
@@ -358,7 +444,7 @@ Respond ONLY with valid JSON matching this exact schema:
     return count
   }, 0)
 
-  const aboveHospitalListTotal = enrichedFindings.reduce((total, finding) => {
+  const aboveHospitalListTotal = allFindings.reduce((total, finding) => {
     const record = finding as typeof finding & { hospitalGrossCharge?: number }
     const lineItem = input.lineItems[finding.lineItemIndex]
     if (record.hospitalGrossCharge != null && lineItem && lineItem.billedAmount > record.hospitalGrossCharge) {
@@ -369,7 +455,7 @@ Respond ONLY with valid JSON matching this exact schema:
 
   return {
     ...call1Result,
-    findings: enrichedFindings,
+    findings: allFindings,
     summary: {
       ...call1Result.summary,
       aboveHospitalListCount,

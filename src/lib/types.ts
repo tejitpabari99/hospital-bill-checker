@@ -24,7 +24,7 @@ export interface AuditFinding {
   lineItemIndex: number
   cptCode: string
   severity: 'error' | 'warning' | 'info'
-  errorType: 'upcoding' | 'unbundling' | 'pharmacy_markup' | 'icd10_mismatch' | 'duplicate' | 'other'
+  errorType: 'upcoding' | 'unbundling' | 'pharmacy_markup' | 'icd10_mismatch' | 'duplicate' | 'above_hospital_list_price' | 'other'
   confidence?: ConfidenceLevel
   description: string        // plain English for patient
   standardDescription?: string  // official CPT/HCPCS code name from standard references

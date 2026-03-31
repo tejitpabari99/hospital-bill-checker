@@ -38,10 +38,13 @@
 
     <h2>The Google Gemini API</h2>
     <p>
-      The analysis is powered by Google Gemini. Bill codes and dollar amounts are sent to the Gemini API for processing.
+      Part of the analysis is powered by Google Gemini. For checks that require clinical reasoning — upcoding detection and ICD-10 code mismatch — bill codes and dollar amounts are sent to the Gemini API for processing.
       We do not send patient name, date of birth, or medical record number to the API.
       For details on how Google handles API data, see
       <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google's privacy policy</a>.
+    </p>
+    <p>
+      For the deterministic checks — NCCI unbundling, duplicate billing, pharmacy markup, and lab-rate lookups — <strong>no data is sent to any AI model</strong>. These are determined entirely by local CMS rule table lookup on our server. Your bill codes are compared against our locally stored NCCI, MPFS, CLFS, and ASP datasets, plus the hospital price transparency file when available, and never leave our infrastructure for these checks.
     </p>
 
     <h2>The savings counter</h2>
