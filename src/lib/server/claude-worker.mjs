@@ -12,12 +12,16 @@ process.stdin.on('end', async () => {
   try {
     const { prompt } = JSON.parse(inputData.trim())
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const models = ['gemini-2.5-flash', 'gemini-2.5-pro']
+    // pro first for audit quality; flash as 503 fallback only
+    const models = ['gemini-2.5-pro', 'gemini-2.5-flash']
     let lastError = null
 
     for (const modelName of models) {
       try {
-        const model = genAI.getGenerativeModel({ model: modelName })
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: { temperature: 0 },  // deterministic output
+        })
         const result = await model.generateContent(prompt)
         const text = result.response.text()
         process.stdout.write(JSON.stringify({ text, model: modelName }))

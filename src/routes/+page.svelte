@@ -4,9 +4,23 @@
   import DisputeLetter from '$lib/components/DisputeLetter.svelte'
   import ShareButton from '$lib/components/ShareButton.svelte'
   import FeedbackForm from '$lib/components/FeedbackForm.svelte'
+  import MissingCodesNote from '$lib/components/MissingCodesNote.svelte'
   import type { AuditResult, LineItem } from '$lib/types'
   import { trackAuditStarted, trackAuditCompleted, trackBillParseError, trackFileSelected, trackFileTooLarge, trackNewBill } from '$lib/analytics'
   import { downloadResultReport } from '$lib/result-report'
+  import { buildResultSections } from '$lib/results'
+
+  type ExtendedAuditResult = AuditResult & {
+    summary: AuditResult['summary'] & {
+      aboveHospitalListCount?: number
+      aboveHospitalListTotal?: number
+      hospitalName?: string
+      hospitalMrfUrl?: string
+    }
+    extractedMeta: AuditResult['extractedMeta'] & {
+      hospitalName?: string
+    }
+  }
 
   type Screen = 'upload' | 'processing' | 'results'
   let screen: Screen = $state('upload')
@@ -17,16 +31,22 @@
   let errorMessage = $state('')
   let auditResult: unknown = $state(null)
   let auditLineItems: LineItem[] = $state([])
-  let usedVision = $state(false)
+  const resultSections = $derived.by(() => {
+    if (!auditResult) return []
+    const result = auditResult as ExtendedAuditResult
+    return buildResultSections(auditLineItems, result.findings)
+  })
 
   // Processing steps
   const STEPS = [
     'Reading your bill...',
     'Extracting billing codes...',
-    'Checking NCCI bundling rules...',
-    'Comparing CMS Medicare rates...',
+    'Checking NCCI codes...',
+    'Comparing Medicare rates...',
+    'Checking lab rates...',
     'Checking pharmacy markup...',
-    'Analyzing findings...',
+    'Looking up hospital published prices...',
+    'Reviewing upcoding and diagnosis mismatches...',
     'Generating dispute letter...',
   ]
   let currentStep = $state(0)
@@ -80,8 +100,6 @@
       }
 
       const parsed = await parseRes.json()
-      usedVision = !!parsed.usedVision
-
       if (parsed.parseWarning && parsed.cptCodesFound.length === 0) {
         trackBillParseError('no_cpt_codes_found')
         throw new Error(parsed.parseWarning)
@@ -144,7 +162,6 @@
     errorMessage = ''
     auditResult = null
     auditLineItems = []
-    usedVision = false
     currentStep = 0
     if (stepTimer) clearInterval(stepTimer)
   }
@@ -166,323 +183,669 @@
 </svelte:head>
 
 {#if screen === 'upload'}
-  <main class="container" style="padding-top: 48px; padding-bottom: 64px;">
-    <header style="text-align: center; margin-bottom: 40px;">
-      <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 8px;">Hospital Bill Checker</h1>
-      <p style="color: var(--text-muted); margin: 0 0 16px; font-size: 16px;">
-        Find errors. Dispute overcharges.
-      </p>
-      <div class="trust-badges">
-        <span class="trust-badge">No login</span>
-        <span class="trust-badge">No data stored</span>
-        <span class="trust-badge">Privacy first</span>
-      </div>
+  <main class="container upload-screen">
+    <header class="upload-header">
+      <h1 class="upload-title">Hospital Bill Checker</h1>
+      <p class="upload-subtitle">Upload your itemized bill. We check every charge against 8,150 NCCI rules, 7,436 Medicare rates, CLFS lab rates, and 931 drug prices — then write your dispute letter.</p>
     </header>
 
     {#if errorMessage}
-      <div class="error-banner" style="margin-bottom: 16px;">
-        {errorMessage}
-      </div>
+      <div class="error-banner">{errorMessage}</div>
     {/if}
 
-    <div
-      class="drop-zone card"
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <label
+      class="drop-zone"
       class:drag-over={dragOver}
-      role="button"
-      tabindex="0"
-      aria-label="Drop zone for bill upload"
+      for="file-input"
       ondragover={(e) => { e.preventDefault(); dragOver = true }}
       ondragleave={() => dragOver = false}
       ondrop={handleDrop}
-      onclick={() => document.getElementById('file-input')?.click()}
-      onkeydown={(e) => e.key === 'Enter' && document.getElementById('file-input')?.click()}
     >
       <input
         id="file-input"
+        class="file-input"
         type="file"
         accept=".pdf,.jpg,.jpeg,.png,.webp"
-        style="display:none"
         onchange={handleFileInput}
         capture="environment"
+        aria-label="Upload bill file"
       />
 
       {#if file}
         <div class="file-selected">
-          <span class="file-icon">📄</span>
-          <span class="file-name">{file.name}</span>
-          <span style="color: var(--text-muted); font-size: 13px;">
-            {(file.size / 1024 / 1024).toFixed(1)} MB
+          <span class="file-icon-wrap" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
           </span>
+          <div class="file-info">
+            <span class="file-name">{file.name}</span>
+            <span class="file-size">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+          </div>
+          <span class="file-status">Ready</span>
         </div>
       {:else}
         <div class="drop-prompt">
-          <div class="upload-icon">↑</div>
-          <p style="margin: 8px 0 4px; font-weight: 500;">Drop your bill here</p>
-          <p style="margin: 0; color: var(--text-muted); font-size: 14px;">or click to browse</p>
+          <span class="drop-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </span>
+          <p class="drop-primary">Drop your bill here</p>
+          <p class="drop-secondary">or click to browse - PDF, JPG, PNG up to 20 MB</p>
         </div>
       {/if}
-    </div>
+    </label>
 
     {#if fileWarning}
       <p class="file-warning">{fileWarning}</p>
     {/if}
 
-    <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin: 8px 0 20px;">
-      Works with PDF, JPG, PNG · Max 20MB
-    </p>
+    <button
+      class="btn btn-primary upload-cta"
+      disabled={!file}
+      onclick={startAudit}
+    >
+      Analyze Bill
+    </button>
 
-    <div style="text-align: center; margin-bottom: 24px;">
-      <button
-        class="btn btn-primary"
-        style="font-size: 16px; padding: 12px 32px;"
-        disabled={!file}
-        onclick={startAudit}
-      >
-        Analyze Bill
-      </button>
+    <div class="trust-row">
+      <span class="trust-item">No login</span>
+      <span class="trust-sep" aria-hidden="true">·</span>
+      <span class="trust-item">No data stored</span>
+      <span class="trust-sep" aria-hidden="true">·</span>
+      <a href="/privacy" class="trust-link">Privacy policy</a>
+      <span class="trust-sep" aria-hidden="true">·</span>
+      <a href="/how-it-works" class="trust-link">How it works</a>
     </div>
 
-    <p class="privacy-note">
-      🔒 Your bill is processed and immediately discarded. We store nothing.
-      <a href="/privacy" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">Privacy policy</a>
-      ·
-      <a href="/how-it-works" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">How it works</a>
-    </p>
-
-    <div style="margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--border);">
-      <FeedbackForm showRating={false} />
+    <div class="feedback-section">
+      <FeedbackForm />
     </div>
   </main>
 
 {:else if screen === 'processing'}
-  <main class="container" style="padding-top: 80px; padding-bottom: 64px; text-align: center;">
-    <h2 style="font-size: 22px; font-weight: 600; margin-bottom: 8px;">Analyzing your bill...</h2>
-    <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 15px;">This takes 20–60 seconds. Please don't close this tab.</p>
+  <main class="container processing-screen">
+    <div class="processing-inner">
+      <p class="processing-label eyebrow">Analyzing</p>
+      <h2 class="processing-title">Reviewing your bill</h2>
+      <p class="processing-sub">Cross-checking each code against CMS data. This takes 20–60 seconds - do not close this tab.</p>
 
-    <div class="steps-list card" style="max-width: 400px; margin: 0 auto; padding: 24px; text-align: left;">
-      {#each STEPS as step, i}
-        <div class="step-row" class:active={i === currentStep} class:done={i < currentStep}>
-          <span class="step-indicator">
-            {#if i < currentStep}✓{:else if i === currentStep}<span class="spinner"></span>{:else}·{/if}
-          </span>
-          <span class="step-label">{step}</span>
-        </div>
-      {/each}
+      <div class="steps-list">
+        {#each STEPS as step, i}
+          <div class="step-row" class:active={i === currentStep} class:done={i < currentStep}>
+            <span class="step-indicator" aria-hidden="true">
+              {#if i < currentStep}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              {:else if i === currentStep}
+                <span class="spinner"></span>
+              {:else}
+                <span class="step-dot"></span>
+              {/if}
+            </span>
+            <span class="step-label">{step}</span>
+          </div>
+        {/each}
+      </div>
     </div>
   </main>
 
 {:else if screen === 'results'}
   {#if auditResult !== null}
-    {@const result = auditResult as AuditResult}
-    <main class="container" style="padding-top: 48px; padding-bottom: 64px;">
-
-      <!-- Header row -->
-      <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-        <button class="btn btn-secondary" onclick={reset}>← New bill</button>
-        <h2 style="margin:0; font-size:22px; font-weight:600;">Audit Results</h2>
-        <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
+    {@const result = auditResult as ExtendedAuditResult}
+    <main class="container results-screen">
+      <div class="results-header">
+        <div class="results-header-left">
+          <button class="btn btn-ghost results-back-btn" onclick={reset}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            New bill
+          </button>
+          <h2 class="results-title">Audit Results</h2>
+        </div>
+        <div class="results-header-actions">
           <button class="btn btn-secondary" onclick={downloadAuditReport}>Download report</button>
         </div>
       </div>
 
-      <!-- Subtitle: hospital name / date of service -->
       {#if result.extractedMeta?.hospitalName || result.extractedMeta?.dateOfService}
         <p class="results-subtitle">
           {#if result.extractedMeta.hospitalName}{result.extractedMeta.hospitalName}{/if}{#if result.extractedMeta.hospitalName && result.extractedMeta.dateOfService} · {/if}{#if result.extractedMeta.dateOfService}Service date: {result.extractedMeta.dateOfService}{/if}
         </p>
       {/if}
 
-      <!-- Summary strip -->
-      <div style="margin-top: 24px; margin-bottom: 32px;">
+      <div class="summary-section">
         <ResultsSummary summary={result.summary} />
       </div>
 
-      <!-- Line items section -->
-      <h3 class="section-heading">Billing Line Items</h3>
+      {#if !result.summary.hospitalMrfUrl && result.extractedMeta?.hospitalName}
+        <p class="hospital-data-note">
+          Hospital price comparison not available for {result.extractedMeta.hospitalName} — we couldn't locate their required CMS price transparency file.
+          <a href="/how-it-works#price-transparency" target="_blank" rel="noopener noreferrer">Learn more ↗</a>
+        </p>
+      {/if}
+
+      <div class="section-heading-row">
+        <h3 class="section-heading">Billing Line Items</h3>
+        <a class="section-link" href="#missing-codes">Missing codes</a>
+      </div>
+
       <div class="line-items-list">
-        {#each auditLineItems as lineItem, i}
-          {@const finding = result.findings.find(f => f.lineItemIndex === i) ?? null}
-          <LineItemCard item={lineItem} {finding} index={i} />
+        {#each resultSections as section}
+          <section class="result-section">
+            <div class="result-section-header">
+              <h4 class="result-section-title">{section.title}</h4>
+            </div>
+
+            {#each section.groups as group}
+              <div class="result-group">
+                {#if group.title}
+                  <p class="result-group-title">{group.title}</p>
+                {/if}
+                <div class="result-group-cards">
+                  {#each group.entries as entry}
+                    <LineItemCard item={entry.item} finding={entry.finding} index={entry.index} />
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </section>
         {/each}
       </div>
 
-      <!-- Dispute letter -->
+      <div style="margin-top: 18px;">
+        <MissingCodesNote />
+      </div>
+
       <div style="margin-top: 40px;">
         <DisputeLetter letter={result.disputeLetter} />
       </div>
 
-      <!-- Share button -->
-      <div style="margin-top: 24px; display: flex; justify-content: center;">
-        <ShareButton potentialOvercharge={result.summary.potentialOvercharge} />
-      </div>
+      <ShareButton potentialOvercharge={result.summary.potentialOvercharge} />
 
-      <div style="text-align: center; margin-top: 12px;">
-        <a href="/how-it-works" target="_blank" rel="noopener noreferrer" style="font-size: 13px; color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px;">
-          How we check your bill — full transparency ↗
+      <div class="transparency-link-wrap">
+        <a href="/how-it-works" target="_blank" rel="noopener noreferrer">
+          How we check your bill - full transparency ↗
         </a>
       </div>
 
-      <!-- Disclaimer -->
       <p class="disclaimer">
-        This tool flags potential issues for your review. A flagged item does not mean you were
-        definitely overcharged — it means you have grounds to ask for an explanation.
+        This tool flags potential issues for your review. A flagged item does not mean you were definitely overcharged - it means you have grounds to ask for an explanation.
         This is not legal or medical advice.
       </p>
 
-      {#if usedVision}
-        <div class="missing-codes-note card">
-          <h3>Missing codes?</h3>
-          <p>
-            Some itemized bills also include revenue codes like <code>0250</code> or <code>0301</code>,
-            and hospital-specific internal codes like <code>2000000001</code>. We intentionally omit
-            those because they are not standard CPT/HCPCS audit codes.
-          </p>
-        </div>
-      {/if}
-
-      <!-- Feedback -->
-      <div style="margin-top: 48px; padding-top: 40px; border-top: 1px solid var(--border);">
+      <div class="feedback-section">
         <FeedbackForm />
       </div>
-
     </main>
   {/if}
 {/if}
 
 <style>
-  .trust-badges {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
+  .upload-screen {
+    padding-top: 48px;
+    padding-bottom: 64px;
   }
 
-  .trust-badge {
-    display: inline-block;
-    background: #F0FDFA;
-    color: var(--accent);
-    border: 1px solid #99F6E4;
-    border-radius: 20px;
-    padding: 6px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+  .upload-header {
+    margin-bottom: 32px;
+  }
+
+  .upload-title {
+    font-family: var(--font-display);
+    font-size: 38px;
+    font-weight: 400;
+    margin: 0 0 10px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  .upload-subtitle {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 52ch;
   }
 
   .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: var(--radius);
-    padding: 40px 24px;
+    display: block;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 40px 28px;
     text-align: center;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
   }
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: #F0FDFA;
-  }
-  .drop-zone:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .upload-icon {
-    font-size: 32px;
-    color: var(--accent);
-    margin-bottom: 4px;
+  .drop-zone:hover,
+  .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .drop-zone:focus-within {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  .file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .drop-icon {
+    display: inline-flex;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .drop-primary {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .drop-secondary {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
   }
 
   .file-selected {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 12px;
+    text-align: left;
   }
-  .file-icon { font-size: 24px; }
-  .file-name { font-weight: 500; word-break: break-all; }
+
+  .file-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .file-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-size {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .file-status {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid var(--success-border);
+    border-radius: var(--radius);
+    padding: 3px 8px;
+    flex-shrink: 0;
+  }
 
   .file-warning {
     color: var(--warning);
     font-size: 13px;
-    text-align: center;
-    margin: 4px 0 8px;
-    background: #FFFBEB;
-    border: 1px solid #FEF3C7;
+    text-align: left;
+    margin: 0 0 8px;
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
     border-radius: var(--radius);
-    padding: 8px 12px;
+    padding: 10px 14px;
+    line-height: 1.5;
   }
 
   .error-banner {
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
     color: var(--error);
     border-radius: var(--radius);
     padding: 12px 16px;
     font-size: 14px;
+    margin-bottom: 16px;
+    line-height: 1.5;
   }
 
-  .privacy-note {
-    text-align: center;
+  .upload-cta {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    letter-spacing: 0.01em;
+  }
+
+  .trust-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12px;
     color: var(--text-muted);
-    font-size: 13px;
-    margin: 0;
+    margin-bottom: 0;
   }
 
-  .steps-list { display: flex; flex-direction: column; gap: 16px; }
+  .trust-item {
+    color: var(--text-muted);
+  }
+
+  .trust-sep {
+    color: var(--border-strong);
+    font-size: 10px;
+  }
+
+  .trust-link {
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: 2px;
+  }
+
+  .trust-link:hover {
+    color: var(--text-primary);
+  }
+
+  .feedback-section {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+
+  .processing-screen {
+    padding-top: 80px;
+    padding-bottom: 80px;
+  }
+
+  .processing-inner {
+    max-width: 420px;
+  }
+
+  .processing-label {
+    margin: 0 0 8px;
+  }
+
+  .processing-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 400;
+    margin: 0 0 10px;
+    color: var(--text-primary);
+  }
+
+  .processing-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0 0 36px;
+  }
+
+  .steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
 
   .step-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    color: var(--text-muted);
-    font-size: 15px;
+    gap: 14px;
+    color: var(--text-ghost);
+    font-size: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
     transition: color 0.2s;
   }
-  .step-row.done { color: var(--success); }
-  .step-row.active { color: var(--text-primary); font-weight: 500; }
+
+  .step-row:last-child {
+    border-bottom: none;
+  }
+
+  .step-row.done {
+    color: var(--success);
+  }
+
+  .step-row.active {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
 
   .step-indicator {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
     flex-shrink: 0;
+    color: inherit;
+  }
+
+  .step-dot {
+    display: block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    margin: 0 auto;
   }
 
   .spinner {
     display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--border);
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--border);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
 
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .results-screen {
+    padding-top: 48px;
+    padding-bottom: 64px;
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+
+  .results-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .results-header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .results-back-btn {
+    gap: 4px;
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  .results-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 400;
+    margin: 0;
+    color: var(--text-primary);
+  }
 
   .results-subtitle {
     color: var(--text-muted);
-    font-size: 14px;
-    margin: 4px 0 0 0;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    margin: 2px 0 0;
     padding-left: 2px;
   }
 
+  .summary-section {
+    margin: 24px 0 8px;
+  }
+
+  .hospital-data-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: -16px 0 20px;
+    padding: 8px 12px;
+    background: #FAFAFA;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .hospital-data-note a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .hospital-data-note a:hover {
+    text-decoration: underline;
+  }
+
   .section-heading {
-    font-size: 17px;
-    font-weight: 600;
-    margin: 0 0 16px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .section-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .section-link {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .section-link:hover {
     color: var(--text-primary);
   }
 
   .line-items-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
+  }
+
+  .result-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .result-section-header {
+    padding-top: 4px;
+  }
+
+  .result-section-title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .result-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .result-group-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .result-group-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .transparency-link-wrap {
+    text-align: center;
+    margin-top: 18px;
+  }
+
+  .transparency-link-wrap a {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .transparency-link-wrap a:hover {
+    color: var(--text-primary);
   }
 
   .disclaimer {
@@ -490,41 +853,35 @@
     font-size: 12px;
     color: var(--text-muted);
     text-align: center;
-    line-height: 1.6;
-    max-width: 560px;
+    line-height: 1.7;
+    max-width: 520px;
     margin-left: auto;
     margin-right: auto;
-  }
-
-  .missing-codes-note {
-    margin-top: 16px;
-    padding: 14px 18px;
-    max-width: 640px;
-    margin-left: auto;
-    margin-right: auto;
+    padding: 16px;
     border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-subtle);
   }
 
-  .missing-codes-note h3 {
-    margin: 0 0 6px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
+  @media (max-width: 480px) {
+    .upload-title {
+      font-size: 28px;
+    }
 
-  .missing-codes-note p {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: 13px;
-    line-height: 1.55;
-  }
+    .drop-zone {
+      padding: 28px 20px;
+    }
 
-  .missing-codes-note code {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    background: #EEF2FF;
-    color: #3730A3;
-    padding: 0 4px;
-    border-radius: 4px;
+    .upload-subtitle {
+      font-size: 15px;
+    }
+
+    .results-title {
+      font-size: 20px;
+    }
+
+    .step-row {
+      gap: 12px;
+    }
   }
 </style>

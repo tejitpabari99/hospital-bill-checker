@@ -38,10 +38,13 @@
 
     <h2>The Google Gemini API</h2>
     <p>
-      The analysis is powered by Google Gemini. Bill codes and dollar amounts are sent to the Gemini API for processing.
+      Part of the analysis is powered by Google Gemini. For checks that require clinical reasoning — upcoding detection and ICD-10 code mismatch — bill codes and dollar amounts are sent to the Gemini API for processing.
       We do not send patient name, date of birth, or medical record number to the API.
       For details on how Google handles API data, see
       <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google's privacy policy</a>.
+    </p>
+    <p>
+      For the deterministic checks — NCCI unbundling, duplicate billing, pharmacy markup, and lab-rate lookups — <strong>no data is sent to any AI model</strong>. These are determined entirely by local CMS rule table lookup on our server. Your bill codes are compared against our locally stored NCCI, MPFS, CLFS, and ASP datasets, plus the hospital price transparency file when available, and never leave our infrastructure for these checks.
     </p>
 
     <h2>The savings counter</h2>
@@ -75,7 +78,7 @@
   .privacy-page {
     min-height: 100vh;
     background: var(--bg);
-    padding: 40px 16px 80px;
+    padding: 40px 24px 80px;
   }
 
   .privacy-container {
@@ -88,7 +91,7 @@
     font-size: 14px;
     color: var(--text-muted);
     text-decoration: none;
-    margin-bottom: 32px;
+    margin-bottom: 36px;
   }
 
   .back-link:hover {
@@ -96,30 +99,39 @@
   }
 
   h1 {
-    font-size: 28px;
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 400;
     color: var(--text-primary);
     margin: 0 0 4px;
+    letter-spacing: -0.01em;
   }
 
   .last-updated {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin: 0 0 32px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-ghost);
+    margin: 0 0 40px;
+    letter-spacing: 0.02em;
   }
 
   h2 {
-    font-size: 16px;
-    font-weight: 600;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--text-primary);
-    margin: 28px 0 8px;
+    margin: 36px 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
   }
 
   p {
     font-size: 15px;
-    color: var(--text-primary);
-    line-height: 1.7;
-    margin: 0 0 12px;
+    color: var(--text-secondary);
+    line-height: 1.75;
+    margin: 0 0 14px;
   }
 
   a {

@@ -15,122 +15,136 @@ import zipfile
 import io
 import sys
 import os
+import re
 import urllib.request
 from pathlib import Path
 
 OUTPUT_PATH = Path(__file__).parent.parent / "src" / "lib" / "data" / "mpfs.json"
 
-# CMS MPFS 2024 national payment rates CSV (ZIP)
-# Check https://www.cms.gov/medicare/physician-fee-schedule/search for latest year URL
-# Format varies by year — this targets the "MPFS Relative Value Files" download
-MPFS_URL = "https://downloads.cms.gov/medicare/physician-fee-schedule/2024/January/RVU24A.zip"
+# CMS MPFS Relative Value Files — updated annually in January
+# Direct download URL pattern: https://www.cms.gov/files/zip/rvu{YY}a.zip
+# Get latest from: https://www.cms.gov/medicare/payment/fee-schedules/physician/pfs-relative-value-files
+MPFS_URLS = [
+    "https://www.cms.gov/files/zip/rvu26a.zip",   # 2026
+    "https://www.cms.gov/files/zip/rvu25a.zip",   # 2025 fallback
+]
 
-def parse_mpfs_zip(zip_bytes: bytes) -> dict[str, dict]:
-    """Parse MPFS ZIP file and extract CPT → { rate, description } mapping."""
-    rates: dict[str, dict] = {}
+# 2026 Medicare non-QPP conversion factor (CF × total non-facility RVU = payment)
+# Update annually. Source: https://www.cms.gov/newsroom/fact-sheets/calendar-year-cy-2026-medicare-physician-fee-schedule-final-rule-cms-1832-f
+CONVERSION_FACTOR = 33.29
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
-        # Find the RVU CSV file inside the ZIP
-        csv_names = [n for n in z.namelist() if n.upper().endswith('.csv') or n.upper().endswith('.txt')]
-        print(f"Files in ZIP: {z.namelist()}")
+# Active status codes that have calculated payment rates
+ACTIVE_STATUSES = {'A', 'R', 'T'}
 
-        if not csv_names:
-            print("ERROR: No CSV found in ZIP")
-            return rates
+CPT_PATTERN = re.compile(r'^[0-9]{5}$|^[JGABC][0-9]{4}$')
 
-        # Try each file looking for HCPCS codes
-        for fname in csv_names:
-            with z.open(fname) as f:
-                content = f.read().decode('utf-8', errors='replace')
-                reader = csv.DictReader(io.StringIO(content))
 
-                # Normalize column names
-                for row in reader:
-                    cols = {k.strip().upper(): v.strip() for k, v in row.items() if k}
+def parse_mpfs_xlsx(xlsx_bytes: bytes) -> dict:
+    """Parse MPFS XLSX (PPRRVU file) and return CPT → { rate, description }."""
+    try:
+        import openpyxl
+    except ImportError:
+        print("openpyxl not installed. Run: pip install openpyxl")
+        return {}
 
-                    # Try various column name patterns CMS uses across years
-                    code = cols.get('HCPCS') or cols.get('CPT') or cols.get('HCPCS_CD') or cols.get('CODE')
-                    if not code:
-                        continue
+    rates = {}
+    wb = openpyxl.load_workbook(io.BytesIO(xlsx_bytes), read_only=True, data_only=True)
+    ws = wb.active
 
-                    # Par amount (participating provider) — try multiple column names
-                    amount_str = (cols.get('PAR_AMOUNT') or cols.get('PHYSICIAN_WORK_RVU') or
-                                  cols.get('PAR_NONFACILITY_PRICE') or cols.get('NONFACILITY_PRICE') or '')
+    # Column indices from the known PPRRVU header (row with 'HCPCS'):
+    # 0=HCPCS, 1=MOD, 2=DESCRIPTION, 3=STATUS, 4=NOT_USED, 5=WORK_RVU,
+    # 6=NONFAC_PE_RVU, 7=NONFAC_NA_IND, 8=FAC_PE_RVU, 9=FAC_NA_IND,
+    # 10=MP_RVU, 11=NONFAC_TOTAL, 12=FAC_TOTAL, ...
+    HCPCS_COL, MOD_COL, DESC_COL, STATUS_COL = 0, 1, 2, 3
+    NONFAC_TOTAL_COL = 11
 
-                    # Description — try multiple column names
-                    description = (cols.get('DESCRIPTION') or cols.get('SHORT_DESCRIPTION') or
-                                   cols.get('LONG_DESCRIPTION') or cols.get('DESC') or '')
+    header_found = False
+    for row in ws.iter_rows(values_only=True):
+        if not header_found:
+            if row[HCPCS_COL] == 'HCPCS':
+                header_found = True
+            continue
 
-                    code = code.strip()
-                    amount_str = amount_str.replace('$', '').replace(',', '').strip()
+        if not row[HCPCS_COL]:
+            continue
 
-                    if code and amount_str:
-                        try:
-                            amount = float(amount_str)
-                            if amount > 0:
-                                entry: dict = {"rate": round(amount, 2)}
-                                if description:
-                                    entry["description"] = description
-                                rates[code] = entry
-                        except ValueError:
-                            pass
+        hcpcs = str(row[HCPCS_COL]).strip()
+        mod = row[MOD_COL]
+        description = str(row[DESC_COL]).strip() if row[DESC_COL] else ''
+        status = str(row[STATUS_COL]).strip() if row[STATUS_COL] else ''
+        nonfac_total = row[NONFAC_TOTAL_COL]
 
-                if rates:
-                    print(f"Parsed {len(rates)} rates from {fname}")
-                    break
+        # Skip modifier-specific rows
+        if mod:
+            continue
+
+        if status not in ACTIVE_STATUSES or not CPT_PATTERN.match(hcpcs):
+            continue
+
+        if isinstance(nonfac_total, (int, float)) and nonfac_total > 0:
+            rates[hcpcs] = {
+                "rate": round(float(nonfac_total) * CONVERSION_FACTOR, 2),
+                "description": description,
+            }
 
     return rates
+
 
 def main():
     os.makedirs(OUTPUT_PATH.parent, exist_ok=True)
 
-    print(f"Downloading MPFS from {MPFS_URL}...")
-    try:
-        with urllib.request.urlopen(MPFS_URL, timeout=60) as resp:
-            zip_bytes = resp.read()
-        print(f"Downloaded {len(zip_bytes):,} bytes")
-    except Exception as e:
-        print(f"Download failed: {e}")
-        print("Generating minimal fallback with common codes...")
-        # Fallback: common E&M codes with approximate 2024 Medicare rates
-        rates = {
-            "99202": {"rate": 72.68, "description": "Office or other outpatient visit, new patient, low complexity"},
-            "99203": {"rate": 111.57, "description": "Office or other outpatient visit, new patient, moderate complexity"},
-            "99204": {"rate": 167.36, "description": "Office or other outpatient visit, new patient, moderate-high complexity"},
-            "99205": {"rate": 211.93, "description": "Office or other outpatient visit, new patient, high complexity"},
-            "99211": {"rate": 24.76, "description": "Office or other outpatient visit, established patient, minimal"},
-            "99212": {"rate": 54.74, "description": "Office or other outpatient visit, established patient, straightforward"},
-            "99213": {"rate": 92.31, "description": "Office or other outpatient visit, established patient, low complexity"},
-            "99214": {"rate": 130.70, "description": "Office or other outpatient visit, established patient, moderate complexity"},
-            "99215": {"rate": 171.89, "description": "Office or other outpatient visit, established patient, high complexity"},
-            "99281": {"rate": 22.00, "description": "Emergency department visit, self-limited or minor problem"},
-            "99282": {"rate": 50.46, "description": "Emergency department visit, low complexity"},
-            "99283": {"rate": 84.73, "description": "Emergency department visit, moderate complexity"},
-            "99284": {"rate": 175.64, "description": "Emergency department visit, high complexity"},
-            "99285": {"rate": 225.87, "description": "Emergency department visit, high medical decision making complexity"},
-            "99221": {"rate": 113.91, "description": "Initial hospital care, low complexity"},
-            "99222": {"rate": 165.81, "description": "Initial hospital care, moderate complexity"},
-            "99223": {"rate": 218.12, "description": "Initial hospital care, high complexity"},
-            "73721": {"rate": 120.00, "description": "Magnetic resonance imaging, any joint of lower extremity"},
-            "93005": {"rate": 19.24, "description": "Electrocardiogram, routine ECG with at least 12 leads; tracing only"},
-            "85025": {"rate": 8.06, "description": "Blood count; complete (CBC), automated"},
-            "80053": {"rate": 14.56, "description": "Comprehensive metabolic panel"},
-            "27447": {"rate": 1250.00, "description": "Arthroplasty, knee, condyle and plateau; medical and lateral compartments"},
-            "26410": {"rate": 280.00, "description": "Repair, extensor tendon, finger, primary or secondary; without free graft"},
-            "27370": {"rate": 90.00, "description": "Injection, contrast agent, for knee arthrography"},
-        }
-        OUTPUT_PATH.write_text(json.dumps(rates, indent=2))
-        print(f"Wrote {len(rates)} fallback rates to {OUTPUT_PATH}")
-        return
+    # Accept local file as argument
+    local_file = sys.argv[1] if len(sys.argv) > 1 else None
+    if local_file and Path(local_file).exists():
+        print(f"Using local file: {local_file}")
+        zip_bytes = Path(local_file).read_bytes()
+    else:
+        zip_bytes = None
+        for url in MPFS_URLS:
+            print(f"Trying {url}...")
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    zip_bytes = resp.read()
+                print(f"Downloaded {len(zip_bytes):,} bytes")
+                break
+            except Exception as e:
+                print(f"  Failed: {e}")
 
-    rates = parse_mpfs_zip(zip_bytes)
-
-    if not rates:
-        print("WARNING: No rates parsed — check URL and column format")
+    if not zip_bytes:
+        print("ERROR: All downloads failed.")
+        print("Download from: https://www.cms.gov/medicare/payment/fee-schedules/physician/pfs-relative-value-files")
         sys.exit(1)
 
-    OUTPUT_PATH.write_text(json.dumps(rates, indent=2))
-    print(f"Wrote {len(rates):,} rates to {OUTPUT_PATH}")
+    rates = {}
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
+        print(f"Files in ZIP: {z.namelist()}")
+        # Find PPRRVU non-QPP XLSX (the main payment file)
+        xlsx_files = [n for n in z.namelist() if 'nonqpp' in n.lower() and n.lower().endswith('.xlsx')]
+        if not xlsx_files:
+            xlsx_files = [n for n in z.namelist() if 'pprrvu' in n.lower() and n.lower().endswith('.xlsx')]
+        if not xlsx_files:
+            xlsx_files = [n for n in z.namelist() if n.lower().endswith('.xlsx')]
+
+        for fname in xlsx_files:
+            print(f"Parsing {fname}...")
+            with z.open(fname) as f:
+                rates = parse_mpfs_xlsx(f.read())
+            if rates:
+                print(f"Parsed {len(rates):,} rates from {fname}")
+                break
+
+    if not rates:
+        print("ERROR: No rates parsed.")
+        sys.exit(1)
+
+    OUTPUT_PATH.write_text(json.dumps(rates, sort_keys=True, indent=2))
+    size_kb = OUTPUT_PATH.stat().st_size // 1024
+    print(f"Wrote {len(rates):,} rates to {OUTPUT_PATH} ({size_kb} KB)")
+    print(f"Sample: 99285 = {rates.get('99285', 'NOT FOUND')}")
+    print(f"Sample: 70450 = {rates.get('70450', 'NOT FOUND')}")
+    print(f"Sample: 70486 = {rates.get('70486', 'NOT FOUND')}")
+
 
 if __name__ == '__main__':
     main()

@@ -12,7 +12,10 @@ process.stdin.on('end', async () => {
   try {
     const { base64 } = JSON.parse(inputData.trim())
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { temperature: 0 },  // deterministic extraction
+    })
     const result = await model.generateContent([
       { inlineData: { mimeType: 'application/pdf', data: base64 } },
       { text: `Extract billing information from this hospital bill. Return ONLY valid JSON (no prose before or after):
@@ -28,7 +31,7 @@ process.stdin.on('end', async () => {
   "errorMessage": null
 }
 
-IMPORTANT: Keep lineItems to the top 20 most expensive charges only.
+IMPORTANT: Extract ALL line items with CPT/HCPCS codes. If the bill has more than 40 items, prioritize: (1) any with CPT/HCPCS codes, (2) highest billed amounts. Do NOT omit any CPT or HCPCS code visible anywhere on the bill.
 For UB-04 facility bills (with Revenue Codes), extract ONLY standard 5-digit CPT codes or HCPCS Level II codes (letter J/G/A/B/C + 4 digits) from the CPT/HCPCS column. Do NOT include 4-digit Revenue Codes (e.g. 0730, 0450) or hospital-local/internal charge codes (e.g. 2000000001) in cptCodes or lineItems. If only Revenue Codes are visible with no CPT column, extract any CPT/HCPCS codes you can identify from the description column.
 If this is an EOB (Explanation of Benefits) not a hospital bill, set errorMessage to "This is an insurance EOB, not a hospital bill. Please upload your itemized hospital bill instead."
 If the image is too blurry to read, set errorMessage to "We couldn't read this clearly. Try a better-lit photo."

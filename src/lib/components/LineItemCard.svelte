@@ -1,14 +1,23 @@
 <script lang="ts">
   import type { LineItem, AuditFinding } from '$lib/types'
   import { trackLineItemExpanded, trackCptCodeLookup } from '$lib/analytics'
+  import { getDisplayDescription } from '$lib/results'
 
   let { item, finding, index }: { item: LineItem, finding: AuditFinding | null, index: number } = $props()
 
   let expanded = $state(false)
 
+  type ExtendedFinding = AuditFinding & {
+    hospitalGrossCharge?: number
+    hospitalCashPrice?: number
+    hospitalPriceSource?: string
+  }
+
   function formatDollars(n: number) {
     return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
+
+  const extendedFinding = $derived(finding as ExtendedFinding | null)
 
   const severityLabel = $derived(
     finding?.severity === 'error' ? 'ERROR' :
@@ -18,16 +27,7 @@
     finding?.severity === 'error' ? 'badge-error' :
     finding?.severity === 'warning' ? 'badge-warning' : 'badge-clean'
   )
-  const confidenceLabel = $derived(
-    finding?.confidence === 'high' ? 'HIGH CONFIDENCE' :
-    finding?.confidence === 'medium' ? 'MEDIUM CONFIDENCE' :
-    finding?.confidence === 'low' ? 'LOW CONFIDENCE' : null
-  )
-  const confidenceClass = $derived(
-    finding?.confidence === 'high' ? 'confidence-high' :
-    finding?.confidence === 'medium' ? 'confidence-medium' :
-    finding?.confidence === 'low' ? 'confidence-low' : ''
-  )
+  const displayDescription = $derived(getDisplayDescription(item, finding))
 
   function aapcUrl(code: string) {
     return `https://www.aapc.com/codes/cpt-codes/${code}`
@@ -64,6 +64,19 @@
     }
     return null
   })())
+
+  const hospitalPriceComparison = $derived((() => {
+    const f = extendedFinding
+    if (!f || item.billedAmount <= 0) return null
+    const hospitalPrice = f.hospitalGrossCharge ?? f.hospitalCashPrice ?? null
+    if (hospitalPrice == null) return null
+    return {
+      price: hospitalPrice,
+      label: f.hospitalGrossCharge != null ? 'Hospital gross charge' : 'Hospital cash price',
+      source: f.hospitalPriceSource ?? null,
+      overcharge: item.billedAmount > hospitalPrice ? item.billedAmount - hospitalPrice : null,
+    }
+  })())
 </script>
 
 <div class="line-item" class:has-finding={!!finding} onclick={() => { if (!expanded) trackLineItemExpanded(item.cpt); expanded = !expanded }} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)} aria-expanded={expanded}>
@@ -81,14 +94,11 @@
             onclick={(e) => { e.stopPropagation(); trackCptCodeLookup(item.cpt) }}
           >Look up code ↗</a>
         </span>
-        {#if item.description}
-          <span class="item-desc">{item.description}</span>
+        {#if displayDescription}
+          <span class="item-desc">{displayDescription}</span>
         {/if}
         {#if finding}
           <span class="item-error-type">{finding.errorType.replace(/_/g, ' ')}</span>
-          {#if confidenceLabel}
-            <span class="item-confidence {confidenceClass}">{confidenceLabel}</span>
-          {/if}
         {/if}
       </div>
     </div>
@@ -106,7 +116,7 @@
           <div class="price-comparison">
             <span class="pc-billed">Billed: <span class="pc-mono">{formatDollars(item.billedAmount)}</span></span>
             <span class="pc-arrow">→</span>
-            <span class="pc-expected">Expected: <span class="pc-mono">{formatDollars(priceComparison.expected)}</span></span>
+            <span class="pc-expected">Medicare expected: <span class="pc-mono">{formatDollars(priceComparison.expected)}</span></span>
             {#if priceComparison.zeroLabel}
               <span class="pc-save pc-zero">({priceComparison.zeroLabel})</span>
             {:else}
@@ -114,10 +124,45 @@
             {/if}
           </div>
         {/if}
+        {#if hospitalPriceComparison}
+          <div class="price-comparison hospital-price">
+            <span class="pc-billed">Billed: <span class="pc-mono">{formatDollars(item.billedAmount)}</span></span>
+            <span class="pc-arrow">→</span>
+            <span class="pc-expected">
+              {hospitalPriceComparison.label}: <span class="pc-mono">{formatDollars(hospitalPriceComparison.price)}</span>
+            </span>
+            {#if hospitalPriceComparison.overcharge != null}
+              <span class="pc-save pc-hospital-flag">
+                ({formatDollars(hospitalPriceComparison.overcharge)} above hospital's own price list)
+              </span>
+            {:else}
+              <span class="pc-save pc-zero">(within hospital's published price)</span>
+            {/if}
+          </div>
+          {#if hospitalPriceComparison.source}
+            <p class="hospital-mrf-source">
+              Source: hospital's required CMS price transparency file
+              <a
+                href={hospitalPriceComparison.source}
+                target="_blank"
+                rel="noopener noreferrer"
+                onclick={(e) => e.stopPropagation()}
+              >View file ↗</a>
+            </p>
+          {/if}
+        {/if}
         <div class="detail-grid">
           {#if finding.medicareRate}
             <span class="detail-label">Medicare rate</span>
             <span class="detail-value">{formatDollars(finding.medicareRate)}</span>
+          {/if}
+          {#if extendedFinding?.hospitalGrossCharge != null}
+            <span class="detail-label">Hospital gross charge</span>
+            <span class="detail-value">{formatDollars(extendedFinding.hospitalGrossCharge)}</span>
+          {/if}
+          {#if extendedFinding?.hospitalCashPrice != null}
+            <span class="detail-label">Hospital cash price</span>
+            <span class="detail-value">{formatDollars(extendedFinding.hospitalCashPrice)}</span>
           {/if}
           {#if finding.markupRatio}
             <span class="detail-label">Markup ratio</span>
@@ -162,11 +207,14 @@
     border-radius: var(--radius);
     overflow: hidden;
     cursor: pointer;
-    transition: border-color 0.15s;
+    transition: border-color 0.12s, box-shadow 0.12s;
     user-select: none;
   }
-  .line-item:hover { border-color: #D1D5DB; }
-  .line-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .line-item:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+  }
+  .line-item:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
   .line-item.has-finding { border-left-width: 3px; }
   .line-item.has-finding:has(.badge-error) { border-left-color: var(--error); }
   .line-item.has-finding:has(.badge-warning) { border-left-color: var(--warning); }
@@ -184,76 +232,85 @@
 
   .badge {
     display: inline-flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
-    padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 600; letter-spacing: 0.08em;
+    padding: 3px 6px; border-radius: 3px; white-space: nowrap; flex-shrink: 0;
   }
-  .badge-error { background: #FEF2F2; color: var(--error); }
-  .badge-warning { background: #FFFBEB; color: var(--warning); }
-  .badge-clean { background: #F0FDF4; color: var(--success); }
+  .badge-error { background: var(--error-bg); color: var(--error); border: 1px solid var(--error-border); }
+  .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+  .badge-clean { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
 
   .item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .item-code { font-family: var(--font-mono); font-size: 13px; font-weight: 600; display: flex; align-items: baseline; gap: 6px; }
+  .item-code { font-family: var(--font-mono); font-size: 13px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; letter-spacing: 0.02em; }
   .aapc-link {
-    font-family: var(--font-sans, sans-serif);
+    font-family: var(--font-sans);
     font-size: 11px;
     font-weight: 400;
-    color: var(--text-muted);
+    color: var(--text-ghost);
     text-decoration: none;
     letter-spacing: 0;
   }
-  .aapc-link:hover { text-decoration: underline; }
-  .item-desc { font-size: 13px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .item-error-type { font-size: 11px; color: var(--warning); text-transform: uppercase; letter-spacing: 0.04em; }
-  .item-confidence {
-    display: inline-flex;
-    width: fit-content;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-    text-transform: uppercase;
-  }
-  .confidence-high { background: #ECFDF5; color: #047857; }
-  .confidence-medium { background: #FFFBEB; color: #B45309; }
-  .confidence-low { background: #FEF2F2; color: #B91C1C; }
+  .aapc-link:hover { color: var(--accent); text-decoration: underline; }
+  .item-desc { font-size: 13px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-sans); }
+  .item-error-type { font-size: 10px; font-weight: 700; color: var(--warning); text-transform: uppercase; letter-spacing: 0.07em; font-family: var(--font-mono); }
 
-  .item-amount { font-weight: 600; font-size: 15px; font-family: var(--font-mono); }
-  .expand-toggle { font-size: 10px; color: var(--text-muted); }
+  .item-amount { font-weight: 600; font-size: 14px; font-family: var(--font-mono); color: var(--text-primary); letter-spacing: 0.01em; }
+  .expand-toggle { font-size: 10px; color: var(--text-ghost); }
+  .line-item:hover .expand-toggle { color: var(--text-muted); }
 
   .item-detail {
-    padding: 12px 16px 16px;
+    padding: 14px 16px 16px;
     border-top: 1px solid var(--border);
-    background: #FAFAFA;
+    background: var(--bg-subtle);
     animation: expand 0.15s ease-out;
   }
-  @keyframes expand { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes expand {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-  .detail-description { margin: 0 0 12px; font-size: 14px; line-height: 1.5; }
-  .detail-clean { margin: 0; font-size: 14px; color: var(--success); }
-  .detail-meta { margin: 8px 0 0; font-size: 13px; color: var(--text-muted); }
+  .detail-description { margin: 0 0 14px; font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+  .detail-clean { margin: 0; font-size: 14px; color: var(--success); font-weight: 500; }
+  .detail-meta { margin: 8px 0 0; font-size: 13px; font-family: var(--font-mono); color: var(--text-muted); }
 
   .price-comparison {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
     font-size: 13px;
-    margin-bottom: 12px;
-    padding: 8px 10px;
-    background: #F8F8F8;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+  }
+  .price-comparison.hospital-price {
+    background: #EFF6FF;
+    border-color: #BFDBFE;
   }
   .pc-mono { font-family: var(--font-mono); }
-  .pc-arrow { color: var(--text-muted); }
+  .pc-arrow { color: var(--border-strong); }
   .pc-billed { color: var(--text-muted); }
-  .pc-expected { font-weight: 500; }
+  .pc-expected { font-weight: 600; color: var(--text-primary); }
   .pc-save { color: var(--success); font-size: 12px; }
-  .pc-zero { color: var(--text-muted); font-style: italic; }
+  .pc-zero { color: var(--text-muted); font-style: italic; font-family: var(--font-sans); }
+  .pc-hospital-flag { color: #1D4ED8; font-size: 12px; font-weight: 600; }
+
+  .hospital-mrf-source {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 4px 0 10px;
+    padding: 0;
+  }
+  .hospital-mrf-source a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .hospital-mrf-source a:hover {
+    text-decoration: underline;
+  }
 
   .code-link {
     font-family: var(--font-mono);
@@ -266,21 +323,36 @@
   .detail-grid {
     display: grid;
     grid-template-columns: max-content 1fr;
-    gap: 4px 16px;
+    gap: 4px 20px;
     font-size: 13px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
-  .detail-label { color: var(--text-muted); }
-  .detail-value { font-weight: 500; font-family: var(--font-mono); }
+  .detail-label { color: var(--text-muted); font-size: 12px; }
+  .detail-value { font-weight: 500; font-family: var(--font-mono); color: var(--text-primary); }
   .text-error { color: var(--error); }
   .text-warning { color: var(--warning); }
 
   .detail-recommendation {
     font-size: 13px;
-    background: #F0FDFA;
-    border: 1px solid #99F6E4;
-    border-radius: 6px;
-    padding: 8px 12px;
-    line-height: 1.4;
+    background: var(--accent-light);
+    border: 1px solid var(--success-border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+  .detail-recommendation strong {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  @media (max-width: 480px) {
+    .item-desc {
+      display: none;
+    }
+
+    .item-amount {
+      font-size: 13px;
+    }
   }
 </style>

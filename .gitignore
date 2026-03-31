@@ -13,5 +13,6 @@ src/lib/data/asp.json
 .gstack/
 data/savings.json
 data/stats.json
+data/mrf_cache/
 tmp/
 vite-dev.log

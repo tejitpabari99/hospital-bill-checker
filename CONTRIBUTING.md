@@ -21,6 +21,7 @@ pip3 install openpyxl
 python3 scripts/build_mpfs.py
 python3 scripts/build_ncci.py
 python3 scripts/build_asp.py
+python3 scripts/build_hospital_index.py
 
 # Run dev server
 bun run dev
@@ -74,6 +75,7 @@ The lookup tables in `src/lib/data/` come from public CMS datasets. Refresh quar
 python3 scripts/build_ncci.py   # quarterly
 python3 scripts/build_asp.py    # quarterly
 python3 scripts/build_mpfs.py   # annually (January)
+python3 scripts/build_hospital_index.py   # monthly
 ```
 
 ## Pull requests
