@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"start": "node build",
+		"start": "BODY_SIZE_LIMIT=20971520 node build",
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:watch": "vitest",
