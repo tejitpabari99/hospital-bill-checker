@@ -1,123 +1,247 @@
 #!/usr/bin/env python3
 """
 Build NCCI (National Correct Coding Initiative) PTP lookup JSON.
-Downloads quarterly NCCI PTP edits from CMS.
+Downloads quarterly NCCI PTP edits from CMS and parses the tab-delimited text files.
 
-NCCI PTP table columns:
-  Column 1 Code: comprehensive code (gets paid)
-  Column 2 Code: component code (bundled into Column 1, should NOT be billed separately)
-  Modifier Indicator: 0=cannot override, 1=modifier -59 can override
+Output format: { "col2_code": { "bundledInto": ["col1_a", "col1_b"], "modifierCanOverride": bool } }
+  - col2_code = component code (bundled, should NOT be billed separately)
+  - bundledInto = list of Column 1 (comprehensive) codes it bundles into
+  - modifierCanOverride = True if modifier -59/X{EPSU} can override, False if always an error
 
-Output format: { "column2_code": "column1_code" }
-So we can check: if billed_code in ncci → it's bundled into ncci[billed_code]
+Run quarterly.
 """
-import json
-import zipfile
+
+from __future__ import annotations
+
 import io
+import json
 import os
 import re
+import sys
 import urllib.request
+import zipfile
+from collections import defaultdict
 from pathlib import Path
-
-try:
-    import openpyxl
-    HAS_OPENPYXL = True
-except ImportError:
-    HAS_OPENPYXL = False
+from typing import Iterable
 
 OUTPUT_PATH = Path(__file__).parent.parent / "src" / "lib" / "data" / "ncci.json"
 
-# CMS NCCI PTP files — check https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits for latest
-# File format: XLSX inside ZIP
-NCCI_URL = "https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/downloads/ncci-ptp-edits-current.zip"
+SOURCE_GROUPS = [
+    {
+        "name": "CMS Medicare NCCI PTP 2026 Q2",
+        "urls": [
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q2-practitioner-ptp-edits-ccipra-v321r0-f1.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q2-practitioner-ptp-edits-ccipra-v321r0-f2.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q2-practitioner-ptp-edits-ccipra-v321r0-f3.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q2-practitioner-ptp-edits-ccipra-v321r0-f4.zip",
+        ],
+    },
+    {
+        "name": "CMS Medicare NCCI PTP 2026 Q1",
+        "urls": [
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q1-practitioner-ptp-edits-ccipra-v320r0-f1.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q1-practitioner-ptp-edits-ccipra-v320r0-f2.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q1-practitioner-ptp-edits-ccipra-v320r0-f3.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q1-practitioner-ptp-edits-ccipra-v320r0-f4.zip",
+        ],
+    },
+    {
+        "name": "CMS Medicaid NCCI Practitioner Services 2026 Q2",
+        "urls": [
+            "https://www.cms.gov/files/zip/medicaid-ncci-q2-2026-ptp-edits-practitioner-services.zip",
+        ],
+    },
+    {
+        "name": "CMS Medicaid NCCI Practitioner Services 2026 Q1",
+        "urls": [
+            "https://www.cms.gov/files/zip/medicaid-ncci-q1-2026-ptp-edits-practitioner-services.zip",
+        ],
+    },
+]
 
-def parse_ncci_xlsx(xlsx_bytes: bytes) -> dict[str, str]:
-    """Parse NCCI XLSX and return {col2_code: col1_code} mapping."""
-    if not HAS_OPENPYXL:
-        print("openpyxl not installed — install with: pip install openpyxl")
-        return {}
+# Active date threshold — edits with deletion date before this are expired.
+# Update to the first day of the current quarter.
+ACTIVE_DATE = 20260401
 
-    bundling: dict[str, str] = {}
-    wb = openpyxl.load_workbook(io.BytesIO(xlsx_bytes), read_only=True, data_only=True)
+CODE_PATTERN = re.compile(r"^(?:[0-9]{5}|[0-9]{4}[A-Z]|[A-Z][0-9]{4})$")
 
-    for sheet_name in wb.sheetnames:
-        ws = wb[sheet_name]
-        rows = list(ws.iter_rows(values_only=True))
 
-        if not rows:
+def parse_ncci_txt(txt_bytes: bytes) -> dict[str, dict[str, object]]:
+    """Parse one NCCI tab-delimited text file."""
+    bundling: dict[str, dict[str, object]] = defaultdict(
+        lambda: {"bundledInto": [], "modifierCanOverride": None}
+    )
+    text = io.StringIO(txt_bytes.decode("utf-8", errors="replace"))
+
+    for line in text:
+        line = line.rstrip("\r\n")
+        if not line:
             continue
 
-        # Find header row
-        header_row_idx = None
-        col1_idx = col2_idx = mod_idx = None
-
-        for i, row in enumerate(rows[:10]):
-            row_text = ' '.join(str(c).upper() for c in row if c)
-            if 'COLUMN 1' in row_text or 'COL 1' in row_text or 'COLUMN1' in row_text:
-                header_row_idx = i
-                for j, cell in enumerate(row):
-                    if cell:
-                        ct = str(cell).upper()
-                        if 'COLUMN 1' in ct or 'COL1' in ct: col1_idx = j
-                        elif 'COLUMN 2' in ct or 'COL2' in ct: col2_idx = j
-                        elif 'MODIFIER' in ct: mod_idx = j
-                break
-
-        if header_row_idx is None or col1_idx is None or col2_idx is None:
+        parts = line.split("\t")
+        if len(parts) < 5:
             continue
 
-        for row in rows[header_row_idx + 1:]:
-            if not row or not row[col1_idx] or not row[col2_idx]:
-                continue
-            col1 = str(row[col1_idx]).strip()
-            col2 = str(row[col2_idx]).strip()
+        col1 = parts[0].strip().upper()
+        col2 = parts[1].strip().upper()
 
-            # Validate CPT format
-            if re.match(r'^[0-9]{5}$|^[JGABC][0-9]{4}$', col1) and re.match(r'^[0-9]{5}$|^[JGABC][0-9]{4}$', col2):
-                bundling[col2] = col1
+        if not CODE_PATTERN.match(col1) or not CODE_PATTERN.match(col2):
+            continue
 
-        if bundling:
-            print(f"Parsed {len(bundling)} NCCI pairs from sheet '{sheet_name}'")
-            break
+        has_medicare_shape = len(parts) > 5 and parts[2].strip() in {"", "*"}
+        del_dt_str = parts[4].strip() if has_medicare_shape else parts[3].strip()
+        mod_indicator = parts[5].strip() if has_medicare_shape else (parts[4].strip() if len(parts) > 4 else "1")
+
+        try:
+            del_dt = int(del_dt_str) if del_dt_str and del_dt_str != "*" else 99991231
+        except ValueError:
+            del_dt = 99991231
+
+        if del_dt < ACTIVE_DATE:
+            continue
+
+        entry = bundling[col2]
+        bundled_into = entry["bundledInto"]
+        if col1 not in bundled_into:
+            bundled_into.append(col1)
+
+        if mod_indicator == "0":
+            entry["modifierCanOverride"] = False
+        elif entry["modifierCanOverride"] is None and mod_indicator in {"1", "9"}:
+            entry["modifierCanOverride"] = True
 
     return bundling
 
-def main():
+
+def merge_bundling(
+    target: dict[str, dict[str, object]],
+    incoming: dict[str, dict[str, object]],
+) -> None:
+    for code, data in incoming.items():
+        entry = target.setdefault(code, {"bundledInto": [], "modifierCanOverride": None})
+
+        for bundled_code in data["bundledInto"]:
+            if bundled_code not in entry["bundledInto"]:
+                entry["bundledInto"].append(bundled_code)
+
+        if data["modifierCanOverride"] is False:
+            entry["modifierCanOverride"] = False
+        elif entry["modifierCanOverride"] is None:
+            entry["modifierCanOverride"] = data["modifierCanOverride"]
+
+
+def finalize(bundling: dict[str, dict[str, object]]) -> dict[str, dict[str, object]]:
+    return {
+        code: {
+            "bundledInto": sorted(entry["bundledInto"]),
+            "modifierCanOverride": (
+                entry["modifierCanOverride"] if entry["modifierCanOverride"] is not None else True
+            ),
+        }
+        for code, entry in sorted(bundling.items())
+    }
+
+
+def download_bytes(url: str) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        return resp.read()
+
+
+def resolve_zip_sources(args: list[str]) -> tuple[list[str], str, str]:
+    local_files = [Path(arg) for arg in args if Path(arg).exists()]
+    if local_files:
+        print(f"Using local file(s): {', '.join(str(path) for path in local_files)}")
+        return [str(path) for path in local_files], "local file(s)", "local"
+
+    for group in SOURCE_GROUPS:
+        print(f"Trying source: {group['name']}")
+        downloads: list[str] = []
+        for url in group["urls"]:
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    size = resp.headers.get("Content-Length")
+                if size:
+                    print(f"  Reachable {url} ({int(size):,} bytes)")
+                else:
+                    print(f"  Reachable {url}")
+                downloads.append(url)
+            except Exception as exc:
+                print(f"  Failed {url}: {exc}")
+                downloads = []
+                break
+
+        if downloads:
+            print(f"Using source: {group['name']}")
+            return downloads, group["name"], "remote"
+
+    print("ERROR: All downloads failed.")
+    print(
+        "Try a local ZIP download from either:\n"
+        "  Medicare: https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits/medicare-ncci-procedure-procedure-ptp-edits\n"
+        "  Medicaid: https://www.cms.gov/medicare/coding-billing/ncci-medicaid/medicaid-ncci-edit-files"
+    )
+    sys.exit(1)
+
+
+def iter_zip_sources(sources: list[str], source_type: str) -> Iterable[tuple[str, bytes]]:
+    for source in sources:
+        if source_type == "local":
+            path = Path(source)
+            yield path.name, path.read_bytes()
+            continue
+
+        data = download_bytes(source)
+        print(f"Downloaded {len(data):,} bytes from {source}")
+        yield source, data
+
+
+def parse_zip_sources(sources: list[str], source_type: str) -> dict[str, dict[str, object]]:
+    bundling: dict[str, dict[str, object]] = {}
+
+    for source_name, zip_bytes in iter_zip_sources(sources, source_type):
+        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
+            txt_files = [name for name in archive.namelist() if name.lower().endswith(".txt")]
+            print(f"Files in {source_name}: {archive.namelist()}")
+
+            parsed_any = False
+            for filename in txt_files:
+                print(f"Parsing {filename}...")
+                parsed = parse_ncci_txt(archive.read(filename))
+                if not parsed:
+                    continue
+
+                merge_bundling(bundling, parsed)
+                print(f"  Parsed {len(parsed):,} component codes from {filename}")
+                parsed_any = True
+
+            if not parsed_any:
+                print(f"WARNING: No practitioner PTP text file parsed from {source_name}")
+
+    return bundling
+
+
+def main() -> None:
     os.makedirs(OUTPUT_PATH.parent, exist_ok=True)
 
-    print(f"Downloading NCCI from {NCCI_URL}...")
-    try:
-        req = urllib.request.Request(NCCI_URL, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            zip_bytes = resp.read()
-        print(f"Downloaded {len(zip_bytes):,} bytes")
+    sources, source_used, source_type = resolve_zip_sources(sys.argv[1:])
+    bundling = parse_zip_sources(sources, source_type)
 
-        bundling: dict[str, str] = {}
-        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
-            xlsx_files = [n for n in z.namelist() if n.lower().endswith('.xlsx')]
-            print(f"XLSX files in ZIP: {xlsx_files}")
+    if not bundling:
+        print("ERROR: No data parsed from ZIP source(s). Check file format.")
+        sys.exit(1)
 
-            for xlsx_name in xlsx_files:
-                with z.open(xlsx_name) as f:
-                    xlsx_bytes = f.read()
-                pairs = parse_ncci_xlsx(xlsx_bytes)
-                bundling.update(pairs)
-                if bundling:
-                    break
+    final = finalize(bundling)
+    OUTPUT_PATH.write_text(json.dumps(final, sort_keys=True, indent=2))
+    size_kb = OUTPUT_PATH.stat().st_size // 1024
 
-    except Exception as e:
-        print(f"Download failed: {e}")
-        print("Generating minimal fallback with common NCCI pairs...")
-        # Common NCCI bundling pairs for fallback
-        bundling = {
-            "27370": "27447",  # knee injection bundled into total knee replacement
-            "93010": "93000",  # ECG interpretation bundled into complete ECG
-            "36000": "36410",  # IV access bundled into venipuncture
-            "99070": "99213",  # supplies bundled into E&M
-        }
+    print(f"Wrote {len(final):,} entries to {OUTPUT_PATH} ({size_kb} KB)")
+    print(f"Source used: {source_used}")
+    print(f"Sample: 70450 = {final.get('70450', 'NOT FOUND')}")
+    print(f"Sample: 93010 = {final.get('93010', 'NOT FOUND')}")
+    print(f"Sample: 0001A = {final.get('0001A', 'NOT FOUND')}")
 
-    OUTPUT_PATH.write_text(json.dumps(bundling, indent=2))
-    print(f"Wrote {len(bundling):,} NCCI pairs to {OUTPUT_PATH}")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

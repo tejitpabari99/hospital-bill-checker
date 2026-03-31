@@ -35,11 +35,12 @@
   const STEPS = [
     'Reading your bill...',
     'Extracting billing codes...',
-    'Checking NCCI bundling rules...',
-    'Comparing CMS Medicare rates...',
-    'Checking pharmacy markup...',
+    'Checking 8,150 NCCI bundling rules...',
+    'Comparing 7,436 CMS Medicare rates...',
+    'Checking CLFS lab rates where applicable...',
+    'Checking pharmacy markup against 931 drug prices...',
     'Looking up hospital published prices...',
-    'Analyzing findings...',
+    'AI analyzing for upcoding and diagnosis mismatches...',
     'Generating dispute letter...',
   ]
   let currentStep = $state(0)
@@ -179,7 +180,7 @@
   <main class="container upload-screen">
     <header class="upload-header">
       <h1 class="upload-title">Hospital Bill Checker</h1>
-      <p class="upload-subtitle">Upload your itemized bill. We audit every charge against CMS data and write your dispute letter.</p>
+      <p class="upload-subtitle">Upload your itemized bill. We check every charge against 8,150 NCCI rules, 7,436 Medicare rates, CLFS lab rates, and 931 drug prices — then write your dispute letter.</p>
     </header>
 
     {#if errorMessage}

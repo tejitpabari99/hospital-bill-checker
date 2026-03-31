@@ -30,12 +30,14 @@
   <section class="secondary card">
     <h2>What to include</h2>
     <ul>
-      <li>The code or charge that looks off</li>
+      <li>The CPT or HCPCS code that was flagged or missed</li>
+      <li>Whether the flag seems correct or incorrect to you</li>
+      <li>For unbundling flags: whether a modifier -59 or X&#123;EPSU&#125; was present on your bill</li>
       <li>What the bill says versus what you expected</li>
       <li>Any related insurance or coverage detail</li>
     </ul>
     <p>
-      We use this to improve the billing checks and catch more hospital and insurance issues accurately.
+      The most useful reports are: (1) a bundling flag that fired but the codes had modifier -59 or X&#123;EPSU&#125; justifying separate billing, (2) a drug markup flag where the quantity billed was not a single unit, (3) a lab-rate or hospital price comparison that looks wrong, or (4) an AI finding (upcoding or diagnosis mismatch) that seems clinically incorrect. We use all feedback to improve accuracy.
     </p>
   </section>
 </main>

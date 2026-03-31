@@ -29,7 +29,7 @@
       <span class="step-num">2</span>
       <h2>Gemini Vision reads the bill</h2>
     </div>
-    <p>Your bill is sent to <strong>Google Gemini Vision</strong> (<code>gemini-2.5-flash</code>), which reads the PDF or image and extracts:</p>
+    <p>Your bill is sent to <strong>Google Gemini Vision</strong> with <code>temperature: 0</code> for consistent extraction, which reads the PDF or image and extracts:</p>
     <ul>
       <li>All CPT and HCPCS billing codes</li>
       <li>Line-item descriptions, units, and dollar amounts</li>
@@ -50,9 +50,9 @@
   <section class="section">
     <div class="step-header">
       <span class="step-num">3</span>
-      <h2>We check against three CMS datasets</h2>
+      <h2>We check against four CMS datasets</h2>
     </div>
-    <p>Before running the AI audit, we look up each code in three public datasets published by the Centers for Medicare &amp; Medicaid Services (CMS):</p>
+    <p>Before the AI is involved at all, we look up each code in four public datasets published by the Centers for Medicare &amp; Medicaid Services (CMS). These lookups are fully deterministic — they are rule table checks, not AI guesses:</p>
 
     <div class="data-table">
       <div class="data-row header-row">
@@ -60,25 +60,32 @@
       </div>
       <div class="data-row">
         <span><strong>MPFS</strong><br/><small>Medicare Physician Fee Schedule</small></span>
-        <span>The official Medicare payment rate for every CPT code. Published annually.</span>
-        <span>Benchmark for upcoding — if a hospital charges 3× the Medicare rate, that's flagged.</span>
+        <span>The official Medicare payment rate for every CPT code. Published annually. We use the 2026 edition — <strong>7,436 codes</strong>.</span>
+        <span>Benchmark for upcoding — if a hospital charges far above the Medicare rate, that's flagged. Also used to calculate the dollar magnitude of potential overcharges.</span>
+      </div>
+      <div class="data-row">
+        <span><strong>CLFS</strong><br/><small>Clinical Laboratory Fee Schedule</small></span>
+        <span>CMS pricing for lab and pathology codes when they do not fall under MPFS. We use it as the benchmark for lab-rate lookups when a code belongs to the CLFS table.</span>
+        <span>Lab-code benchmark — when a billed lab code maps to CLFS, we use the local fee schedule instead of sending the code to Gemini for pricing.</span>
       </div>
       <div class="data-row">
         <span><strong>NCCI</strong><br/><small>National Correct Coding Initiative</small></span>
-        <span>CMS rules on which CPT codes must be billed together (bundled) and cannot be billed separately. Updated quarterly.</span>
-        <span>Unbundling detection — if code A is billed separately but NCCI says it must be included in code B, that's an error.</span>
+        <span>CMS rules on which CPT codes must be billed together (bundled) and cannot be billed separately. Updated quarterly. We prefer the Medicare NCCI file and fall back to the Medicaid Practitioner Services edition when Medicare does not publish the edit. Current lookup size: <strong>8,150 code pairs</strong>.</span>
+        <span>Unbundling detection — if code A is billed separately but NCCI says it must be included in code B, that's a definite billing error detected by rule lookup, not AI.</span>
       </div>
       <div class="data-row">
         <span><strong>ASP</strong><br/><small>Average Sales Price — Drug Pricing</small></span>
-        <span>CMS quarterly drug pricing for injectable drugs billed under HCPCS J-codes. Represents the average manufacturer selling price plus a 6% allowed markup.</span>
-        <span>Pharmacy markup detection — if a J-code drug is billed far above the CMS ASP limit, the excess is flagged.</span>
+        <span>CMS quarterly drug pricing for injectable drugs billed under HCPCS J-codes. Represents the average manufacturer selling price plus a 6% allowed markup. We use Q3 2025 data — <strong>931 J-codes</strong>.</span>
+        <span>Pharmacy markup detection — if a J-code drug is billed far above the CMS ASP limit, the excess is flagged. Detected by price table lookup, not AI.</span>
       </div>
     </div>
 
-    <p style="margin-top:16px;">These datasets are free, public, and updated regularly. You can download them yourself at <a href="https://www.cms.gov" target="_blank" rel="noopener noreferrer">cms.gov</a>. We rebuild our lookup files from these sources quarterly using open-source Python scripts included in the repository.</p>
+    <p style="margin-top:16px;">These datasets are free, public, and updated regularly. You can download them yourself at <a href="https://www.cms.gov" target="_blank" rel="noopener noreferrer">cms.gov</a>. We rebuild our lookup files from these sources quarterly using open-source Python scripts included in the repository. NCCI bundling violations, duplicate billing, pharmacy markup overcharges, and lab-rate lookups are all detected by these lookup tables — Gemini is not involved in those checks.</p>
     <p class="reference-row">
       Direct sources:
       <a href="https://www.cms.gov/medicare/payment/fee-schedules/physician" target="_blank" rel="noopener noreferrer">Physician Fee Schedule</a>
+      ·
+      <a href="https://www.cms.gov/Medicare/Medicare-Fee-for-Service-Payment/ClinicalLabFeeSched/index.html" target="_blank" rel="noopener noreferrer">Clinical Laboratory Fee Schedule</a>
       ·
       <a href="https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits" target="_blank" rel="noopener noreferrer">NCCI edits</a>
       ·
@@ -89,44 +96,44 @@
   <section class="section">
     <div class="step-header">
       <span class="step-num">4</span>
-      <h2>Gemini audits for five error types</h2>
+      <h2>Two error types require AI — the rest are local lookups</h2>
     </div>
-    <p>We send the extracted line items, CMS benchmark data, and a structured audit prompt to <strong>Google Gemini</strong> (<code>gemini-2.5-pro</code>). The model checks for:</p>
+    <p>Most billing errors are caught by the CMS rule lookups in Step 3 — no AI required. For two error types that genuinely require clinical reasoning, we send the extracted line items and benchmark data to <strong>Google Gemini</strong> with <code>temperature: 0</code>:</p>
 
     <div class="error-types">
       <div class="error-type">
-        <span class="error-tag tag-error">UPCODING</span>
-        <div>
-          <strong>Billing for a more complex service than provided.</strong>
-          <p>E&amp;M visit codes (99201–99285) are graded by complexity. If the diagnosis codes present don't justify a high-complexity code, that's upcoding. We compare against the Medicare rate for a lower code and flag the difference.</p>
+          <span class="error-tag tag-error">UPCODING</span>
+          <div>
+            <strong>Billing for a more complex service than provided.</strong>
+          <p>Checked by Gemini — requires clinical reasoning. E&amp;M visit codes (99201–99285) are graded by complexity. If the diagnosis codes on the bill don't justify a high-complexity code, that's upcoding. Gemini compares the E&amp;M code against the diagnosis codes and flags mismatches, with the Medicare rate for a lower code used as the benchmark. If the code is a lab test, we use CLFS instead of MPFS for the rate check.</p>
         </div>
       </div>
       <div class="error-type">
         <span class="error-tag tag-error">UNBUNDLING</span>
         <div>
           <strong>Billing separately for services that must be combined.</strong>
-          <p>NCCI rules define which procedures are "component" codes that must be included in a "comprehensive" code. Billing both separately is a billing error — you should only pay for the comprehensive code.</p>
+          <p>Detected by CMS NCCI rule lookup — not AI. NCCI defines which procedures are "component" codes that must be included in a "comprehensive" code. We check all 8,150 rule pairs from the current dataset. If both codes appear on your bill, it's flagged as a confirmed error.</p>
         </div>
       </div>
       <div class="error-type">
         <span class="error-tag tag-warning">PHARMACY MARKUP</span>
         <div>
           <strong>Drug billed far above the CMS price limit.</strong>
-          <p>Medicare allows hospitals to charge the ASP plus 6%. We calculate the ratio of the billed amount to the CMS limit. Ratios above 4.5× are flagged as errors; lower ratios are flagged for review.</p>
+          <p>Detected by CMS ASP price table lookup — not AI. Medicare allows hospitals to charge the ASP plus 6%. We look up the billed J-code in our 931-entry ASP dataset and calculate the markup ratio. Ratios above 4.5× are flagged as errors; lower ratios are flagged for review.</p>
         </div>
       </div>
       <div class="error-type">
         <span class="error-tag tag-warning">ICD-10 MISMATCH</span>
         <div>
           <strong>Diagnosis codes that don't justify the procedure.</strong>
-          <p>Every procedure should be clinically linked to a diagnosis. If the ICD-10 codes on the bill don't justify the procedure billed, that's a potential mismatch worth questioning.</p>
+          <p>Checked by Gemini — requires clinical reasoning. Every procedure should be clinically linked to a diagnosis. If the ICD-10 codes on the bill don't support the procedure billed, Gemini flags it as a potential mismatch worth questioning.</p>
         </div>
       </div>
       <div class="error-type">
         <span class="error-tag tag-error">DUPLICATE</span>
         <div>
           <strong>The same code billed more than once.</strong>
-          <p>Exact duplicate CPT codes on the same bill — same code, same service — are flagged. One occurrence should be $0.</p>
+          <p>Detected deterministically — not AI. If the same CPT or HCPCS code appears more than once on the bill for the same service date, every occurrence after the first is flagged. One occurrence should be $0.</p>
         </div>
       </div>
     </div>
@@ -168,7 +175,8 @@
       <ul style="margin:0; padding-left:20px; line-height:1.8;">
         <li><strong>This is not a guarantee.</strong> A flagged item means you have grounds to ask for an explanation — not that you were definitely overcharged.</li>
         <li><strong>We use Medicare rates as benchmarks.</strong> Hospitals often charge more than Medicare rates. A charge above Medicare isn't automatically wrong — it's a starting point for a conversation.</li>
-        <li><strong>AI can make mistakes.</strong> Gemini may misread scanned bills, misidentify codes, or flag something incorrectly. Always review findings yourself.</li>
+        <li><strong>Lab codes are checked against CLFS when available.</strong> Common lab tests billed under HCPCS codes like 85025 (CBC) or 80053 (metabolic panel) are benchmarked against the Clinical Laboratory Fee Schedule (CLFS) instead of MPFS when that table applies.</li>
+        <li><strong>AI can make mistakes.</strong> Gemini may misread scanned bills, misidentify codes, or flag something incorrectly for the two checks it handles (upcoding and ICD-10 mismatch). Always review findings yourself.</li>
         <li><strong>This is not legal or medical advice.</strong> For complex disputes, consult a qualified medical billing advocate.</li>
       </ul>
     </div>
