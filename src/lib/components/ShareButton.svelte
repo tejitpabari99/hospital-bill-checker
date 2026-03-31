@@ -35,21 +35,37 @@
 
 {#if potentialOvercharge > 0}
   <div class="share-section">
-    <div class="share-expanded card" style="padding: 20px;">
-      <p style="margin: 0 0 12px; font-size: 14px; font-weight: 500; text-align: center;">
-        Share with others:
+    <p class="share-kicker">Share with others</p>
+    <div class="share-bubble card">
+      <div class="share-quote-mark" aria-hidden="true">“</div>
+      <p class="share-text">
+        {shareText}
       </p>
-      <div class="share-text-box">
-        <p style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;">
-          {shareText}
-        </p>
-      </div>
-      <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: center;">
-        <button class="btn btn-secondary" onclick={copyShareText}>
-          {copied ? '✓ Copied!' : 'Copy text'}
+
+      <div class="share-actions">
+        <button class="share-action btn btn-secondary" onclick={copyShareText}>
+          <span class="action-icon" aria-hidden="true">
+            {#if copied}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            {:else}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
+            {/if}
+          </span>
+          <span>{copied ? 'Copied' : 'Copy'}</span>
         </button>
-        <a class="btn btn-secondary" href={twitterUrl} target="_blank" rel="noopener noreferrer" onclick={trackShareTwitter}>
-          Post on X
+
+        <a class="share-action btn btn-secondary" href={twitterUrl} target="_blank" rel="noopener noreferrer" onclick={trackShareTwitter}>
+          <span class="action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.9 2H22l-6.8 7.8L23.2 22H17l-4.8-6.2L6.8 22H3.7l7.3-8.4L.8 2h6.4l4.4 5.7L18.9 2Zm-1.1 18h1.7L6.3 3.9H4.5L17.8 20Z" />
+            </svg>
+          </span>
+          <span>Post</span>
         </a>
       </div>
     </div>
@@ -61,10 +77,67 @@
     margin-top: 24px;
   }
 
-  .share-text-box {
-    background: var(--bg);
+  .share-kicker {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+  }
+
+  .share-bubble {
+    position: relative;
+    padding: 20px 22px;
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: visible;
+  }
+
+  .share-quote-mark {
+    font-family: var(--font-display);
+    font-size: 56px;
+    line-height: 1;
+    color: var(--border);
+    margin-bottom: -8px;
+    user-select: none;
+  }
+
+  .share-text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .share-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+
+  .share-action {
+    gap: 8px;
+    min-width: 116px;
+    justify-content: center;
+  }
+
+  .action-icon {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .action-icon svg {
+    width: 18px;
+    height: 18px;
+    display: block;
   }
 </style>

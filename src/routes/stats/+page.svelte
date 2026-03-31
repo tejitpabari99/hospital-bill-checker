@@ -45,11 +45,10 @@
 </svelte:head>
 
 <main class="container" style="padding-top: 48px; padding-bottom: 64px;">
-  <div style="margin-bottom: 32px;">
-    <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 6px;">Live Stats</h1>
-    <p style="color: var(--text-muted); font-size: 13px; margin: 0;">
-      Updated every 30 seconds
-      {#if lastRefreshed > 0}· last refreshed {lastRefreshed}s ago{/if}
+  <div style="margin-bottom: 40px;">
+    <h1 style="margin: 0 0 6px;">Live Stats</h1>
+    <p style="color: var(--text-muted); font-size: 13px; margin: 0; font-family: var(--font-mono);">
+      Updated every 30 seconds{#if lastRefreshed > 0} · {lastRefreshed}s ago{/if}
     </p>
   </div>
 
@@ -97,10 +96,21 @@
 </main>
 
 <style>
+  h1 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
     margin-bottom: 32px;
   }
 
@@ -110,14 +120,11 @@
 
   .stat-card {
     background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
+    padding: 24px 22px;
+    position: relative;
   }
 
   .stat-card.accent {
-    border-color: #99F6E4;
-    background: #F0FDFA;
     grid-column: span 2;
   }
 
@@ -125,55 +132,69 @@
     .stat-card.accent { grid-column: span 1; }
   }
 
-  .stat-card.live { border-left: 3px solid var(--accent); }
+  .stat-card.live {
+    box-shadow: inset 4px 0 0 var(--accent);
+    padding-left: 20px;
+  }
 
   .stat-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
+    gap: 7px;
+    margin-bottom: 6px;
   }
 
   .stat-label {
-    font-size: 13px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--text-muted);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    display: block;
   }
 
   .stat-value {
-    font-size: 32px;
-    font-weight: 700;
     font-family: var(--font-mono);
+    font-size: 36px;
+    font-weight: 600;
     color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1;
   }
 
   .stat-note {
     font-size: 12px;
     color: var(--text-muted);
-    margin-top: 2px;
+    margin-top: 4px;
   }
 
   .dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: var(--accent);
+    background: var(--accent-mid, #4A9970);
     animation: pulse 2s ease-in-out infinite;
     flex-shrink: 0;
   }
 
   @keyframes pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+    50% { opacity: 0.25; }
   }
 
   .disclaimer {
     font-size: 12px;
     color: var(--text-muted);
     text-align: center;
-    line-height: 1.6;
+    line-height: 1.65;
     max-width: 520px;
     margin: 0 auto;
+    padding: 16px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
   }
 </style>
