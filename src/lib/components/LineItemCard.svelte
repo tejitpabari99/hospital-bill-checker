@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { LineItem, AuditFinding } from '$lib/types'
   import { trackLineItemExpanded, trackCptCodeLookup } from '$lib/analytics'
+  import { getDisplayDescription } from '$lib/results'
 
   let { item, finding, index }: { item: LineItem, finding: AuditFinding | null, index: number } = $props()
 
@@ -26,16 +27,7 @@
     finding?.severity === 'error' ? 'badge-error' :
     finding?.severity === 'warning' ? 'badge-warning' : 'badge-clean'
   )
-  const confidenceLabel = $derived(
-    finding?.confidence === 'high' ? 'HIGH CONFIDENCE' :
-    finding?.confidence === 'medium' ? 'MEDIUM CONFIDENCE' :
-    finding?.confidence === 'low' ? 'LOW CONFIDENCE' : null
-  )
-  const confidenceClass = $derived(
-    finding?.confidence === 'high' ? 'confidence-high' :
-    finding?.confidence === 'medium' ? 'confidence-medium' :
-    finding?.confidence === 'low' ? 'confidence-low' : ''
-  )
+  const displayDescription = $derived(getDisplayDescription(item, finding))
 
   function aapcUrl(code: string) {
     return `https://www.aapc.com/codes/cpt-codes/${code}`
@@ -102,14 +94,11 @@
             onclick={(e) => { e.stopPropagation(); trackCptCodeLookup(item.cpt) }}
           >Look up code ↗</a>
         </span>
-        {#if item.description}
-          <span class="item-desc">{item.description}</span>
+        {#if displayDescription}
+          <span class="item-desc">{displayDescription}</span>
         {/if}
         {#if finding}
           <span class="item-error-type">{finding.errorType.replace(/_/g, ' ')}</span>
-          {#if confidenceLabel}
-            <span class="item-confidence {confidenceClass}">{confidenceLabel}</span>
-          {/if}
         {/if}
       </div>
     </div>
@@ -264,23 +253,6 @@
   .aapc-link:hover { color: var(--accent); text-decoration: underline; }
   .item-desc { font-size: 13px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-sans); }
   .item-error-type { font-size: 10px; font-weight: 700; color: var(--warning); text-transform: uppercase; letter-spacing: 0.07em; font-family: var(--font-mono); }
-  .item-confidence {
-    display: inline-flex;
-    width: fit-content;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    padding: 2px 5px;
-    border-radius: 3px;
-    white-space: nowrap;
-    text-transform: uppercase;
-  }
-  .confidence-high { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
-  .confidence-medium { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
-  .confidence-low { background: var(--error-bg); color: var(--error); border: 1px solid var(--error-border); }
 
   .item-amount { font-weight: 600; font-size: 14px; font-family: var(--font-mono); color: var(--text-primary); letter-spacing: 0.01em; }
   .expand-toggle { font-size: 10px; color: var(--text-ghost); }

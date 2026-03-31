@@ -8,6 +8,7 @@
   import type { AuditResult, LineItem } from '$lib/types'
   import { trackAuditStarted, trackAuditCompleted, trackBillParseError, trackFileSelected, trackFileTooLarge, trackNewBill } from '$lib/analytics'
   import { downloadResultReport } from '$lib/result-report'
+  import { buildResultSections } from '$lib/results'
 
   type ExtendedAuditResult = AuditResult & {
     summary: AuditResult['summary'] & {
@@ -30,17 +31,22 @@
   let errorMessage = $state('')
   let auditResult: unknown = $state(null)
   let auditLineItems: LineItem[] = $state([])
+  const resultSections = $derived.by(() => {
+    if (!auditResult) return []
+    const result = auditResult as ExtendedAuditResult
+    return buildResultSections(auditLineItems, result.findings)
+  })
 
   // Processing steps
   const STEPS = [
     'Reading your bill...',
     'Extracting billing codes...',
-    'Checking 8,150 NCCI bundling rules...',
-    'Comparing 7,436 CMS Medicare rates...',
-    'Checking CLFS lab rates where applicable...',
-    'Checking pharmacy markup against 931 drug prices...',
+    'Checking NCCI codes...',
+    'Comparing Medicare rates...',
+    'Checking lab rates...',
+    'Checking pharmacy markup...',
     'Looking up hospital published prices...',
-    'AI analyzing for upcoding and diagnosis mismatches...',
+    'Reviewing upcoding and diagnosis mismatches...',
     'Generating dispute letter...',
   ]
   let currentStep = $state(0)
@@ -328,9 +334,25 @@
       </div>
 
       <div class="line-items-list">
-        {#each auditLineItems as lineItem, i}
-          {@const finding = result.findings.find(f => f.lineItemIndex === i) ?? null}
-          <LineItemCard item={lineItem} {finding} index={i} />
+        {#each resultSections as section}
+          <section class="result-section">
+            <div class="result-section-header">
+              <h4 class="result-section-title">{section.title}</h4>
+            </div>
+
+            {#each section.groups as group}
+              <div class="result-group">
+                {#if group.title}
+                  <p class="result-group-title">{group.title}</p>
+                {/if}
+                <div class="result-group-cards">
+                  {#each group.entries as entry}
+                    <LineItemCard item={entry.item} finding={entry.finding} index={entry.index} />
+                  {/each}
+                </div>
+              </div>
+            {/each}
+          </section>
         {/each}
       </div>
 
@@ -767,6 +789,44 @@
   }
 
   .line-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .result-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .result-section-header {
+    padding-top: 4px;
+  }
+
+  .result-section-title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .result-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .result-group-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .result-group-cards {
     display: flex;
     flex-direction: column;
     gap: 8px;
