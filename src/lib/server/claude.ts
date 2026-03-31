@@ -3,6 +3,8 @@ import { join } from 'path'
 import { GEMINI_API_KEY } from '$env/static/private'
 import type { BillInput, AuditResult, ConfidenceLevel } from '$lib/types'
 import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/types'
+import { lookupHospitalPrices } from './hospital-prices'
+import type { HospitalPriceResult } from './hospital-prices'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
 
@@ -98,6 +100,53 @@ function normalizeFindings(findings: AuditResult['findings']): AuditResult['find
     ...finding,
     confidence: normalizeConfidence((finding as { confidence?: unknown }).confidence),
   }))
+}
+
+const US_STATE_CODES = new Set([
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+  'DC',
+])
+
+function extractStateFromHospitalName(hospitalName: string): string {
+  const match = hospitalName.match(/\b([A-Z]{2})\b/g)
+  if (!match) return ''
+  const state = match.find((code) => US_STATE_CODES.has(code))
+  return state ?? ''
+}
+
+function buildHospitalPriceContext(
+  hospitalPrices: HospitalPriceResult | null,
+  findings: AuditResult['findings'],
+  lineItems: BillInput['lineItems']
+): string {
+  if (!hospitalPrices) return ''
+
+  const hospitalPriceLines: string[] = []
+  for (const finding of findings) {
+    const f = finding as typeof finding & { hospitalGrossCharge?: number }
+    if (f.hospitalGrossCharge == null) continue
+    const lineItem = lineItems[finding.lineItemIndex]
+    if (!lineItem || lineItem.billedAmount <= f.hospitalGrossCharge) continue
+    hospitalPriceLines.push(
+      `CPT ${finding.cptCode}: billed $${lineItem.billedAmount.toFixed(2)}, ` +
+      `hospital's own published gross charge $${f.hospitalGrossCharge.toFixed(2)} ` +
+      `(source: ${hospitalPrices.mrfUrl})`
+    )
+  }
+
+  if (hospitalPriceLines.length === 0) return ''
+
+  return [
+    '',
+    'Hospital\'s own CMS-required price transparency file shows these discrepancies:',
+    hospitalPriceLines.join('\n'),
+    'Include a paragraph citing these discrepancies and the MRF URL as evidence.',
+    '',
+  ].join('\n')
 }
 
 // Pre-compute NCCI and MPFS context to inject into prompt
@@ -222,6 +271,31 @@ Respond ONLY with valid JSON matching this exact schema:
     throw new AuditParseError(`Raw response: ${result1.text.slice(0, 200)}`)
   }
 
+  const hospitalName = input.hospitalName ?? call1Result.extractedMeta?.hospitalName ?? ''
+  const state = extractStateFromHospitalName(hospitalName)
+  const allCodes = input.lineItems.map((lineItem) => lineItem.cpt)
+
+  let hospitalPrices: HospitalPriceResult | null = null
+  try {
+    hospitalPrices = await lookupHospitalPrices(hospitalName, state, allCodes)
+  } catch (error) {
+    console.warn('[claude.ts] Hospital price lookup failed:', error)
+  }
+
+  const enrichedFindings = call1Result.findings.map((finding) => {
+    if (!hospitalPrices) return finding
+    const record = hospitalPrices.charges[finding.cptCode]
+    if (!record) return finding
+    return {
+      ...finding,
+      hospitalGrossCharge: record.grossCharge ?? undefined,
+      hospitalCashPrice: record.discountedCash ?? undefined,
+      hospitalPriceSource: hospitalPrices.mrfUrl || undefined,
+    }
+  })
+
+  const hospitalPriceContext = buildHospitalPriceContext(hospitalPrices, enrichedFindings, input.lineItems)
+
   // Call 2: dispute letter
   const prompt2 = `You are a medical billing auditor helping a patient write a dispute letter.
 
@@ -231,7 +305,7 @@ Date of service: ${input.dateOfService ?? call1Result.extractedMeta?.dateOfServi
 Account: ${input.accountNumber ?? call1Result.extractedMeta?.accountNumber ?? 'Unknown'}
 
 Findings from billing audit:
-${JSON.stringify(call1Result.findings, null, 2)}
+${JSON.stringify(enrichedFindings, null, 2)}${hospitalPriceContext}
 
 Generate a dispute letter for the patient. Use these EXACT placeholder strings (they will be highlighted in amber in the UI):
 - [Your Full Name]
@@ -275,5 +349,34 @@ Respond ONLY with valid JSON matching this exact schema:
     throw new AuditParseError(`Raw response: ${result2.text.slice(0, 200)}`)
   }
 
-  return { ...call1Result, ...call2Result } as AuditResult
+  const aboveHospitalListCount = enrichedFindings.reduce((count, finding) => {
+    const record = finding as typeof finding & { hospitalGrossCharge?: number }
+    const lineItem = input.lineItems[finding.lineItemIndex]
+    if (record.hospitalGrossCharge != null && lineItem && lineItem.billedAmount > record.hospitalGrossCharge) {
+      return count + 1
+    }
+    return count
+  }, 0)
+
+  const aboveHospitalListTotal = enrichedFindings.reduce((total, finding) => {
+    const record = finding as typeof finding & { hospitalGrossCharge?: number }
+    const lineItem = input.lineItems[finding.lineItemIndex]
+    if (record.hospitalGrossCharge != null && lineItem && lineItem.billedAmount > record.hospitalGrossCharge) {
+      return total + (lineItem.billedAmount - record.hospitalGrossCharge)
+    }
+    return total
+  }, 0)
+
+  return {
+    ...call1Result,
+    findings: enrichedFindings,
+    summary: {
+      ...call1Result.summary,
+      aboveHospitalListCount,
+      aboveHospitalListTotal,
+      hospitalName: hospitalPrices?.hospitalName || undefined,
+      hospitalMrfUrl: hospitalPrices?.mrfUrl || undefined,
+    },
+    ...call2Result,
+  } as AuditResult
 }
