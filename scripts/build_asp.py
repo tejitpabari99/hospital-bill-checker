@@ -1,9 +1,21 @@
 #!/usr/bin/env python3
 """
 Build CMS ASP (Average Sales Price) drug pricing lookup JSON.
-Downloads quarterly ASP data from CMS.
+Downloads quarterly ASP pricing file from CMS.
 
-Output: { "JCODE": asp_payment_limit_dollars }
+Output: { "JCODE": payment_limit_per_unit }
+
+CMS page: https://www.cms.gov/medicare/payment/part-b-drugs/asp-pricing-files
+URL pattern: https://www.cms.gov/files/zip/{month}-{year}-asp-pricing-file.zip
+  e.g. https://www.cms.gov/files/zip/july-2025-asp-pricing-file.zip
+
+The ZIP contains a CSV with an 8-row header block; data starts on row 9.
+Columns: HCPCS Code, Short Description, HCPCS Code Dosage, Payment Limit, ...
+
+Payment Limit = ASP + 6% (what Medicare pays providers per billing unit).
+Our pharmacy markup threshold is 4.5× this amount.
+
+Run quarterly. Accepts a local zip file: python3 build_asp.py /path/to/asp.zip
 """
 import json
 import zipfile
@@ -11,96 +23,190 @@ import io
 import os
 import re
 import csv
+import sys
 import urllib.request
 from pathlib import Path
 
 OUTPUT_PATH = Path(__file__).parent.parent / "src" / "lib" / "data" / "asp.json"
 
-# CMS ASP quarterly files — check https://www.cms.gov/medicare/medicare-part-b-drug-average-sales-price
-ASP_URL = "https://www.cms.gov/medicare/medicare-part-b-drug-average-sales-price/2024-asp-drug-pricing-files"
+# Update these each quarter. Pattern: {month}-{year}-asp-pricing-file.zip
+# CMS publishes: January (Q1 effective), April (Q2), July (Q3), October (Q4)
+ASP_URLS = [
+    "https://www.cms.gov/files/zip/july-2025-asp-pricing-file.zip",    # Q3 2025 (most recent)
+    "https://www.cms.gov/files/zip/april-2025-asp-pricing-file.zip",   # Q2 2025
+    "https://www.cms.gov/files/zip/january-2025-asp-pricing-file.zip", # Q1 2025
+]
 
-def fetch_asp_data() -> dict[str, float]:
-    """Try to fetch and parse ASP data. Returns empty dict on failure."""
-    asp: dict[str, float] = {}
+# HCPCS codes to include — J-codes (Part B injectable drugs) and some Q/C codes
+HCPCS_PATTERN = re.compile(r'^[JQCAB][0-9]{4}$')
 
-    # CMS ASP page lists quarterly files — try to find a direct CSV link
-    # The actual quarterly file URL pattern changes each quarter
-    # Try a known 2024 Q4 URL format
-    quarterly_urls = [
-        "https://www.cms.gov/files/zip/2024-asp-q4.zip",
-        "https://www.cms.gov/files/zip/2024-asp-q3.zip",
-    ]
-
-    for url in quarterly_urls:
-        try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                content = resp.read()
-
-            # Try as ZIP
-            if content[:2] == b'PK':
-                with zipfile.ZipFile(io.BytesIO(content)) as z:
-                    for fname in z.namelist():
-                        if fname.lower().endswith('.csv') or fname.lower().endswith('.xlsx'):
-                            with z.open(fname) as f:
-                                asp.update(parse_asp_csv(f.read()))
-            else:
-                asp.update(parse_asp_csv(content))
-
-            if asp:
-                print(f"Got {len(asp)} ASP rates from {url}")
-                break
-        except Exception as e:
-            print(f"Failed {url}: {e}")
-
-    return asp
 
 def parse_asp_csv(content: bytes) -> dict[str, float]:
-    """Parse ASP CSV content."""
+    """
+    Parse CMS ASP CSV.
+    The file has an 8-row header block; the column header row is row 9 (index 8).
+    Columns: HCPCS Code, Short Description, HCPCS Code Dosage, Payment Limit, ...
+    """
     asp: dict[str, float] = {}
     text = content.decode('utf-8', errors='replace')
-    reader = csv.DictReader(io.StringIO(text))
+    lines = text.splitlines()
+
+    # Find the header row: first column must be 'HCPCS Code' (exact match, not just any mention)
+    header_idx = None
+    for i, line in enumerate(lines[:20]):
+        first_col = line.split(',')[0].strip().strip('"')
+        if first_col.upper() in ('HCPCS CODE', 'HCPCS'):
+            header_idx = i
+            break
+
+    if header_idx is None:
+        # Fallback: skip first 8 rows
+        header_idx = 8
+
+    data_text = '\n'.join(lines[header_idx:])
+    reader = csv.DictReader(io.StringIO(data_text))
 
     for row in reader:
-        cols = {k.strip().upper(): v.strip() for k, v in row.items() if k}
+        # Normalize column names
+        cols = {k.strip().upper().replace(' ', '_'): v.strip() for k, v in row.items() if k}
 
-        code = cols.get('HCPCS_CD') or cols.get('HCPCS') or cols.get('CODE') or cols.get('J-CODE')
-        rate = cols.get('ASP_PAYMENT_LIMIT') or cols.get('PAYMENT_LIMIT') or cols.get('AMOUNT')
+        code = (
+            cols.get('HCPCS_CODE') or
+            cols.get('HCPCS') or
+            cols.get('CODE')
+        )
+        rate = (
+            cols.get('PAYMENT_LIMIT') or
+            cols.get('ASP_PAYMENT_LIMIT') or
+            cols.get('AMOUNT')
+        )
 
-        if code and rate:
-            code = code.strip()
-            rate_str = rate.replace('$', '').replace(',', '').strip()
-            if re.match(r'^J[0-9]{4}$', code):
-                try:
-                    asp[code] = round(float(rate_str), 4)
-                except ValueError:
-                    pass
+        if not code or not rate:
+            continue
+
+        code = re.sub(r'\s+', '', code).upper()
+        rate_str = rate.replace('$', '').replace(',', '').strip()
+
+        if HCPCS_PATTERN.match(code) and rate_str:
+            try:
+                val = float(rate_str)
+                if val > 0:
+                    asp[code] = round(val, 4)
+            except ValueError:
+                pass
 
     return asp
+
 
 def main():
     os.makedirs(OUTPUT_PATH.parent, exist_ok=True)
 
-    asp = fetch_asp_data()
+    # Accept local file as argument
+    local_file = sys.argv[1] if len(sys.argv) > 1 else None
+    if local_file and Path(local_file).exists():
+        print(f"Using local file: {local_file}")
+        zip_bytes = Path(local_file).read_bytes()
+    else:
+        zip_bytes = None
+        for url in ASP_URLS:
+            print(f"Trying {url}...")
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    zip_bytes = resp.read()
+                print(f"Downloaded {len(zip_bytes):,} bytes from {url}")
+                break
+            except Exception as e:
+                print(f"  Failed: {e}")
+
+    if not zip_bytes:
+        print("ERROR: All downloads failed.")
+        print("To update URLs: go to https://www.cms.gov/medicare/payment/part-b-drugs/asp-pricing-files")
+        print("Find the latest quarter, right-click the download link → Copy link address.")
+        print("URL pattern: https://www.cms.gov/files/zip/{month}-{year}-asp-pricing-file.zip")
+        print("Or: python3 build_asp.py /path/to/downloaded.zip")
+        sys.exit(1)
+
+    asp: dict[str, float] = {}
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
+        print(f"Files in ZIP: {z.namelist()}")
+        # Prefer Section 508 CSV (more reliable encoding)
+        csv_files = [n for n in z.namelist() if n.lower().endswith('.csv')]
+        xls_files = [n for n in z.namelist() if n.lower().endswith('.xls') or n.lower().endswith('.xlsx')]
+
+        files_to_try = csv_files + xls_files
+        for fname in files_to_try:
+            print(f"Parsing {fname}...")
+            with z.open(fname) as f:
+                raw = f.read()
+
+            if fname.lower().endswith('.csv'):
+                asp = parse_asp_csv(raw)
+            else:
+                asp = parse_asp_xlsx(raw, fname)
+
+            if asp:
+                print(f"Parsed {len(asp):,} rates from {fname}")
+                break
 
     if not asp:
-        print("Using fallback ASP data for common J-codes...")
-        # Fallback: common J-codes with approximate 2024 ASP rates
-        asp = {
-            "J0696": 1.45,    # ceftriaxone 250mg
-            "J9035": 694.89,  # bevacizumab (Avastin) 10mg
-            "J0878": 41.28,   # daptomycin 1mg
-            "J1100": 0.72,    # dexamethasone sodium phosphate 1mg
-            "J2175": 0.27,    # meperidine HCl 10mg
-            "J2270": 0.93,    # morphine sulfate 10mg
-            "J3490": None,    # unclassified drug — cannot verify
-            "J3590": None,    # unclassified biologic — cannot verify
-        }
-        # Remove None values
-        asp = {k: v for k, v in asp.items() if v is not None}
+        print("ERROR: No rates parsed from ZIP.")
+        sys.exit(1)
 
-    OUTPUT_PATH.write_text(json.dumps(asp, indent=2))
-    print(f"Wrote {len(asp):,} ASP rates to {OUTPUT_PATH}")
+    OUTPUT_PATH.write_text(json.dumps(asp, sort_keys=True, indent=2))
+    size_kb = OUTPUT_PATH.stat().st_size // 1024
+    print(f"Wrote {len(asp):,} rates to {OUTPUT_PATH} ({size_kb} KB)")
+    print(f"Sample: J0696 = {asp.get('J0696', 'NOT FOUND')}")
+    print(f"Sample: J9035 = {asp.get('J9035', 'NOT FOUND')}")
+    print(f"Sample: J1100 = {asp.get('J1100', 'NOT FOUND')}")
+
+
+def parse_asp_xlsx(xlsx_bytes: bytes, fname: str) -> dict[str, float]:
+    """Parse ASP XLSX file (fallback if CSV not available)."""
+    try:
+        import openpyxl
+    except ImportError:
+        print("openpyxl not installed. Run: pip install openpyxl")
+        return {}
+
+    asp: dict[str, float] = {}
+    wb = openpyxl.load_workbook(io.BytesIO(xlsx_bytes), read_only=True, data_only=True)
+    ws = wb.active
+
+    header_row = None
+    hcpcs_col = None
+    rate_col = None
+
+    for row_idx, row in enumerate(ws.iter_rows(values_only=True)):
+        if header_row is None:
+            # Find header row
+            for col_idx, cell in enumerate(row):
+                if cell and 'hcpcs' in str(cell).lower():
+                    header_row = row_idx
+                    hcpcs_col = col_idx
+                elif cell and 'payment' in str(cell).lower() and 'limit' in str(cell).lower():
+                    rate_col = col_idx
+            if header_row is not None:
+                continue
+
+        if hcpcs_col is None or rate_col is None:
+            continue
+
+        code = row[hcpcs_col]
+        rate = row[rate_col]
+
+        if not code:
+            continue
+
+        code_str = re.sub(r'\s+', '', str(code)).upper()
+        if not HCPCS_PATTERN.match(code_str):
+            continue
+
+        if isinstance(rate, (int, float)) and rate > 0:
+            asp[code_str] = round(float(rate), 4)
+
+    return asp
+
 
 if __name__ == '__main__':
     main()

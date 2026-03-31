@@ -24,7 +24,7 @@ export interface AuditFinding {
   lineItemIndex: number
   cptCode: string
   severity: 'error' | 'warning' | 'info'
-  errorType: 'upcoding' | 'unbundling' | 'pharmacy_markup' | 'icd10_mismatch' | 'duplicate' | 'other'
+  errorType: 'upcoding' | 'unbundling' | 'pharmacy_markup' | 'icd10_mismatch' | 'duplicate' | 'above_hospital_list_price' | 'other'
   confidence?: ConfidenceLevel
   description: string        // plain English for patient
   standardDescription?: string  // official CPT/HCPCS code name from standard references
@@ -32,6 +32,9 @@ export interface AuditFinding {
   markupRatio?: number       // billedAmount / medicareRate
   ncciBundledWith?: string   // the Column 1 CPT it's bundled into
   recommendation: string     // what patient should do
+  hospitalGrossCharge?: number
+  hospitalCashPrice?: number
+  hospitalPriceSource?: string
 }
 
 export interface DisputeLetter {
@@ -48,6 +51,10 @@ export interface AuditResult {
     errorCount: number
     warningCount: number
     cleanCount: number
+    aboveHospitalListCount?: number
+    aboveHospitalListTotal?: number
+    hospitalName?: string
+    hospitalMrfUrl?: string
   }
   extractedMeta: {
     hospitalName?: string

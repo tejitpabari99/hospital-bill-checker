@@ -52,6 +52,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   try {
     const result = await auditBill(input)
+    console.log(`[audit] Hospital price enrichment: ${result.summary.aboveHospitalListCount ?? 0} codes above hospital list`)
     incrementStats({
       potentialOvercharge: result.summary.potentialOvercharge,
       errorCount: result.summary.errorCount,
