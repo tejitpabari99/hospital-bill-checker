@@ -35,19 +35,22 @@
     left: 0;
     right: 0;
     z-index: 1000;
-    background: #065F46;
-    color: #D1FAE5;
-    font-size: 14px;
+    background: var(--bg-ink);
+    color: var(--text-on-dark);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
     height: 40px;
     display: flex;
     align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .notif-inner {
     width: 100%;
-    max-width: 960px;
+    max-width: var(--container-wide, 900px);
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -58,7 +61,7 @@
   .notif-content {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -66,47 +69,50 @@
   .notif-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    color: rgba(245, 244, 240, 0.65);
   }
 
   .notif-item strong {
-    color: #ECFDF5;
+    color: #F5F4F0;
     font-weight: 600;
   }
 
   .sep {
-    color: #34D399;
-    opacity: 0.4;
+    color: rgba(245, 244, 240, 0.2);
+    font-size: 10px;
   }
 
   .dot {
     display: inline-block;
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: #34D399;
-    animation: blink 1.4s ease-in-out infinite;
+    background: var(--accent-mid, #4A9970);
+    animation: blink 2s ease-in-out infinite;
     flex-shrink: 0;
   }
 
   @keyframes blink {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.15; }
+    50% { opacity: 0.2; }
   }
 
   .stats-link {
-    color: #6EE7B7;
-    font-size: 13px;
+    color: rgba(245, 244, 240, 0.45);
+    font-size: 11px;
     font-weight: 500;
     text-decoration: none;
     white-space: nowrap;
     flex-shrink: 0;
     transition: color 0.15s;
     position: absolute;
-    right: 20px;
+    right: 24px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .stats-link:hover {
-    color: #ECFDF5;
+    color: #F5F4F0;
   }
 </style>

@@ -4,25 +4,26 @@
 </svelte:head>
 
 <main class="container" style="padding-top: 48px; padding-bottom: 80px;">
+  <div class="back-link-wrap"><a href="/">← Back</a></div>
 
-  <a href="/" style="display:inline-block; font-size:14px; color:var(--text-muted); text-decoration:none; margin-bottom:32px;">← Back</a>
-
-  <h1 style="font-size:26px; font-weight:700; margin:0 0 8px;">How It Works</h1>
-  <p style="color:var(--text-muted); font-size:14px; margin:0 0 40px;">
+  <h1 style="margin:0 0 8px;">How It Works</h1>
+  <p class="page-subtitle">
     Full transparency on every step — from upload to dispute letter.
   </p>
 
-  <!-- Step 1 -->
-  <section class="section">
+  <section class="section" id="price-transparency">
     <div class="step-header">
       <span class="step-num">1</span>
       <h2>You upload your bill</h2>
     </div>
     <p>You upload a PDF, JPG, PNG, or WebP of your itemized hospital bill. The file never leaves your browser until you click Analyze — and even then, it is sent directly to our server over HTTPS, processed immediately, and never written to disk.</p>
     <p>We validate the file type using magic bytes (not just the filename), and reject files over 20MB.</p>
+    <p class="reference-row">
+      More on secure health information handling:
+      <a href="https://www.hhs.gov/hipaa/for-professionals/privacy/index.html" target="_blank" rel="noopener noreferrer">HHS HIPAA Privacy Rule</a>
+    </p>
   </section>
 
-  <!-- Step 2 -->
   <section class="section">
     <div class="step-header">
       <span class="step-num">2</span>
@@ -38,9 +39,14 @@
     <div class="callout">
       <strong>Privacy:</strong> We do not send patient name, date of birth, or medical record number to the API. Those fields are only used to pre-fill the dispute letter in your browser.
     </div>
+    <p class="reference-row">
+      Read more:
+      <a href="https://www.cms.gov/medicare/coding-billing/healthcare-common-procedure-system" target="_blank" rel="noopener noreferrer">CMS HCPCS</a>
+      ·
+      <a href="https://www.ama-assn.org/practice-management/cpt/cpt-code-set-basics-and-resources" target="_blank" rel="noopener noreferrer">AMA CPT basics</a>
+    </p>
   </section>
 
-  <!-- Step 3 -->
   <section class="section">
     <div class="step-header">
       <span class="step-num">3</span>
@@ -70,9 +76,16 @@
     </div>
 
     <p style="margin-top:16px;">These datasets are free, public, and updated regularly. You can download them yourself at <a href="https://www.cms.gov" target="_blank" rel="noopener noreferrer">cms.gov</a>. We rebuild our lookup files from these sources quarterly using open-source Python scripts included in the repository.</p>
+    <p class="reference-row">
+      Direct sources:
+      <a href="https://www.cms.gov/medicare/payment/fee-schedules/physician" target="_blank" rel="noopener noreferrer">Physician Fee Schedule</a>
+      ·
+      <a href="https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits" target="_blank" rel="noopener noreferrer">NCCI edits</a>
+      ·
+      <a href="https://www.cms.gov/medicare/payment/fee-for-service-providers/part-b-drugs/average-drug-sales-price" target="_blank" rel="noopener noreferrer">Average Sales Price</a>
+    </p>
   </section>
 
-  <!-- Step 4 -->
   <section class="section">
     <div class="step-header">
       <span class="step-num">4</span>
@@ -117,9 +130,14 @@
         </div>
       </div>
     </div>
+    <p class="reference-row">
+      Related reading:
+      <a href="https://www.cms.gov/medicare/coding-billing/national-correct-coding-initiative-ncci-edits" target="_blank" rel="noopener noreferrer">CMS NCCI overview</a>
+      ·
+      <a href="https://www.cms.gov/medicare/coding-billing/icd-10" target="_blank" rel="noopener noreferrer">CMS ICD-10 information</a>
+    </p>
   </section>
 
-  <!-- Step 5 -->
   <section class="section">
     <div class="step-header">
       <span class="step-num">5</span>
@@ -133,9 +151,14 @@
       <li>Uses <span style="background:var(--placeholder); border:1px solid var(--placeholder-border); padding:1px 4px; border-radius:3px; font-size:13px;">[amber placeholders]</span> for personal details you fill in</li>
     </ul>
     <p>The letter is editable in your browser before you copy or download it. Nothing is sent anywhere.</p>
+    <p class="reference-row">
+      Billing rights context:
+      <a href="https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-405/subpart-C/section-405.374" target="_blank" rel="noopener noreferrer">42 CFR 405.374</a>
+      ·
+      <a href="https://www.cms.gov/nosurprises" target="_blank" rel="noopener noreferrer">CMS No Surprises Act</a>
+    </p>
   </section>
 
-  <!-- Limitations -->
   <section class="section">
     <div class="step-header">
       <span class="step-num">!</span>
@@ -151,75 +174,117 @@
     </div>
   </section>
 
-  <!-- Open source -->
   <section class="section">
     <div class="step-header">
       <span class="step-num">✓</span>
       <h2>Open source &amp; auditable</h2>
     </div>
     <p>Every line of code is public. You can verify exactly what we do with your data. The CMS data build scripts, audit prompts, and extraction logic are all in the repository.</p>
-    <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="display:inline-flex; margin-top:8px;">View source on GitHub ↗</a>
+    <div class="reference-links">
+      <a href="https://www.cms.gov" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="display:inline-flex; margin-top:8px;">Browse CMS references ↗</a>
+      <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="display:inline-flex; margin-top:8px;">View source on GitHub ↗</a>
+    </div>
   </section>
 
 </main>
 
 <style>
+  .back-link-wrap { margin-bottom: 36px; }
+  .back-link-wrap a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-family: var(--font-sans);
+  }
+  .back-link-wrap a:hover { color: var(--text-primary); }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 400;
+    margin: 0 0 8px;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .page-subtitle {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin: 0 0 48px;
+    line-height: 1.6;
+  }
+
   .section {
-    margin-bottom: 40px;
-    padding-bottom: 40px;
+    margin-bottom: 48px;
+    padding-bottom: 48px;
     border-bottom: 1px solid var(--border);
   }
-  .section:last-child {
-    border-bottom: none;
-  }
+  .section:last-child { border-bottom: none; }
 
   .step-header {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 14px;
+    gap: 16px;
+    margin-bottom: 16px;
   }
 
   .step-num {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    background: var(--accent);
-    color: white;
-    font-size: 14px;
-    font-weight: 700;
+    background: var(--bg-ink);
+    color: var(--text-on-dark);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
     flex-shrink: 0;
   }
 
   h2 {
-    font-size: 18px;
+    font-family: var(--font-sans);
+    font-size: 17px;
     font-weight: 600;
     margin: 0;
     color: var(--text-primary);
   }
 
-  p { font-size: 15px; line-height: 1.7; color: var(--text-primary); margin: 0 0 12px; }
-  ul { font-size: 15px; line-height: 1.8; color: var(--text-primary); margin: 0 0 12px; padding-left: 20px; }
+  p  { font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin: 0 0 12px; }
+  ul { font-size: 15px; line-height: 1.8; color: var(--text-secondary); margin: 0 0 12px; padding-left: 20px; }
   li { margin-bottom: 4px; }
-  code { font-family: var(--font-mono); font-size: 13px; background: #F1F5F9; padding: 1px 5px; border-radius: 4px; }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--text-primary);
+  }
+
   a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
 
   .callout {
-    background: #F0FDFA;
-    border: 1px solid #99F6E4;
+    background: var(--accent-light);
+    border: 1px solid var(--success-border);
     border-radius: var(--radius);
-    padding: 12px 16px;
+    padding: 14px 18px;
     font-size: 14px;
-    line-height: 1.6;
-    margin-top: 12px;
+    line-height: 1.65;
+    margin-top: 14px;
+    color: var(--text-secondary);
   }
 
   .callout-warning {
-    background: #FFFBEB;
-    border-color: #FEF3C7;
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
   }
 
   .data-table {
@@ -227,25 +292,33 @@
     border-radius: var(--radius);
     overflow: hidden;
     font-size: 14px;
+    margin-top: 16px;
   }
 
   .data-row {
     display: grid;
     grid-template-columns: 1fr 2fr 2fr;
-    gap: 0;
     border-bottom: 1px solid var(--border);
   }
   .data-row:last-child { border-bottom: none; }
   .data-row > span {
-    padding: 12px 14px;
+    padding: 12px 16px;
     border-right: 1px solid var(--border);
-    line-height: 1.5;
+    line-height: 1.55;
   }
   .data-row > span:last-child { border-right: none; }
-  .header-row { background: #F8FAFC; font-weight: 600; font-size: 13px; color: var(--text-muted); }
+  .header-row {
+    background: var(--bg-subtle);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
   small { font-size: 12px; color: var(--text-muted); }
 
-  .error-types { display: flex; flex-direction: column; gap: 16px; }
+  .error-types { display: flex; flex-direction: column; gap: 18px; margin-top: 16px; }
   .error-type {
     display: flex;
     gap: 14px;
@@ -256,15 +329,51 @@
   .error-tag {
     display: inline-flex;
     align-items: center;
-    font-size: 10px;
+    font-family: var(--font-mono);
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 3px 8px;
-    border-radius: 4px;
+    letter-spacing: 0.08em;
+    padding: 3px 7px;
+    border-radius: 3px;
     white-space: nowrap;
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 3px;
   }
-  .tag-error { background: #FEF2F2; color: var(--error); }
-  .tag-warning { background: #FFFBEB; color: var(--warning); }
+  .tag-error {
+    background: var(--error-bg);
+    color: var(--error);
+    border: 1px solid var(--error-border);
+  }
+  .tag-warning {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border: 1px solid var(--warning-border);
+  }
+
+  .reference-row {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 14px;
+  }
+
+  .reference-links {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 700px) {
+    h1 { font-size: 28px; }
+
+    .data-row {
+      grid-template-columns: 1fr;
+    }
+    .data-row > span {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-row > span:last-child { border-bottom: none; }
+
+    .error-type { flex-direction: column; gap: 8px; }
+  }
 </style>
