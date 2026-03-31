@@ -61,25 +61,40 @@
 
   const blocks = $derived(parseBlocks(letter.text))
 
+  function formatTableRowsForEmail(headers: string[], rows: string[][]): string[] {
+    const labelMap = headers.map((header) => header.trim())
+    return rows.flatMap((row, index) => {
+      const getValue = (name: string) => row[labelMap.findIndex((header) => header.toLowerCase() === name.toLowerCase())] ?? ''
+      const cptCode = getValue('CPT Code')
+      const description = getValue('Description')
+      const reason = getValue('Reason for dispute')
+      const benchmark = getValue('Medicare benchmark rate')
+
+      if (!cptCode && !description && !reason && !benchmark) return []
+
+      return [
+        `${index + 1}. ${cptCode || 'Code entry'}`,
+        `  - CPT Code: ${cptCode || '-'}`,
+        `  - Description: ${description || '-'}`,
+        `  - Reason for dispute: ${reason || '-'}`,
+        `  - Medicare benchmark rate: ${benchmark || '-'}`,
+      ]
+    })
+  }
+
   function toPlainText(raw: string): string {
-    const lines = raw.split('\n')
+    const sourceBlocks = parseBlocks(raw)
     const out: string[] = []
 
-    for (const line of lines) {
-      const trimmed = line.trim()
-
-      // Convert markdown table rows to bullet list items
-      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-        // Skip separator lines (e.g. | --- | --- |)
-        if (/^\|[\s|:-]+\|$/.test(trimmed)) continue
-        const cells = trimmed.slice(1, -1).split('|').map(c => c.trim()).filter(Boolean)
-        if (cells.length === 1) {
-          out.push(`• ${cells[0]}`)
-        } else if (cells.length >= 2) {
-          out.push(`• ${cells[0]}: ${cells.slice(1).join(', ')}`)
-        }
+    for (const block of sourceBlocks) {
+      if (block.type === 'table') {
+        out.push(...formatTableRowsForEmail(block.headers, block.rows))
+        out.push('')
         continue
       }
+
+      for (const line of block.content.split('\n')) {
+      const trimmed = line.trim()
 
       // Strip heading markers (## Heading → Heading)
       let processed = line.replace(/^#{1,6}\s+/, '')
@@ -91,7 +106,9 @@
       processed = processed.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '$1')
       processed = processed.replace(/_(.+?)_/g, '$1')
 
+      if (!trimmed && out.at(-1) === '') continue
       out.push(processed)
+      }
     }
 
     // Collapse 3+ consecutive blank lines into 2

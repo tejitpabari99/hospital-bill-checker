@@ -62,6 +62,22 @@ export function trackShareCopied(): void {
   gtag('event', 'share_copied')
 }
 
+export function trackShareOpened(platform: string): void {
+  gtag('event', 'share_opened', { platform })
+}
+
 export function trackShareTwitter(): void {
-  gtag('event', 'share_twitter')
+  trackShareOpened('twitter')
+}
+
+export function trackShareLinkedIn(): void {
+  trackShareOpened('linkedin')
+}
+
+export function trackShareFacebook(): void {
+  trackShareOpened('facebook')
+}
+
+export function trackShareWhatsApp(): void {
+  trackShareOpened('whatsapp')
 }

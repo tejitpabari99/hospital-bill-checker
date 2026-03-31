@@ -14,6 +14,31 @@ export interface PriceComparison {
   savings: number
 }
 
+type PdfFactory = {
+  new (options: { unit: string; format: string }): jsPDF
+  (options: { unit: string; format: string }): jsPDF
+}
+
+interface FindingGroup {
+  key: AuditFinding['errorType']
+  title: string
+  tint: [number, number, number]
+}
+
+interface GroupedFinding {
+  finding: AuditFinding
+  item: LineItem | undefined
+}
+
+const FINDING_GROUPS: FindingGroup[] = [
+  { key: 'unbundling', title: 'Unbundling Issues', tint: [243, 227, 227] },
+  { key: 'duplicate', title: 'Duplicate Charges', tint: [255, 239, 213] },
+  { key: 'pharmacy_markup', title: 'Pharmacy Markup', tint: [255, 244, 214] },
+  { key: 'upcoding', title: 'Upcoding Flags', tint: [255, 243, 199] },
+  { key: 'icd10_mismatch', title: 'Diagnosis Mismatches', tint: [229, 239, 255] },
+  { key: 'above_hospital_list_price', title: 'Above Hospital List Price', tint: [235, 244, 239] },
+]
+
 function formatDollars(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
@@ -28,10 +53,6 @@ function formatDateTime(date: Date): string {
   })
 }
 
-function confidenceLabel(confidence: AuditFinding['confidence'] | undefined): string {
-  return confidence ? confidence.toUpperCase() : 'N/A'
-}
-
 function textOrDash(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === '') return '-'
   return String(value)
@@ -42,7 +63,11 @@ export function getPriceComparison(item: LineItem, finding: AuditFinding | null)
 
   if (finding.errorType === 'upcoding') {
     if (finding.medicareRate == null) return null
-    return { expected: finding.medicareRate, zeroLabel: null, savings: Math.max(0, item.billedAmount - finding.medicareRate) }
+    return {
+      expected: finding.medicareRate,
+      zeroLabel: null,
+      savings: Math.max(0, item.billedAmount - finding.medicareRate),
+    }
   }
 
   if (finding.errorType === 'unbundling') {
@@ -55,7 +80,11 @@ export function getPriceComparison(item: LineItem, finding: AuditFinding | null)
 
   if (finding.errorType === 'pharmacy_markup') {
     if (finding.medicareRate != null) {
-      return { expected: finding.medicareRate, zeroLabel: null, savings: Math.max(0, item.billedAmount - finding.medicareRate) }
+      return {
+        expected: finding.medicareRate,
+        zeroLabel: null,
+        savings: Math.max(0, item.billedAmount - finding.medicareRate),
+      }
     }
     if (finding.markupRatio != null && finding.markupRatio > 0) {
       const expected = item.billedAmount / finding.markupRatio
@@ -68,30 +97,19 @@ export function getPriceComparison(item: LineItem, finding: AuditFinding | null)
     return { expected: 0, zeroLabel: 'charge not justified by diagnosis', savings: item.billedAmount }
   }
 
+  if (finding.errorType === 'above_hospital_list_price' && finding.hospitalGrossCharge != null) {
+    return {
+      expected: finding.hospitalGrossCharge,
+      zeroLabel: null,
+      savings: Math.max(0, item.billedAmount - finding.hospitalGrossCharge),
+    }
+  }
+
   return null
 }
 
-function safeText(value: string): string {
-  return value.replace(/\s+/g, ' ').trim()
-}
-
-function addWrappedText(
-  doc: jsPDF,
-  text: string,
-  x: number,
-  y: number,
-  width: number,
-  options?: { fontSize?: number; color?: string | number[]; lineHeight?: number; bold?: boolean }
-): number {
-  if (options?.fontSize) doc.setFontSize(options.fontSize)
-  if (options?.color) doc.setTextColor(options.color as any)
-  if (options?.bold) doc.setFont('helvetica', 'bold')
-  else doc.setFont('helvetica', 'normal')
-
-  const lines = doc.splitTextToSize(text, width) as string[]
-  const lineHeight = options?.lineHeight ?? 5
-  doc.text(lines, x, y)
-  return y + lines.length * lineHeight
+function safeText(value: string | null | undefined): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim()
 }
 
 function ensureSpace(doc: jsPDF, y: number, needed: number, margin: number): number {
@@ -100,138 +118,155 @@ function ensureSpace(doc: jsPDF, y: number, needed: number, margin: number): num
   return margin
 }
 
-function drawSectionTitle(doc: jsPDF, title: string, y: number, margin: number): number {
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(13)
-  doc.setTextColor(16, 33, 58)
-  doc.text(title, margin, y)
-  return y + 6
+function drawWrappedText(
+  doc: jsPDF,
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  options?: { fontSize?: number; bold?: boolean; color?: [number, number, number] }
+): number {
+  doc.setFont('helvetica', options?.bold ? 'bold' : 'normal')
+  doc.setFontSize(options?.fontSize ?? 10)
+  doc.setTextColor(...(options?.color ?? [16, 33, 58]))
+  const lines = doc.splitTextToSize(text, width) as string[]
+  doc.text(lines, x, y)
+  return y + lines.length * ((options?.fontSize ?? 10) + 1)
 }
 
-function drawKeyValue(doc: jsPDF, label: string, value: string, x: number, y: number, width: number): number {
+function drawLabelValue(
+  doc: jsPDF,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  width: number
+): number {
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(95, 107, 122)
-  doc.text(label, x, y)
+  doc.setFontSize(8)
+  doc.setTextColor(97, 109, 126)
+  doc.text(label.toUpperCase(), x, y)
 
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(16, 33, 58)
-  const lines = doc.splitTextToSize(value, width) as string[]
-  doc.text(lines, x, y + 4)
-  return y + 4 + lines.length * 4.5
+  return drawWrappedText(doc, value, x, y + 12, width, { fontSize: 10 })
 }
 
-function drawSummaryCard(doc: jsPDF, result: AuditResult, x: number, y: number, w: number, h: number): void {
-  doc.setFillColor(248, 250, 252)
-  doc.setDrawColor(221, 227, 238)
-  doc.roundedRect(x, y, w, h, 3, 3, 'FD')
-
-  const col = w / 4
+function drawSummaryStrip(doc: jsPDF, result: AuditResult, x: number, y: number, width: number): number {
   const items = [
-    ['Likely errors', String(result.summary.errorCount)],
-    ['Worth reviewing', String(result.summary.warningCount)],
     ['Potential overcharge', formatDollars(result.summary.potentialOvercharge)],
-    ['Clean codes', String(result.summary.cleanCount)],
+    ['Likely errors', String(result.summary.errorCount)],
+    ['Warnings', String(result.summary.warningCount)],
+    ['Clean lines', String(result.summary.cleanCount)],
   ]
 
-  items.forEach(([label, value], i) => {
-    const cx = x + i * col + 4
+  const cardWidth = (width - 18) / items.length
+  items.forEach(([label, value], index) => {
+    const cardX = x + index * (cardWidth + 6)
+    doc.setFillColor(248, 250, 252)
+    doc.setDrawColor(223, 228, 235)
+    doc.roundedRect(cardX, y, cardWidth, 48, 8, 8, 'FD')
+
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(15)
+    doc.setFontSize(14)
     doc.setTextColor(16, 33, 58)
-    doc.text(String(value), cx, y + 12)
+    doc.text(String(value), cardX + 10, y + 20)
+
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
-    doc.setTextColor(95, 107, 122)
-    doc.text(String(label), cx, y + 18)
+    doc.setTextColor(97, 109, 126)
+    doc.text(String(label), cardX + 10, y + 34)
   })
+
+  return y + 64
 }
 
-function drawFindings(doc: jsPDF, result: AuditResult, lineItems: LineItem[], x: number, y: number, width: number, margin: number): number {
-  if (result.findings.length === 0) {
-    return addWrappedText(doc, 'No billing issues were flagged in this audit.', x, y, width, { fontSize: 10 })
-  }
-
-  let cursor = y
-  const maxFindings = Math.min(result.findings.length, 5)
-  for (let i = 0; i < maxFindings; i++) {
-    const finding = result.findings[i]
-    const item = lineItems[finding.lineItemIndex]
-    const comparison = item ? getPriceComparison(item, finding) : null
-    const blockHeight = comparison ? 34 : 28
-    cursor = ensureSpace(doc, cursor, blockHeight, margin)
-
-    doc.setFillColor(250, 251, 253)
-    doc.setDrawColor(221, 227, 238)
-    doc.roundedRect(x, cursor, width, blockHeight, 2, 2, 'FD')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(16, 33, 58)
-    doc.text(`${finding.cptCode} - ${finding.errorType.replace(/_/g, ' ')}`, x + 4, cursor + 6)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    doc.setTextColor(95, 107, 122)
-    const meta = [
-      finding.severity.toUpperCase(),
-      confidenceLabel(finding.confidence),
-      item ? formatDollars(item.billedAmount) : '-',
-    ].filter(Boolean).join(' | ')
-    doc.text(meta, x + 4, cursor + 11)
-
-    doc.setTextColor(16, 33, 58)
-    const desc = doc.splitTextToSize(safeText(finding.description), width - 8) as string[]
-    doc.text(desc, x + 4, cursor + 16)
-
-    if (comparison) {
-      doc.setFontSize(8)
-      doc.setTextColor(87, 150, 90)
-      doc.text(`Expected ${formatDollars(comparison.expected)}  Save ~${formatDollars(comparison.savings)}`, x + 4, cursor + blockHeight - 4)
-    }
-
-    cursor += blockHeight + 4
-  }
-
-  if (result.findings.length > maxFindings) {
-    cursor = addWrappedText(
-      doc,
-      `Showing ${maxFindings} of ${result.findings.length} findings to keep the report concise.`,
-      x,
-      cursor + 2,
-      width,
-      { fontSize: 9, color: [95, 107, 122] }
-    )
-  }
-  return cursor
+function groupFindings(findings: AuditFinding[], lineItems: LineItem[]): Array<{ group: FindingGroup; entries: GroupedFinding[] }> {
+  return FINDING_GROUPS
+    .map((group) => ({
+      group,
+      entries: findings
+        .filter((finding) => finding.errorType === group.key)
+        .sort((left, right) => {
+          const related = (left.ncciBundledWith ?? '').localeCompare(right.ncciBundledWith ?? '')
+          if (related !== 0) return related
+          return left.cptCode.localeCompare(right.cptCode) || left.lineItemIndex - right.lineItemIndex
+        })
+        .map((finding) => ({ finding, item: lineItems[finding.lineItemIndex] })),
+    }))
+    .filter((entry) => entry.entries.length > 0)
 }
 
-function drawDisputeLetter(doc: jsPDF, letterText: string, x: number, y: number, width: number, margin: number): number {
-  let cursor = y
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
+function drawGroupHeader(doc: jsPDF, title: string, tint: [number, number, number], x: number, y: number, width: number): number {
+  doc.setFillColor(...tint)
+  doc.roundedRect(x, y, width, 26, 6, 6, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
   doc.setTextColor(16, 33, 58)
-  const paragraphs = letterText.split('\n').map((line) => line.trimEnd())
+  doc.text(title, x + 10, y + 17)
+  return y + 38
+}
 
-  for (const paragraph of paragraphs) {
-    if (!paragraph) {
-      cursor += 3
-      continue
-    }
-    const lines = doc.splitTextToSize(paragraph, width) as string[]
-    cursor = ensureSpace(doc, cursor, lines.length * 4.5 + 2, margin)
-    doc.text(lines, x, cursor)
-    cursor += lines.length * 4.5 + 2
+function drawFindingCard(doc: jsPDF, entry: GroupedFinding, x: number, y: number, width: number): number {
+  const { finding, item } = entry
+  const comparison = item ? getPriceComparison(item, finding) : null
+  const description = safeText(finding.standardDescription || item?.description || finding.description)
+  const codeLine = `${finding.cptCode}${finding.ncciBundledWith ? `  ->  related to ${finding.ncciBundledWith}` : ''}`
+  const benchmark =
+    comparison?.zeroLabel
+      ? comparison.zeroLabel
+      : comparison
+        ? formatDollars(comparison.expected)
+        : finding.medicareRate != null
+          ? formatDollars(finding.medicareRate)
+          : '-'
+  const detailLines = [
+    `Description: ${description}`,
+    `Reason for dispute: ${safeText(finding.description)}`,
+    `Recommendation: ${safeText(finding.recommendation)}`,
+    `Billed amount: ${item ? formatDollars(item.billedAmount) : '-'}`,
+    `Medicare benchmark rate: ${benchmark}`,
+  ]
+  if (comparison && comparison.savings > 0) {
+    detailLines.push(`Estimated savings: ${formatDollars(comparison.savings)}`)
+  }
+  if (finding.hospitalPriceSource) {
+    detailLines.push(`Hospital price source: ${finding.hospitalPriceSource}`)
   }
 
-  return cursor
+  const textHeight = detailLines.length * 13 + 24
+  doc.setFillColor(255, 255, 255)
+  doc.setDrawColor(218, 223, 231)
+  doc.roundedRect(x, y, width, textHeight, 8, 8, 'FD')
+
+  doc.setFillColor(finding.severity === 'error' ? 183 : 210, finding.severity === 'error' ? 28 : 140, finding.severity === 'error' ? 28 : 85)
+  doc.roundedRect(x + 10, y + 10, 70, 16, 8, 8, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.setTextColor(255, 255, 255)
+  doc.text(finding.severity.toUpperCase(), x + 20, y + 21)
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(16, 33, 58)
+  doc.text(codeLine, x + 92, y + 21)
+
+  let cursor = y + 38
+  detailLines.forEach((line) => {
+    cursor = drawWrappedText(doc, line, x + 12, cursor, width - 24, { fontSize: 9 })
+  })
+
+  return y + textHeight + 10
 }
 
 export function downloadResultReport(input: ResultReportInput): void {
-  const result = input.result
-  const lineItems = input.lineItems
+  const { result, lineItems } = input
   const generatedAt = input.generatedAt ?? new Date()
-  const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+  const createPdf = jsPDF as unknown as PdfFactory
+  let doc: jsPDF
+  try {
+    doc = new createPdf({ unit: 'pt', format: 'a4' })
+  } catch {
+    doc = createPdf({ unit: 'pt', format: 'a4' })
+  }
   const margin = 40
   const pageWidth = doc.internal.pageSize.getWidth()
   const contentWidth = pageWidth - margin * 2
@@ -239,37 +274,48 @@ export function downloadResultReport(input: ResultReportInput): void {
     ? `${result.extractedMeta.hospitalName} Audit Report`
     : 'Hospital Bill Audit Report'
 
-  doc.setTextColor(16, 33, 58)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(20)
-  doc.text(title, margin, 44)
+  // Report plan:
+  // 1. Branded title + metadata snapshot
+  // 2. Summary strip for top-line totals
+  // 3. Grouped findings by audit category with a clear section band
+  // 4. Full finding cards with description, dispute reason, benchmark, and savings context
+  // 5. No dispute-letter appendix in the PDF
 
+  doc.setFillColor(245, 247, 250)
+  doc.rect(0, 0, pageWidth, 110, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(22)
+  doc.setTextColor(16, 33, 58)
+  doc.text(title, margin, 48)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
-  doc.setTextColor(95, 107, 122)
-  doc.text('Concise audit summary for patient review and dispute follow-up.', margin, 58)
+  doc.setTextColor(97, 109, 126)
+  doc.text('Structured audit report for patient review and dispute follow-up.', margin, 66)
 
-  let y = 76
-  y = drawKeyValue(doc, 'Hospital', textOrDash(result.extractedMeta?.hospitalName), margin, y, contentWidth / 2 - 12)
-  y = drawKeyValue(doc, 'Account', textOrDash(result.extractedMeta?.accountNumber), margin, y + 2, contentWidth / 2 - 12)
+  let y = 88
+  drawLabelValue(doc, 'Hospital', textOrDash(result.extractedMeta?.hospitalName), margin, y, contentWidth / 2 - 12)
+  drawLabelValue(doc, 'Account', textOrDash(result.extractedMeta?.accountNumber), margin + contentWidth / 2 + 12, y, contentWidth / 2 - 12)
+  y += 44
+  drawLabelValue(doc, 'Service date', textOrDash(result.extractedMeta?.dateOfService), margin, y, contentWidth / 2 - 12)
+  drawLabelValue(doc, 'Generated', formatDateTime(generatedAt), margin + contentWidth / 2 + 12, y, contentWidth / 2 - 12)
+  y += 56
 
-  let yRight = 76
-  yRight = drawKeyValue(doc, 'Service date', textOrDash(result.extractedMeta?.dateOfService), margin + contentWidth / 2 + 12, yRight, contentWidth / 2 - 12)
-  yRight = drawKeyValue(doc, 'Generated', formatDateTime(generatedAt), margin + contentWidth / 2 + 12, yRight + 2, contentWidth / 2 - 12)
+  y = drawSummaryStrip(doc, result, margin, y, contentWidth)
 
-  y = Math.max(y, yRight) + 10
-  drawSummaryCard(doc, result, margin, y, contentWidth, 34)
-  y += 48
+  const groupedFindings = groupFindings(result.findings, lineItems)
 
-  y = drawSectionTitle(doc, 'Key Findings', y, margin)
-  y = drawFindings(doc, result, lineItems, margin, y, contentWidth, margin)
-  y += 8
-
-  y = ensureSpace(doc, y, 18, margin)
-  y = drawSectionTitle(doc, 'Dispute Letter', y, margin)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  y = drawDisputeLetter(doc, result.disputeLetter.text, margin, y, contentWidth, margin)
+  if (groupedFindings.length === 0) {
+    drawWrappedText(doc, 'No audit findings were generated for this bill.', margin, y, contentWidth, { fontSize: 12 })
+  } else {
+    groupedFindings.forEach(({ group, entries }) => {
+      y = ensureSpace(doc, y, 48, margin)
+      y = drawGroupHeader(doc, group.title, group.tint, margin, y, contentWidth)
+      entries.forEach((entry) => {
+        y = ensureSpace(doc, y, 150, margin)
+        y = drawFindingCard(doc, entry, margin, y, contentWidth)
+      })
+    })
+  }
 
   const blob = doc.output('blob')
   const url = URL.createObjectURL(blob)
