@@ -154,8 +154,9 @@ export function executeTool(
 
 async function callClaudeWithTools(prompt: string, timeoutMs: number): Promise<WorkerResult> {
   const contents: Array<{ role: string; parts: unknown[] }> = [{ role: 'user', parts: [{ text: prompt }] }]
+  const maxTurns = 4
 
-  for (let attempt = 0; attempt < 8; attempt++) {
+  for (let attempt = 0; attempt < maxTurns; attempt++) {
     const result = await runClaudeWorker({ contents, tools: AUDIT_TOOL_DECLARATIONS }, timeoutMs)
     if ('error' in result) return result
 
@@ -168,7 +169,7 @@ async function callClaudeWithTools(prompt: string, timeoutMs: number): Promise<W
 
     contents.push({ role: 'model', parts: modelParts })
     contents.push({
-      role: 'user',
+      role: 'function',
       parts: functionCalls.map((functionCall) => ({
         functionResponse: {
           name: functionCall.name,
