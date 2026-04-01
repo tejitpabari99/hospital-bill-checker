@@ -27,7 +27,7 @@ process.stdin.on('end', async () => {
         }
 
         const model = genAI.getGenerativeModel(modelConfig)
-        const result = await model.generateContent(contents ?? prompt)
+        const result = await model.generateContent(contents ? { contents } : prompt)
         const response = result.response
         const candidateParts = response?.candidates?.[0]?.content?.parts ?? []
         const functionCalls = typeof response.functionCalls === 'function'
