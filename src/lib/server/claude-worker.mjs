@@ -4,13 +4,15 @@
  * Runs as a child process so SDK fatal signals don't affect the main server.
  */
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { createServerLogger, serializeError } from './logger.js'
 
 let inputData = ''
 process.stdin.setEncoding('utf8')
 process.stdin.on('data', chunk => { inputData += chunk })
 process.stdin.on('end', async () => {
   try {
-    const { prompt, contents, tools } = JSON.parse(inputData.trim())
+    const { prompt, contents, tools, traceId } = JSON.parse(inputData.trim())
+    const log = createServerLogger('audit-worker', traceId)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
     // pro first for audit quality; flash as 503 fallback only
     const models = ['gemini-2.5-pro', 'gemini-2.5-flash']
@@ -18,6 +20,12 @@ process.stdin.on('end', async () => {
 
     for (const modelName of models) {
       try {
+        log.info('model-attempt', {
+          modelName,
+          hasPrompt: Boolean(prompt),
+          contentsCount: Array.isArray(contents) ? contents.length : 0,
+          toolCount: Array.isArray(tools) ? tools.length : 0,
+        })
         const modelConfig = {
           model: modelName,
           generationConfig: { temperature: 0 },  // deterministic output
@@ -34,11 +42,18 @@ process.stdin.on('end', async () => {
           ? response.functionCalls()
           : candidateParts.filter((part) => part?.functionCall).map((part) => part.functionCall)
         const text = functionCalls?.length ? '' : response.text()
+        log.info('model-success', {
+          modelName,
+          functionCallCount: functionCalls?.length ?? 0,
+          textLength: text.length,
+          partCount: candidateParts.length,
+        })
         process.stdout.write(JSON.stringify({ text, functionCalls, parts: candidateParts, model: modelName }))
         process.exit(0)
       } catch (err) {
         lastError = err
         const message = err?.message ?? String(err)
+        log.error('model-error', { modelName, message })
         const lower = message.toLowerCase()
         if (!lower.includes('503') && !lower.includes('high demand') && !lower.includes('service unavailable')) {
           throw err
@@ -48,6 +63,8 @@ process.stdin.on('end', async () => {
 
     throw lastError ?? new Error('Gemini returned no response')
   } catch (err) {
+    const log = createServerLogger('audit-worker')
+    log.error('fatal-error', { error: serializeError(err) })
     process.stdout.write(JSON.stringify({ error: err?.message ?? String(err) }))
     process.exit(0)
   }

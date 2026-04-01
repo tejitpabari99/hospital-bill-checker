@@ -1,29 +1,41 @@
 import { spawn } from 'child_process'
 import { join } from 'path'
 import { GEMINI_API_KEY } from '$env/static/private'
+import { createServerLogger, serializeError } from './logger.js'
 
 // All Anthropic API calls and pdf-parse are run in child processes so that
 // any fatal signal (SDK crash, pdfjs Worker crash) is isolated from the main server.
 // Paths are anchored to CWD (Vite dev runs from project root).
 const VISION_SCRIPT = join(process.cwd(), 'src/lib/server/vision-extract.mjs')
 
-function callVision(base64: string): Promise<{ text: string } | { error: string }> {
+function callVision(base64: string, traceId?: string): Promise<{ text: string } | { error: string }> {
+  const log = createServerLogger('parse', traceId)
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [VISION_SCRIPT], {
       timeout: 60_000,
       env: { ...process.env, GEMINI_API_KEY },
     })
     let output = ''
-    child.stdout.on('data', (chunk: Buffer) => { output += chunk.toString() })
+    let stderr = ''
+    child.stdout?.on('data', (chunk: Buffer) => { output += chunk.toString() })
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
     child.on('close', () => {
       try {
+        if (stderr.trim()) log.warn('vision-stderr', { stderr: stderr.slice(0, 4000) })
         resolve(JSON.parse(output))
       } catch {
+        log.error('vision-invalid-output', {
+          outputPreview: output.slice(0, 400),
+          stderrPreview: stderr.slice(0, 400),
+        })
         resolve({ error: 'Vision process returned invalid output' })
       }
     })
-    child.on('error', (err) => resolve({ error: err.message }))
-    child.stdin.write(JSON.stringify({ base64 }))
+    child.on('error', (err) => {
+      log.error('vision-child-error', { error: serializeError(err) })
+      resolve({ error: err.message })
+    })
+    child.stdin.write(JSON.stringify({ base64, traceId }))
     child.stdin.end()
   })
 }
@@ -72,9 +84,15 @@ export interface ParsedBill {
   }
 }
 
-export async function parsePDFBuffer(buffer: Buffer): Promise<ParsedBill> {
+export async function parsePDFBuffer(buffer: Buffer, traceId?: string): Promise<ParsedBill> {
+  const log = createServerLogger('parse', traceId)
   const base64 = buffer.toString('base64')
+  log.info('parse-start', {
+    bytes: buffer.length,
+    base64Length: base64.length,
+  })
   if (base64.length > 15_000_000) {
+    log.error('parse-file-too-large', { base64Length: base64.length })
     return {
       rawText: '',
       cptCodesFound: [],
@@ -83,16 +101,18 @@ export async function parsePDFBuffer(buffer: Buffer): Promise<ParsedBill> {
       parseWarning: 'This file is too large to process. Try uploading just the itemized charges page.',
     }
   }
-  return await parseWithVision(buffer, 1, undefined)
+  return await parseWithVision(buffer, 1, undefined, traceId)
 }
 
-async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?: string): Promise<ParsedBill> {
+async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?: string, traceId?: string): Promise<ParsedBill> {
+  const log = createServerLogger('parse', traceId)
   // Convert PDF buffer to base64 for Claude Vision
   // Note: Claude Vision accepts PDFs directly as documents (not just images)
   const base64 = buffer.toString('base64')
 
   // Stay under 15MB encoded
   if (base64.length > 15_000_000) {
+    log.error('parse-file-too-large-vision', { base64Length: base64.length })
     return {
       rawText: '',
       cptCodesFound: [],
@@ -102,9 +122,11 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     }
   }
 
-  const result = await callVision(base64)
+  log.info('vision-call-start', { pageCount, base64Length: base64.length })
+  const result = await callVision(base64, traceId)
 
   if ('error' in result) {
+    log.error('vision-call-failed', { error: result.error })
     return {
       rawText: '',
       cptCodesFound: [],
@@ -119,8 +141,15 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     // Try code fence first, fall back to first {...} block, then raw text
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? text.match(/(\{[\s\S]*\})/)
     const parsed = JSON.parse(jsonMatch ? jsonMatch[1] : text)
+    log.info('vision-json-parsed', {
+      usedCodeFence: Boolean(text.match(/```(?:json)?\s*([\s\S]*?)```/)),
+      hasErrorMessage: Boolean(parsed.errorMessage),
+      rawCptCount: Array.isArray(parsed.cptCodes) ? parsed.cptCodes.length : 0,
+      rawLineItemCount: Array.isArray(parsed.lineItems) ? parsed.lineItems.length : 0,
+    })
 
     if (parsed.errorMessage) {
+      log.error('vision-domain-error', { errorMessage: parsed.errorMessage })
       return {
         rawText: '',
         cptCodesFound: [],
@@ -138,6 +167,12 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     const sanitizedCodes = rawCodes
       .map((c: string) => normalizeCptHcpcsCode(c))
       .filter((c: string | null): c is string => c !== null)
+    const filteredLineItems = filterStandardLineItems(parsed.lineItems)
+    log.info('vision-sanitized', {
+      sanitizedCptCount: sanitizedCodes.length,
+      filteredLineItemCount: filteredLineItems.length,
+      sampleCodes: sanitizedCodes.slice(0, 10),
+    })
 
     return {
       rawText: parsed.rawText ?? text,
@@ -145,7 +180,7 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
       pageCount,
       usedVision: true,
       parseWarning,
-      lineItems: filterStandardLineItems(parsed.lineItems),
+      lineItems: filteredLineItems,
       extractedMeta: {
         hospitalName: parsed.hospitalName ?? null,
         hospitalAddress: parsed.hospitalAddress ?? null,
@@ -157,7 +192,11 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
         dischargeDate: parsed.dischargeDate ?? null,
       },
     }
-  } catch {
+  } catch (error) {
+    log.error('vision-json-parse-failed', {
+      message: error instanceof Error ? error.message : String(error),
+      responsePreview: result.text.slice(0, 1200),
+    })
     return {
       rawText: '',
       cptCodesFound: [],
