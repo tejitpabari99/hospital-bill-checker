@@ -47,7 +47,21 @@ export interface ParsedLineItem {
   amount: number
 }
 
-function normalizeCptHcpcsCode(code: string): string | null {
+type VisionLineItem = {
+  code?: unknown
+  description?: unknown
+  units?: unknown
+  amount?: unknown
+}
+
+function toCleanString(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value.trim()
+  if (value == null) return fallback
+  return String(value).trim()
+}
+
+function normalizeCptHcpcsCode(code: unknown): string | null {
+  if (typeof code !== 'string') return null
   const trimmed = code.trim()
   const normalized = trimmed
     .replace(/^0+(\d{5})$/, '$1')
@@ -56,12 +70,28 @@ function normalizeCptHcpcsCode(code: string): string | null {
   return /^([0-9]{5}|[JGABC][0-9]{4})$/.test(normalized) ? normalized : null
 }
 
-function filterStandardLineItems(lineItems: ParsedLineItem[] | undefined): ParsedLineItem[] {
-  if (!lineItems) return []
+export function sanitizeVisionCodes(codes: unknown): string[] {
+  if (!Array.isArray(codes)) return []
+  return codes
+    .map((code) => normalizeCptHcpcsCode(code))
+    .filter((code): code is string => code !== null)
+}
+
+export function sanitizeVisionLineItems(lineItems: unknown): ParsedLineItem[] {
+  if (!Array.isArray(lineItems)) return []
   return lineItems.flatMap((item) => {
-    const code = normalizeCptHcpcsCode(item.code)
+    if (!item || typeof item !== 'object') return []
+    const rawItem = item as VisionLineItem
+    const code = normalizeCptHcpcsCode(rawItem.code)
     if (!code) return []
-    return [{ ...item, code }]
+    const units = typeof rawItem.units === 'number' && Number.isFinite(rawItem.units) ? rawItem.units : 1
+    const amount = typeof rawItem.amount === 'number' && Number.isFinite(rawItem.amount) ? rawItem.amount : 0
+    return [{
+      code,
+      description: toCleanString(rawItem.description),
+      units,
+      amount,
+    }]
   })
 }
 
@@ -163,11 +193,8 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     // UB-04 bills often have Revenue Codes (4-digit, starts with 0) adjacent to CPT codes.
     // Claude sometimes reads them as a 6-digit string (e.g. "070486" instead of "70486").
     // Strip leading zeros to recover the real 5-char CPT/HCPCS code, then filter to valid format.
-    const rawCodes: string[] = parsed.cptCodes ?? []
-    const sanitizedCodes = rawCodes
-      .map((c: string) => normalizeCptHcpcsCode(c))
-      .filter((c: string | null): c is string => c !== null)
-    const filteredLineItems = filterStandardLineItems(parsed.lineItems)
+    const sanitizedCodes = sanitizeVisionCodes(parsed.cptCodes)
+    const filteredLineItems = sanitizeVisionLineItems(parsed.lineItems)
     log.info('vision-sanitized', {
       sanitizedCptCount: sanitizedCodes.length,
       filteredLineItemCount: filteredLineItems.length,
