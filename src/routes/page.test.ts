@@ -55,8 +55,9 @@ describe('Homepage flow', () => {
       }
 
       if (url.endsWith('/api/audit')) {
-        const body = JSON.parse(String(init?.body ?? '{}')) as { lineItems: Array<{ cpt: string }> }
+        const body = JSON.parse(String(init?.body ?? '{}')) as { lineItems: Array<{ cpt: string }>; goodFaithEstimate?: number }
         expect(body.lineItems).toHaveLength(1)
+        expect(body.goodFaithEstimate).toBe(1000)
 
         return jsonResponse({
           findings: [
@@ -106,8 +107,10 @@ describe('Homepage flow', () => {
 
     const { getByRole, getByLabelText, getByText, container } = render(Page)
     const fileInput = getByLabelText(/upload bill file/i) as HTMLInputElement
+    const gfeInput = getByLabelText(/good faith estimate total/i) as HTMLInputElement
     const file = new File(['fake pdf bytes'], 'bill.pdf', { type: 'application/pdf' })
     await fireEvent.change(fileInput, { target: { files: [file] } })
+    await fireEvent.input(gfeInput, { target: { value: '1000' } })
     await fireEvent.click(getByRole('button', { name: /analyze bill/i }))
 
     expect(getByText(/reviewing your bill/i)).toBeInTheDocument()
