@@ -108,7 +108,8 @@ export function getDisplayDescription(item: LineItem, finding: AuditFinding | nu
 }
 
 export function buildResultSections(lineItems: LineItem[], findings: AuditFinding[]): ResultSection[] {
-  const findingsByIndex = new Map(findings.map((finding) => [finding.lineItemIndex, finding]))
+  const lineItemFindings = findings.filter((finding) => finding.lineItemIndex >= 0)
+  const findingsByIndex = new Map(lineItemFindings.map((finding) => [finding.lineItemIndex, finding]))
   const entries: ResultEntry[] = lineItems.map((item, index) => ({
     index,
     item,
@@ -158,4 +159,8 @@ export function buildResultSections(lineItems: LineItem[], findings: AuditFindin
   return SECTION_ORDER
     .map((key) => sections.get(key)!)
     .filter((section) => section.groups.length > 0)
+}
+
+export function buildSummaryFindings(findings: AuditFinding[]): AuditFinding[] {
+  return findings.filter((finding) => finding.lineItemIndex === -1)
 }
