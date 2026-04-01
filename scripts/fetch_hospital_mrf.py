@@ -21,6 +21,37 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+try:
+    from rapidfuzz import fuzz, process as fuzz_process
+except ImportError:  # pragma: no cover - exercised only when dependency is unavailable
+    from difflib import SequenceMatcher
+
+    class _FallbackFuzz:
+        @staticmethod
+        def token_set_ratio(left: str, right: str) -> int:
+            left_tokens = " ".join(sorted(set(left.split())))
+            right_tokens = " ".join(sorted(set(right.split())))
+            return int(100 * SequenceMatcher(None, left_tokens, right_tokens).ratio())
+
+    class _FallbackProcess:
+        @staticmethod
+        def extractOne(query: str, choices: list[str], scorer=None, score_cutoff: int = 0):
+            best_choice = None
+            best_score = score_cutoff - 1
+            best_index = -1
+            for index, choice in enumerate(choices):
+                score = scorer(query, choice) if scorer else int(100 * SequenceMatcher(None, query, choice).ratio())
+                if score >= score_cutoff and score > best_score:
+                    best_choice = choice
+                    best_score = score
+                    best_index = index
+            if best_choice is None:
+                return None
+            return best_choice, best_score, best_index
+
+    fuzz = _FallbackFuzz()
+    fuzz_process = _FallbackProcess()
+
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "mrf_cache"
 INDEX_PATH = Path(__file__).resolve().parent.parent / "src" / "lib" / "data" / "hospital_index.json"
 USER_AGENT = "HospitalBillChecker/1.0 (hospital price transparency lookup)"
@@ -41,8 +72,23 @@ GENERIC_NAME_PARTS = {
 CODE_TYPES = {"CPT", "HCPCS"}
 
 
+_SYNONYMS = [
+    (r"\bst\b\.?\s+", "saint "),
+    (r"\bmt\b\.?\s+", "mount "),
+    (r"\bmem\b\.?\s+", "memorial "),
+    (r"\bmed\s+ctr\b", "medical center"),
+    (r"\bhosp\b", "hospital"),
+    (r"\buniv\b\.?\s+", "university "),
+    (r"\bdr\b\.?\s+", "doctor "),
+]
+
+
 def normalize_name(name: str) -> str:
     name = name.lower()
+    name = re.sub(r"'s\b", "s", name)
+    name = re.sub(r"'\b", "", name)
+    for pattern, replacement in _SYNONYMS:
+        name = re.sub(pattern, replacement, name)
     name = unicodedata.normalize("NFKD", name)
     name = name.encode("ascii", "ignore").decode("ascii")
     name = re.sub(r"[^a-z0-9 ]", " ", name)
@@ -469,6 +515,39 @@ def lookup_index_entry(hospital_name: str, state: str = "") -> dict | None:
     for key, entry in index.items():
         if key.startswith(f"{normalized}|"):
             return entry
+
+    candidates = (
+        [(key, entry) for key, entry in index.items() if key.endswith(f"|{state}")]
+        if state
+        else list(index.items())
+    )
+    if not candidates:
+        return None
+
+    key_names = [key.rsplit("|", 1)[0] for key, _ in candidates]
+    result = fuzz_process.extractOne(
+        normalized,
+        key_names,
+        scorer=fuzz.token_set_ratio,
+        score_cutoff=85,
+    )
+    if result:
+        _, _, idx = result
+        return candidates[idx][1]
+
+    if state:
+        all_candidates = list(index.items())
+        all_key_names = [key.rsplit("|", 1)[0] for key, _ in all_candidates]
+        result = fuzz_process.extractOne(
+            normalized,
+            all_key_names,
+            scorer=fuzz.token_set_ratio,
+            score_cutoff=88,
+        )
+        if result:
+            _, _, idx = result
+            return all_candidates[idx][1]
+
     return None
 
 
@@ -478,6 +557,7 @@ def main() -> None:
     parser.add_argument("--state", default="", help="Two-letter state code (e.g. TX)")
     parser.add_argument("--ccn", default="", help="CMS Certification Number if known")
     parser.add_argument("--mrf-url", default="", help="Direct MRF URL (skip discovery)")
+    parser.add_argument("--dry-run", action="store_true", help="Print the matched hospital index entry and exit")
     args = parser.parse_args()
 
     if not args.hospital_name and not args.ccn:
@@ -488,6 +568,11 @@ def main() -> None:
     slug = _slugify(hospital_name)
     db_filename = f"{args.ccn or slug}.db"
     db_path = CACHE_DIR / db_filename
+
+    if args.dry_run:
+        entry = lookup_index_entry(hospital_name, args.state)
+        print(json.dumps(entry, indent=2, sort_keys=True, ensure_ascii=False))
+        sys.exit(0 if entry else 2)
 
     if db_path.exists():
         age_hours = (time.time() - db_path.stat().st_mtime) / 3600
