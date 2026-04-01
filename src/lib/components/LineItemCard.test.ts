@@ -76,4 +76,38 @@ describe('LineItemCard', () => {
     expect(getByText(/above hospital's own price list/i)).toBeInTheDocument()
     expect(getByRole('link', { name: /view file/i })).toHaveAttribute('href', 'https://example.org/mrf.json')
   })
+
+  it('renders bill-level findings without a line-item code link or billed amount', async () => {
+    const finding: AuditFinding = {
+      lineItemIndex: -1,
+      cptCode: 'TOTAL',
+      severity: 'error',
+      errorType: 'arithmetic_error',
+      confidence: 'high',
+      description: 'The bill total does not match the sum of line items.',
+      standardDescription: 'Bill arithmetic error',
+      recommendation: 'Request a corrected itemized statement.',
+    }
+
+    const { getByText, queryByText, queryByRole, getByRole } = render(LineItemCard, {
+      props: {
+        item: {
+          cpt: 'TOTAL',
+          description: 'Bill total',
+          units: 1,
+          billedAmount: 0,
+        },
+        finding,
+        index: -1,
+      },
+    })
+
+    expect(getByText('Bill arithmetic error')).toBeInTheDocument()
+    expect(getByText(/bill-level/i)).toBeInTheDocument()
+    expect(queryByRole('link', { name: /look up code/i })).toBeNull()
+
+    await fireEvent.click(getByRole('button'))
+    expect(getByText(/request a corrected itemized statement/i)).toBeInTheDocument()
+    expect(queryByText(/medicare expected/i)).toBeNull()
+  })
 })

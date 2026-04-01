@@ -43,10 +43,11 @@ function isCacheFresh(dbPath: string): boolean {
   return ageSecs < 86_400
 }
 
-async function ensureCache(hospitalName: string, state: string, dbPath: string): Promise<boolean> {
+async function ensureCache(hospitalName: string, state: string, dbPath: string, hospitalPhone?: string): Promise<boolean> {
   try {
     const args = [FETCH_SCRIPT, hospitalName]
     if (state) args.push('--state', state)
+    if (hospitalPhone) args.push('--phone', hospitalPhone)
     await execFileAsync('python3', args, { timeout: FETCH_TIMEOUT_MS })
     return existsSync(dbPath)
   } catch (error) {
@@ -147,7 +148,8 @@ export function queryCache(dbPath: string, codes: string[]): HospitalPriceResult
 export async function lookupHospitalPrices(
   hospitalName: string,
   state: string,
-  codes: string[]
+  codes: string[],
+  hospitalPhone?: string
 ): Promise<HospitalPriceResult | null> {
   if (!hospitalName || codes.length === 0) return null
 
@@ -155,7 +157,7 @@ export async function lookupHospitalPrices(
   const dbPath = join(CACHE_DIR, `${slug}.db`)
 
   if (!isCacheFresh(dbPath)) {
-    const ok = await ensureCache(hospitalName, state, dbPath)
+    const ok = await ensureCache(hospitalName, state, dbPath, hospitalPhone)
     if (!ok) return null
   }
 

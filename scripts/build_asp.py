@@ -29,12 +29,15 @@ from pathlib import Path
 
 OUTPUT_PATH = Path(__file__).parent.parent / "src" / "lib" / "data" / "asp.json"
 
-# Update these each quarter. Pattern: {month}-{year}-asp-pricing-file.zip
+# Update these each quarter.
+# Old pattern: {month}-{year}-asp-pricing-file.zip (through Q3 2025)
+# New pattern: {month}-{year}-medicare-part-b-payment-limit-files[-date-final-file].zip (Q4 2025+)
 # CMS publishes: January (Q1 effective), April (Q2), July (Q3), October (Q4)
 ASP_URLS = [
-    "https://www.cms.gov/files/zip/july-2025-asp-pricing-file.zip",    # Q3 2025 (most recent)
-    "https://www.cms.gov/files/zip/april-2025-asp-pricing-file.zip",   # Q2 2025
-    "https://www.cms.gov/files/zip/january-2025-asp-pricing-file.zip", # Q1 2025
+    "https://www.cms.gov/files/zip/april-2026-medicare-part-b-payment-limit-files-03-30-2026-final-file.zip",  # Q2 2026 (most recent)
+    "https://www.cms.gov/files/zip/january-2026-medicare-part-b-payment-limit-files.zip",                       # Q1 2026
+    "https://www.cms.gov/files/zip/october-2025-asp-pricing-final-file.zip",                                    # Q4 2025
+    "https://www.cms.gov/files/zip/july-2025-asp-pricing-file.zip",                                             # Q3 2025 (fallback)
 ]
 
 # HCPCS codes to include — J-codes (Part B injectable drugs) and some Q/C codes

@@ -12,9 +12,15 @@ export interface BillInput {
   lineItems: LineItem[]
   rawText?: string      // raw bill text; used when lineItems have $0 amounts (text PDF path)
   hospitalName?: string
+  hospitalAddress?: string
+  hospitalPhone?: string
   hospitalNpi?: string
   accountNumber?: string
   dateOfService?: string
+  billTotal?: number
+  admissionDate?: string
+  dischargeDate?: string
+  goodFaithEstimate?: number
   patientName?: string  // NOT sent to Claude — for letter placeholders only
 }
 
@@ -24,7 +30,17 @@ export interface AuditFinding {
   lineItemIndex: number
   cptCode: string
   severity: 'error' | 'warning' | 'info'
-  errorType: 'upcoding' | 'unbundling' | 'pharmacy_markup' | 'icd10_mismatch' | 'duplicate' | 'above_hospital_list_price' | 'other'
+  errorType:
+    | 'upcoding'
+    | 'unbundling'
+    | 'pharmacy_markup'
+    | 'icd10_mismatch'
+    | 'duplicate'
+    | 'above_hospital_list_price'
+    | 'arithmetic_error'
+    | 'date_error'
+    | 'no_surprises_act'
+    | 'other'
   confidence?: ConfidenceLevel
   description: string        // plain English for patient
   standardDescription?: string  // official CPT/HCPCS code name from standard references
@@ -58,8 +74,13 @@ export interface AuditResult {
   }
   extractedMeta: {
     hospitalName?: string
+    hospitalAddress?: string
+    hospitalPhone?: string
     accountNumber?: string
     dateOfService?: string
+    billTotal?: number
+    admissionDate?: string
+    dischargeDate?: string
   }
 }
 

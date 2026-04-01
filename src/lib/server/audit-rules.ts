@@ -15,6 +15,16 @@ export type MpfsEntry = number | { rate: number; description?: string }
 export type MpfsData = Record<string, MpfsEntry>
 export type AspData = Record<string, number>
 export type ClfsData = Record<string, { rate: number; description?: string }>
+export type MueEntry = { maxUnits: number; adjudicationType: 'date_of_service' | 'claim_line' }
+export type MueData = Record<string, MueEntry>
+export type EmMdmTier = 'S' | 'L' | 'M' | 'H'
+export type EmMdmTierData = Record<string, EmMdmTier>
+export type LcdCoverageEntry = {
+  covered: string[]
+  notCovered: string[]
+  lcdIds: string[]
+}
+export type LcdCoverageData = Record<string, LcdCoverageEntry>
 
 // ── Known CPT descriptions ────────────────────────────────────────────────────
 
@@ -51,6 +61,24 @@ export const CPT_DESCRIPTIONS: Record<string, string> = {
   '99213': 'Office/outpatient visit, established patient, low complexity',
   '99214': 'Office/outpatient visit, established patient, moderate complexity',
   '99215': 'Office/outpatient visit, established patient, high complexity',
+}
+
+const MODIFIER_59_FAMILY = ['59', '-59', 'XE', 'XP', 'XS', 'XU']
+const TIER_RANK: Record<EmMdmTier, number> = { S: 0, L: 1, M: 2, H: 3 }
+const TIER_NAMES: Record<EmMdmTier, string> = {
+  S: 'straightforward',
+  L: 'low complexity',
+  M: 'moderate complexity',
+  H: 'high complexity',
+}
+
+export const EM_MDM_LEVELS: Record<string, EmMdmTier> = {
+  '99202': 'S', '99203': 'L', '99204': 'M', '99205': 'H',
+  '99211': 'S', '99212': 'S', '99213': 'L', '99214': 'M', '99215': 'H',
+  '99281': 'S', '99282': 'S', '99283': 'L', '99284': 'M', '99285': 'H',
+  '99221': 'L', '99222': 'M', '99223': 'H',
+  '99231': 'L', '99232': 'M', '99233': 'H',
+  '99304': 'L', '99305': 'M', '99306': 'H',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -149,7 +177,10 @@ export function buildDeterministicFindings(
   ncci: NcciData,
   mpfs: MpfsData,
   asp: AspData,
-  clfs: ClfsData = {}
+  clfs: ClfsData = {},
+  mue: MueData = {},
+  emMdmTiers: EmMdmTierData = {},
+  lcdCoverage: LcdCoverageData = {}
 ): { findings: AuditFinding[]; promptNote: string } {
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
   const codeSet = new Set(codes)
@@ -170,9 +201,7 @@ export function buildDeterministicFindings(
     if (presentCol1.length === 0) continue
 
     const lineItem = lineItems[i]
-    const hasModifier59 = lineItem.modifiers?.some(m =>
-      ['59', '-59', 'XE', 'XP', 'XS', 'XU'].includes(m.trim())
-    )
+    const hasModifier59 = lineItem.modifiers?.some(m => MODIFIER_59_FAMILY.includes(m.trim()))
     const isError = !hasModifier59 || !ncciEntry.modifierCanOverride
 
     findings.push({
@@ -245,6 +274,104 @@ export function buildDeterministicFindings(
     })
   }
 
+  // 4. LCD/NCD coverage check
+  for (let i = 0; i < lineItems.length; i++) {
+    const code = codes[i]
+    const lcdEntry = lcdCoverage[code]
+    if (!lcdEntry || lcdEntry.covered.length === 0) continue
+
+    const icd10s = lineItems[i].icd10Codes ?? []
+    if (icd10s.length === 0) continue
+
+    const hasCoveredDx = icd10s.some((icd) =>
+      lcdEntry.covered.some((covered) => icd.toUpperCase().startsWith(covered.toUpperCase()))
+    )
+    const hasExcludedDx = icd10s.some((icd) =>
+      lcdEntry.notCovered.some((excluded) => icd.toUpperCase().startsWith(excluded.toUpperCase()))
+    )
+
+    if (hasCoveredDx) continue
+
+    const lcdRef = lcdEntry.lcdIds.slice(0, 2).join(', ')
+    findings.push({
+      lineItemIndex: i,
+      cptCode: code,
+      severity: hasExcludedDx ? 'error' : 'warning',
+      errorType: 'icd10_mismatch',
+      confidence: hasExcludedDx ? 'high' : 'medium',
+      description: `CPT ${code} may not be covered for the diagnosis codes on this bill (${icd10s.join(', ')}). Per CMS LCD ${lcdRef}, this procedure requires specific qualifying diagnoses that are not present on the bill.`,
+      standardDescription: CPT_DESCRIPTIONS[code],
+      recommendation: `Request documentation showing medical necessity for CPT ${code}. The CMS LCD (${lcdRef}) specifies which diagnoses qualify this procedure for coverage. If your diagnosis is not listed, ask billing to explain or correct the diagnosis codes.`,
+      medicareRate: getEffectiveRate(code),
+      markupRatio: undefined,
+      ncciBundledWith: undefined,
+    })
+  }
+
+  // 5. MUE units check — deterministic
+  const codeTotalUnits = new Map<string, number>()
+  for (let i = 0; i < lineItems.length; i++) {
+    const code = codes[i]
+    codeTotalUnits.set(code, (codeTotalUnits.get(code) ?? 0) + (lineItems[i].units || 1))
+  }
+  for (const [code, totalUnits] of codeTotalUnits) {
+    const mueEntry = mue[code]
+    if (!mueEntry) continue
+    if (mueEntry.adjudicationType !== 'date_of_service') continue
+    if (totalUnits <= mueEntry.maxUnits) continue
+    const indexes = codeIndexes.get(code) ?? []
+    for (const idx of indexes) {
+      findings.push({
+        lineItemIndex: idx,
+        cptCode: code,
+        severity: 'error',
+        errorType: 'unbundling',
+        confidence: 'high' as ConfidenceLevel,
+        description: `CPT ${code} billed ${totalUnits} unit(s), but CMS Medically Unlikely Edits cap this at ${mueEntry.maxUnits} unit(s) per day. Billing ${totalUnits} units on a single date of service is not medically plausible.`,
+        standardDescription: CPT_DESCRIPTIONS[code] ?? clfs[code]?.description,
+        recommendation: `Request itemized documentation justifying ${totalUnits} units. CMS MUE limit is ${mueEntry.maxUnits} unit(s) per date of service.`,
+        medicareRate: getEffectiveRate(code),
+        markupRatio: undefined,
+        ncciBundledWith: undefined,
+      })
+    }
+  }
+
+  // 6. E&M upcoding — deterministic pre-filter
+  for (let i = 0; i < lineItems.length; i++) {
+    const code = codes[i]
+    const emTier = EM_MDM_LEVELS[code]
+    if (!emTier) continue
+
+    const icd10s = lineItems[i].icd10Codes ?? []
+    if (icd10s.length === 0) continue
+
+    let maxIcdTier: EmMdmTier = 'S'
+    for (const icd of icd10s) {
+      const prefix = icd.substring(0, 3).toUpperCase()
+      const icdTier = emMdmTiers[prefix] ?? null
+      if (icdTier && TIER_RANK[icdTier] > TIER_RANK[maxIcdTier]) {
+        maxIcdTier = icdTier
+      }
+    }
+
+    if (TIER_RANK[emTier] - TIER_RANK[maxIcdTier] < 2) continue
+
+    findings.push({
+      lineItemIndex: i,
+      cptCode: code,
+      severity: 'warning',
+      errorType: 'upcoding',
+      confidence: 'medium' as ConfidenceLevel,
+      description: `CPT ${code} requires ${TIER_NAMES[emTier]} medical decision-making, but the diagnosis codes on this bill (${icd10s.join(', ')}) suggest at most ${TIER_NAMES[maxIcdTier]} MDM. This may be worth questioning.`,
+      standardDescription: CPT_DESCRIPTIONS[code],
+      recommendation: 'Request the clinical notes supporting this E&M level. Ask billing to explain why the documentation justifies this complexity tier per AMA 2021 E&M guidelines.',
+      medicareRate: getEffectiveRate(code),
+      markupRatio: undefined,
+      ncciBundledWith: undefined,
+    })
+  }
+
   const alreadyFlaggedCodes = new Set(findings.map(f => f.cptCode))
   const promptNote =
     findings.length > 0
@@ -257,4 +384,92 @@ export function buildDeterministicFindings(
       : ''
 
   return { findings, promptNote }
+}
+
+export function buildArithmeticFindings(
+  lineItems: LineItem[],
+  billTotal?: number
+): AuditFinding[] {
+  const findings: AuditFinding[] = []
+  const lineSum = lineItems.reduce((sum, lineItem) => sum + (lineItem.billedAmount || 0), 0)
+
+  if (billTotal != null && billTotal > 0) {
+    const diff = Math.abs(lineSum - billTotal)
+    if (diff > 0.5) {
+      findings.push({
+        lineItemIndex: -1,
+        cptCode: 'TOTAL',
+        severity: 'error',
+        errorType: 'arithmetic_error',
+        confidence: 'high',
+        description: `The sum of all line items ($${lineSum.toFixed(2)}) does not match the bill total ($${billTotal.toFixed(2)}). The difference is $${diff.toFixed(2)}.`,
+        standardDescription: 'Bill arithmetic error',
+        recommendation: 'Request a corrected itemized statement explaining the discrepancy between individual charges and the stated total.',
+        medicareRate: undefined,
+        markupRatio: undefined,
+        ncciBundledWith: undefined,
+      })
+    }
+  }
+
+  return findings
+}
+
+export function buildDateFindings(
+  lineItems: LineItem[],
+  admissionDate?: string,
+  dischargeDate?: string
+): AuditFinding[] {
+  const findings: AuditFinding[] = []
+
+  if (admissionDate && dischargeDate) {
+    const admit = new Date(admissionDate)
+    const discharge = new Date(dischargeDate)
+    for (let i = 0; i < lineItems.length; i++) {
+      const lineItem = lineItems[i]
+      if (!lineItem.serviceDate) continue
+      const serviceDate = new Date(lineItem.serviceDate)
+      if (serviceDate < admit || serviceDate > discharge) {
+        findings.push({
+          lineItemIndex: i,
+          cptCode: lineItem.cpt,
+          severity: 'warning',
+          errorType: 'date_error',
+          confidence: 'high',
+          description: `CPT ${lineItem.cpt} has a service date of ${lineItem.serviceDate}, which is outside your admission window (${admissionDate} - ${dischargeDate}).`,
+          standardDescription: CPT_DESCRIPTIONS[lineItem.cpt],
+          recommendation: 'Request an explanation for why this service was billed outside your stay dates. This may be a data entry error.',
+          medicareRate: undefined,
+          markupRatio: undefined,
+          ncciBundledWith: undefined,
+        })
+      }
+    }
+  }
+
+  return findings
+}
+
+export function buildGfeFindings(
+  lineItems: LineItem[],
+  gfe?: number
+): AuditFinding[] {
+  if (!gfe || gfe <= 0) return []
+  const totalBilled = lineItems.reduce((sum, lineItem) => sum + (lineItem.billedAmount || 0), 0)
+  const excess = totalBilled - gfe
+  if (excess < 400) return []
+
+  return [{
+    lineItemIndex: -1,
+    cptCode: 'GFE',
+    severity: 'error',
+    errorType: 'no_surprises_act',
+    confidence: 'high',
+    description: `Your total bill ($${totalBilled.toFixed(2)}) exceeds your Good Faith Estimate ($${gfe.toFixed(2)}) by $${excess.toFixed(2)}, which is above the $400 threshold under the No Surprises Act.`,
+    standardDescription: 'No Surprises Act - Good Faith Estimate violation',
+    recommendation: 'You have the right to dispute this through CMS Patient-Provider Dispute Resolution. Submit a dispute at cms.gov/medical-bill-rights within 120 days of receiving the bill. Cite 26 U.S.C. § 9816 and 29 U.S.C. § 1185e.',
+    medicareRate: undefined,
+    markupRatio: undefined,
+    ncciBundledWith: undefined,
+  }]
 }

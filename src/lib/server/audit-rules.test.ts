@@ -19,10 +19,13 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDeterministicFindings,
   buildDataContext,
+  buildArithmeticFindings,
+  buildDateFindings,
+  buildGfeFindings,
   getNcciEntry,
   getMpfsRate,
 } from './audit-rules'
-import type { NcciData, MpfsData, AspData, ClfsData } from './audit-rules'
+import type { NcciData, MpfsData, AspData, ClfsData, MueData, EmMdmTierData, LcdCoverageData } from './audit-rules'
 import type { LineItem } from '$lib/types'
 
 // ── Test data fixtures ────────────────────────────────────────────────────────
@@ -58,6 +61,26 @@ const TEST_ASP: AspData = {
 const TEST_CLFS: ClfsData = {
   '85025': { rate: 12.34, description: 'Blood count; complete (CBC), automated' },
   '80053': { rate: 14.56, description: 'Comprehensive metabolic panel' },
+}
+
+const TEST_MUE: MueData = {
+  '99215': { maxUnits: 1, adjudicationType: 'date_of_service' },
+  '36415': { maxUnits: 3, adjudicationType: 'claim_line' },
+}
+
+const TEST_EM_MDM: EmMdmTierData = {
+  'J00': 'S',
+  'R55': 'L',
+  'R07': 'M',
+  'I21': 'H',
+}
+
+const TEST_LCD_COVERAGE: LcdCoverageData = {
+  '99285': {
+    covered: ['I21'],
+    notCovered: ['J00'],
+    lcdIds: ['L99999'],
+  },
 }
 
 function li(cpt: string, billed: number, units = 1, modifiers?: string[]): LineItem {
@@ -375,5 +398,113 @@ describe('buildDeterministicFindings — CLFS fallback', () => {
     const duplicate = findings.find((finding) => finding.errorType === 'duplicate')
     expect(duplicate?.medicareRate).toBe(12.34)
     expect(duplicate?.standardDescription).toBe('Blood count; complete (CBC), automated')
+  })
+})
+
+describe('buildDeterministicFindings — MUE units', () => {
+  it('flags codes that exceed the CMS date-of-service MUE cap', () => {
+    const { findings } = buildDeterministicFindings(
+      [li('99215', 300.00, 1), li('99215', 300.00, 2)],
+      TEST_NCCI,
+      TEST_MPFS,
+      TEST_ASP,
+      TEST_CLFS,
+      TEST_MUE
+    )
+
+    const mueFindings = findings.filter((finding) =>
+      finding.cptCode === '99215' && finding.description.includes('Medically Unlikely Edits')
+    )
+    expect(mueFindings).toHaveLength(2)
+  })
+
+  it('ignores claim-line MUE entries for deterministic caps', () => {
+    const { findings } = buildDeterministicFindings(
+      [li('36415', 20.00, 5)],
+      TEST_NCCI,
+      TEST_MPFS,
+      TEST_ASP,
+      TEST_CLFS,
+      TEST_MUE
+    )
+
+    expect(findings.find((finding) => finding.cptCode === '36415')).toBeUndefined()
+  })
+})
+
+describe('buildDeterministicFindings — E&M upcoding pre-filter', () => {
+  it('flags E&M codes that exceed supported ICD-10 MDM by two tiers or more', () => {
+    const { findings } = buildDeterministicFindings(
+      [{ ...li('99215', 300.00), icd10Codes: ['J00.9'] }],
+      TEST_NCCI,
+      TEST_MPFS,
+      TEST_ASP,
+      TEST_CLFS,
+      TEST_MUE,
+      TEST_EM_MDM
+    )
+
+    expect(findings.find((finding) => finding.errorType === 'upcoding')).toBeDefined()
+  })
+
+  it('does not flag E&M codes when the diagnoses support the billed tier', () => {
+    const { findings } = buildDeterministicFindings(
+      [{ ...li('99284', 220.00), icd10Codes: ['R07.9'] }],
+      TEST_NCCI,
+      TEST_MPFS,
+      TEST_ASP,
+      TEST_CLFS,
+      TEST_MUE,
+      TEST_EM_MDM
+    )
+
+    expect(findings.find((finding) => finding.errorType === 'upcoding')).toBeUndefined()
+  })
+})
+
+describe('buildDeterministicFindings — LCD coverage', () => {
+  it('flags ICD-10 mismatches when no covered diagnosis is present', () => {
+    const { findings } = buildDeterministicFindings(
+      [{ ...li('99285', 300.00), icd10Codes: ['J00.9'] }],
+      TEST_NCCI,
+      TEST_MPFS,
+      TEST_ASP,
+      TEST_CLFS,
+      TEST_MUE,
+      TEST_EM_MDM,
+      TEST_LCD_COVERAGE
+    )
+
+    const lcdFinding = findings.find((finding) =>
+      finding.errorType === 'icd10_mismatch' && finding.description.includes('CMS LCD')
+    )
+    expect(lcdFinding).toBeDefined()
+    expect(lcdFinding?.severity).toBe('error')
+  })
+})
+
+describe('bill-level deterministic findings', () => {
+  it('flags arithmetic mismatches at the bill level', () => {
+    const findings = buildArithmeticFindings([li('99285', 500.00), li('93000', 250.00)], 900)
+    expect(findings).toHaveLength(1)
+    expect(findings[0].lineItemIndex).toBe(-1)
+    expect(findings[0].errorType).toBe('arithmetic_error')
+  })
+
+  it('flags service dates outside the stay window', () => {
+    const findings = buildDateFindings(
+      [{ ...li('99285', 500.00), serviceDate: '2024-01-20' }],
+      '2024-01-14',
+      '2024-01-16'
+    )
+    expect(findings).toHaveLength(1)
+    expect(findings[0].errorType).toBe('date_error')
+  })
+
+  it('flags bills that exceed the Good Faith Estimate by $400 or more', () => {
+    const findings = buildGfeFindings([li('99285', 1200.00)], 700)
+    expect(findings).toHaveLength(1)
+    expect(findings[0].lineItemIndex).toBe(-1)
+    expect(findings[0].errorType).toBe('no_surprises_act')
   })
 })

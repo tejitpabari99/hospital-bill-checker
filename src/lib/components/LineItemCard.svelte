@@ -3,7 +3,7 @@
   import { trackLineItemExpanded, trackCptCodeLookup } from '$lib/analytics'
   import { getDisplayDescription } from '$lib/results'
 
-  let { item, finding, index }: { item: LineItem, finding: AuditFinding | null, index: number } = $props()
+  let { item, finding, index }: { item?: LineItem, finding: AuditFinding | null, index: number } = $props()
 
   let expanded = $state(false)
 
@@ -18,16 +18,24 @@
   }
 
   const extendedFinding = $derived(finding as ExtendedFinding | null)
-
-  const severityLabel = $derived(
-    finding?.severity === 'error' ? 'ERROR' :
-    finding?.severity === 'warning' ? 'REVIEW' : '✓'
+  const isSummaryFinding = $derived(finding?.lineItemIndex === -1 || !item)
+  const codeForDisplay = $derived(finding?.cptCode ?? item?.cpt ?? 'SUMMARY')
+  const summaryLabel = $derived(
+    isSummaryFinding ? 'BILL LEVEL' : (
+      finding?.severity === 'error' ? 'ERROR' :
+      finding?.severity === 'warning' ? 'REVIEW' : '✓'
+    )
   )
+
   const severityClass = $derived(
     finding?.severity === 'error' ? 'badge-error' :
     finding?.severity === 'warning' ? 'badge-warning' : 'badge-clean'
   )
-  const displayDescription = $derived(getDisplayDescription(item, finding))
+  const displayDescription = $derived(
+    isSummaryFinding
+      ? finding?.standardDescription?.trim() || finding?.description?.trim() || 'Bill-level finding'
+      : getDisplayDescription(item as LineItem, finding)
+  )
 
   function aapcUrl(code: string) {
     return `https://www.aapc.com/codes/cpt-codes/${code}`
@@ -37,7 +45,7 @@
   // expected === null means skip the row entirely.
   // zeroLabel is set when expected is $0 to explain why.
   const priceComparison = $derived((() => {
-    if (!finding || item.billedAmount <= 0) return null
+    if (!finding || !item || item.billedAmount <= 0 || isSummaryFinding) return null
     const t = finding.errorType
     if (t === 'upcoding') {
       if (finding.medicareRate == null) return null
@@ -67,7 +75,7 @@
 
   const hospitalPriceComparison = $derived((() => {
     const f = extendedFinding
-    if (!f || item.billedAmount <= 0) return null
+    if (!f || !item || item.billedAmount <= 0 || isSummaryFinding) return null
     const hospitalPrice = f.hospitalGrossCharge ?? f.hospitalCashPrice ?? null
     if (hospitalPrice == null) return null
     return {
@@ -79,20 +87,38 @@
   })())
 </script>
 
-<div class="line-item" class:has-finding={!!finding} onclick={() => { if (!expanded) trackLineItemExpanded(item.cpt); expanded = !expanded }} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)} aria-expanded={expanded}>
+<div
+  class="line-item"
+  class:has-finding={!!finding}
+  class:summary-level={isSummaryFinding}
+  onclick={() => {
+    if (isSummaryFinding) {
+      expanded = !expanded
+      return
+    }
+    if (!expanded && item) trackLineItemExpanded(item.cpt)
+    expanded = !expanded
+  }}
+  role="button"
+  tabindex="0"
+  onkeydown={(e) => e.key === 'Enter' && (expanded = !expanded)}
+  aria-expanded={expanded}
+>
   <div class="item-main">
     <div class="item-left">
-      <span class="badge {severityClass}">{severityLabel}</span>
+      <span class="badge {isSummaryFinding ? 'badge-summary' : severityClass}">{summaryLabel}</span>
       <div class="item-info">
         <span class="item-code">
-          {item.cpt}
-          <a
-            class="aapc-link"
-            href={aapcUrl(item.cpt)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onclick={(e) => { e.stopPropagation(); trackCptCodeLookup(item.cpt) }}
-          >Look up code ↗</a>
+          {codeForDisplay}
+          {#if item && !isSummaryFinding}
+            <a
+              class="aapc-link"
+              href={aapcUrl(item.cpt)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick={(e) => { e.stopPropagation(); trackCptCodeLookup(item.cpt) }}
+            >Look up code ↗</a>
+          {/if}
         </span>
         {#if displayDescription}
           <span class="item-desc">{displayDescription}</span>
@@ -103,7 +129,11 @@
       </div>
     </div>
     <div class="item-right">
-      <span class="item-amount">{formatDollars(item.billedAmount)}</span>
+      {#if item && !isSummaryFinding}
+        <span class="item-amount">{formatDollars(item.billedAmount)}</span>
+      {:else}
+        <span class="item-amount item-amount-summary">Bill-level</span>
+      {/if}
       <span class="expand-toggle">{expanded ? '▲' : '▼'}</span>
     </div>
   </div>
@@ -112,7 +142,7 @@
     <div class="item-detail">
       {#if finding}
         <p class="detail-description">{finding.description}</p>
-        {#if priceComparison}
+        {#if priceComparison && item}
           <div class="price-comparison">
             <span class="pc-billed">Billed: <span class="pc-mono">{formatDollars(item.billedAmount)}</span></span>
             <span class="pc-arrow">→</span>
@@ -124,7 +154,7 @@
             {/if}
           </div>
         {/if}
-        {#if hospitalPriceComparison}
+        {#if hospitalPriceComparison && item}
           <div class="price-comparison hospital-price">
             <span class="pc-billed">Billed: <span class="pc-mono">{formatDollars(item.billedAmount)}</span></span>
             <span class="pc-arrow">→</span>
@@ -182,7 +212,7 @@
               >{finding.ncciBundledWith} ↗</a>
             </span>
           {/if}
-          {#if item.icd10Codes?.length}
+          {#if item?.icd10Codes?.length}
             <span class="detail-label">Diagnosis codes</span>
             <span class="detail-value">{item.icd10Codes.join(', ')}</span>
           {/if}
@@ -192,7 +222,7 @@
         </div>
       {:else}
         <p class="detail-clean">This charge looks consistent with standard billing practices.</p>
-        {#if item.icd10Codes?.length}
+        {#if item?.icd10Codes?.length}
           <p class="detail-meta">Diagnosis codes: {item.icd10Codes.join(', ')}</p>
         {/if}
       {/if}
@@ -218,6 +248,10 @@
   .line-item.has-finding { border-left-width: 3px; }
   .line-item.has-finding:has(.badge-error) { border-left-color: var(--error); }
   .line-item.has-finding:has(.badge-warning) { border-left-color: var(--warning); }
+  .line-item.summary-level {
+    border-style: dashed;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(250, 250, 250, 0.85) 100%);
+  }
 
   .item-main {
     display: flex;
@@ -239,6 +273,7 @@
   .badge-error { background: var(--error-bg); color: var(--error); border: 1px solid var(--error-border); }
   .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
   .badge-clean { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+  .badge-summary { background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE; }
 
   .item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .item-code { font-family: var(--font-mono); font-size: 13px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; letter-spacing: 0.02em; }
@@ -255,6 +290,7 @@
   .item-error-type { font-size: 10px; font-weight: 700; color: var(--warning); text-transform: uppercase; letter-spacing: 0.07em; font-family: var(--font-mono); }
 
   .item-amount { font-weight: 600; font-size: 14px; font-family: var(--font-mono); color: var(--text-primary); letter-spacing: 0.01em; }
+  .item-amount-summary { font-family: var(--font-sans); font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
   .expand-toggle { font-size: 10px; color: var(--text-ghost); }
   .line-item:hover .expand-toggle { color: var(--text-muted); }
 
