@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AuditFinding, LineItem } from '$lib/types'
-import { buildResultSections, getDisplayDescription } from './results'
+import { buildResultSections, buildSummaryFindings, getDisplayDescription } from './results'
 
 function lineItem(cpt: string, description: string, billedAmount = 100): LineItem {
   return { cpt, description, units: 1, billedAmount }
@@ -114,5 +114,27 @@ describe('buildResultSections', () => {
     expect(unbundling.groups).toHaveLength(1)
     expect(unbundling.groups[0].title).toBe('Should be bundled with 93000')
     expect(unbundling.groups[0].entries.map((entry) => entry.item.cpt)).toEqual(['93000', '93010'])
+  })
+
+  it('separates bill-level findings from line-item sections', () => {
+    const lineItems = [lineItem('99285', 'ER visit')]
+    const findings: AuditFinding[] = [
+      finding({
+        lineItemIndex: -1,
+        cptCode: 'TOTAL',
+        severity: 'error',
+        errorType: 'arithmetic_error',
+        recommendation: 'Request a corrected bill total.',
+        standardDescription: 'Bill arithmetic error',
+      }),
+    ]
+
+    const sections = buildResultSections(lineItems, findings)
+    const summaryFindings = buildSummaryFindings(findings)
+
+    expect(sections).toHaveLength(1)
+    expect(sections[0].key).toBe('clean')
+    expect(summaryFindings).toHaveLength(1)
+    expect(summaryFindings[0].cptCode).toBe('TOTAL')
   })
 })

@@ -23,8 +23,13 @@ process.stdin.on('end', async () => {
   "rawText": "brief summary of the bill — hospital name, dates, total charges only (max 200 chars)",
   "cptCodes": ["all", "standard", "CPT", "and", "HCPCS", "codes", "found"],
   "hospitalName": "hospital name or null",
+  "hospitalAddress": "full address printed on bill header, e.g. '123 Main St, Dallas, TX 75201', or null",
+  "hospitalPhone": "hospital phone number as printed, e.g. '(214) 555-1234', or null",
   "accountNumber": "account number or null",
   "dateOfService": "date or null",
+  "billTotal": 1234.56,
+  "admissionDate": "2024-01-14 or null",
+  "dischargeDate": "2024-01-16 or null",
   "lineItems": [
     { "code": "99285", "description": "ER visit", "units": 1, "amount": 800.00 }
   ],
@@ -33,6 +38,8 @@ process.stdin.on('end', async () => {
 
 IMPORTANT: Extract ALL line items with CPT/HCPCS codes. If the bill has more than 40 items, prioritize: (1) any with CPT/HCPCS codes, (2) highest billed amounts. Do NOT omit any CPT or HCPCS code visible anywhere on the bill.
 For UB-04 facility bills (with Revenue Codes), extract ONLY standard 5-digit CPT codes or HCPCS Level II codes (letter J/G/A/B/C + 4 digits) from the CPT/HCPCS column. Do NOT include 4-digit Revenue Codes (e.g. 0730, 0450) or hospital-local/internal charge codes (e.g. 2000000001) in cptCodes or lineItems. If only Revenue Codes are visible with no CPT column, extract any CPT/HCPCS codes you can identify from the description column.
+The hospital address and phone number almost always appear in the header/letterhead of the bill. Extract them exactly as printed.
+admissionDate and dischargeDate are only relevant for inpatient hospital bills. For outpatient bills, set both to null.
 If this is an EOB (Explanation of Benefits) not a hospital bill, set errorMessage to "This is an insurance EOB, not a hospital bill. Please upload your itemized hospital bill instead."
 If the image is too blurry to read, set errorMessage to "We couldn't read this clearly. Try a better-lit photo."
 If no CPT/ICD codes found at all, set errorMessage to "This looks like a summary bill. Request the itemized statement from your hospital."` },

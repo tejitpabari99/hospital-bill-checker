@@ -27,8 +27,23 @@ CSV_URL = (
 USER_AGENT = "HospitalBillChecker/1.0"
 
 
+_SYNONYMS = [
+    (r"\bst\b\.?\s+", "saint "),
+    (r"\bmt\b\.?\s+", "mount "),
+    (r"\bmem\b\.?\s+", "memorial "),
+    (r"\bmed\s+ctr\b", "medical center"),
+    (r"\bhosp\b", "hospital"),
+    (r"\buniv\b\.?\s+", "university "),
+    (r"\bdr\b\.?\s+", "doctor "),
+]
+
+
 def normalize_name(name: str) -> str:
     name = name.lower()
+    name = re.sub(r"'s\b", "s", name)
+    name = re.sub(r"'\b", "", name)
+    for pattern, replacement in _SYNONYMS:
+        name = re.sub(pattern, replacement, name)
     name = unicodedata.normalize("NFKD", name)
     name = name.encode("ascii", "ignore").decode("ascii")
     name = re.sub(r"[^a-z0-9 ]", " ", name)

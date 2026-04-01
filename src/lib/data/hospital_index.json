@@ -159,7 +159,7 @@
     "state": "LA",
     "zip": "70526"
   },
-  "acadia st landry|la": {
+  "acadia saint landry|la": {
     "ccn": "191319",
     "city": "CHURCH POINT",
     "domain": null,
@@ -789,6 +789,16 @@
     "state": "CA",
     "zip": "93654"
   },
+  "adventist health saint helena|ca": {
+    "ccn": "050013",
+    "city": "SAINT HELENA",
+    "domain": null,
+    "name": "ADVENTIST HEALTH ST HELENA",
+    "npi": null,
+    "phone": "(707) 963-3611",
+    "state": "CA",
+    "zip": "94574"
+  },
   "adventist health sierra vista|ca": {
     "ccn": "050506",
     "city": "SAN LUIS OBISPO",
@@ -818,16 +828,6 @@
     "phone": "(209) 536-5000",
     "state": "CA",
     "zip": "95370"
-  },
-  "adventist health st helena|ca": {
-    "ccn": "050013",
-    "city": "SAINT HELENA",
-    "domain": null,
-    "name": "ADVENTIST HEALTH ST HELENA",
-    "npi": null,
-    "phone": "(707) 963-3611",
-    "state": "CA",
-    "zip": "94574"
   },
   "adventist health tehachapi valley|ca": {
     "ccn": "051301",
@@ -1109,7 +1109,7 @@
     "state": "SC",
     "zip": "29801"
   },
-  "akron children s hospital|oh": {
+  "akron childrens hospital|oh": {
     "ccn": "363303",
     "city": "AKRON",
     "domain": null,
@@ -1199,7 +1199,7 @@
     "state": "NY",
     "zip": "12208"
   },
-  "albert j solnit children s center south campus|ct": {
+  "albert j solnit childrens center south campus|ct": {
     "ccn": "074015",
     "city": "MIDDLETOWN",
     "domain": null,
@@ -1229,7 +1229,7 @@
     "state": "LA",
     "zip": "71360"
   },
-  "alexian brothers behavioral hlth hosp|il": {
+  "alexian brothers behavioral hlth hospital|il": {
     "ccn": "144031",
     "city": "HOFFMAN ESTATES",
     "domain": null,
@@ -1619,7 +1619,7 @@
     "state": "CA",
     "zip": "92805"
   },
-  "ancora psych hosp|nj": {
+  "ancora psych hospital|nj": {
     "ccn": "314005",
     "city": "HAMMONTON",
     "domain": null,
@@ -1969,7 +1969,7 @@
     "state": "AZ",
     "zip": "85008"
   },
-  "arkansas children s hospital|ar": {
+  "arkansas childrens hospital|ar": {
     "ccn": "043300",
     "city": "LITTLE ROCK",
     "domain": null,
@@ -1979,7 +1979,7 @@
     "state": "AR",
     "zip": "72202"
   },
-  "arkansas children s northwest inc|ar": {
+  "arkansas childrens northwest inc|ar": {
     "ccn": "043301",
     "city": "SPRINGDALE",
     "domain": null,
@@ -2159,7 +2159,7 @@
     "state": "WI",
     "zip": "53014"
   },
-  "ascension columbia st marys hospital milwaukee|wi": {
+  "ascension columbia saint marys hospital milwaukee|wi": {
     "ccn": "520051",
     "city": "MILWAUKEE",
     "domain": null,
@@ -2179,7 +2179,7 @@
     "state": "MI",
     "zip": "48439"
   },
-  "ascension ne wisconsin st elizabeth campus|wi": {
+  "ascension ne wisconsin saint elizabeth campus|wi": {
     "ccn": "520009",
     "city": "APPLETON",
     "domain": null,
@@ -2249,6 +2249,76 @@
     "state": "FL",
     "zip": "32456"
   },
+  "ascension saint francis hospital|wi": {
+    "ccn": "520078",
+    "city": "MILWAUKEE",
+    "domain": null,
+    "name": "ASCENSION ST FRANCIS HOSPITAL",
+    "npi": null,
+    "phone": "(414) 647-5000",
+    "state": "WI",
+    "zip": "53215"
+  },
+  "ascension saint john broken arrow|ok": {
+    "ccn": "370235",
+    "city": "BROKEN ARROW",
+    "domain": null,
+    "name": "ASCENSION ST JOHN BROKEN ARROW",
+    "npi": null,
+    "phone": "(918) 994-8100",
+    "state": "OK",
+    "zip": "74012"
+  },
+  "ascension saint john jane phillips|ok": {
+    "ccn": "370018",
+    "city": "BARTLESVILLE",
+    "domain": null,
+    "name": "ASCENSION ST JOHN JANE PHILLIPS",
+    "npi": null,
+    "phone": "(918) 333-7200",
+    "state": "OK",
+    "zip": "74006"
+  },
+  "ascension saint john medical center|ok": {
+    "ccn": "370114",
+    "city": "TULSA",
+    "domain": null,
+    "name": "ASCENSION ST JOHN MEDICAL CENTER",
+    "npi": null,
+    "phone": "(918) 744-2296",
+    "state": "OK",
+    "zip": "74104"
+  },
+  "ascension saint john nowata|ok": {
+    "ccn": "371305",
+    "city": "NOWATA",
+    "domain": null,
+    "name": "ASCENSION ST JOHN NOWATA",
+    "npi": null,
+    "phone": "(918) 273-3102",
+    "state": "OK",
+    "zip": "74048"
+  },
+  "ascension saint john sapulpa|ok": {
+    "ccn": "371312",
+    "city": "SAPULPA",
+    "domain": null,
+    "name": "ASCENSION ST JOHN SAPULPA",
+    "npi": null,
+    "phone": "(918) 224-4280",
+    "state": "OK",
+    "zip": "74066"
+  },
+  "ascension saint marys hospital|mi": {
+    "ccn": "230077",
+    "city": "SAGINAW",
+    "domain": null,
+    "name": "ASCENSION ST MARY'S HOSPITAL",
+    "npi": null,
+    "phone": "(989) 776-8000",
+    "state": "MI",
+    "zip": "48601"
+  },
   "ascension saint thomas behavioral health hospital|tn": {
     "ccn": "444030",
     "city": "NASHVILLE",
@@ -2278,6 +2348,176 @@
     "phone": "(931) 296-4203",
     "state": "TN",
     "zip": "37185"
+  },
+  "ascension saint vincent anderson|in": {
+    "ccn": "150088",
+    "city": "ANDERSON",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT ANDERSON",
+    "npi": null,
+    "phone": "(765) 649-2511",
+    "state": "IN",
+    "zip": "46016"
+  },
+  "ascension saint vincent carmel|in": {
+    "ccn": "150157",
+    "city": "CARMEL",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT CARMEL",
+    "npi": null,
+    "phone": "(317) 582-7000",
+    "state": "IN",
+    "zip": "46032"
+  },
+  "ascension saint vincent clay|in": {
+    "ccn": "151309",
+    "city": "BRAZIL",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT CLAY",
+    "npi": null,
+    "phone": "(812) 442-2500",
+    "state": "IN",
+    "zip": "47834"
+  },
+  "ascension saint vincent evansville|in": {
+    "ccn": "150100",
+    "city": "EVANSVILLE",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT EVANSVILLE",
+    "npi": null,
+    "phone": "(812) 485-4000",
+    "state": "IN",
+    "zip": "47750"
+  },
+  "ascension saint vincent fishers|in": {
+    "ccn": "150181",
+    "city": "FISHERS",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT FISHERS",
+    "npi": null,
+    "phone": "(317) 415-9000",
+    "state": "IN",
+    "zip": "46037"
+  },
+  "ascension saint vincent hospital|in": {
+    "ccn": "150084",
+    "city": "INDIANAPOLIS",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT HOSPITAL",
+    "npi": null,
+    "phone": "(317) 338-7000",
+    "state": "IN",
+    "zip": "46260"
+  },
+  "ascension saint vincent jennings|in": {
+    "ccn": "151303",
+    "city": "NORTH VERNON",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT JENNINGS",
+    "npi": null,
+    "phone": "(812) 352-4228",
+    "state": "IN",
+    "zip": "47265"
+  },
+  "ascension saint vincent kokomo|in": {
+    "ccn": "150010",
+    "city": "KOKOMO",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT KOKOMO",
+    "npi": null,
+    "phone": "(765) 452-5611",
+    "state": "IN",
+    "zip": "46904"
+  },
+  "ascension saint vincent mercy|in": {
+    "ccn": "151308",
+    "city": "ELWOOD",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT MERCY",
+    "npi": null,
+    "phone": "(765) 552-4743",
+    "state": "IN",
+    "zip": "46036"
+  },
+  "ascension saint vincent randolph|in": {
+    "ccn": "151301",
+    "city": "WINCHESTER",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT RANDOLPH",
+    "npi": null,
+    "phone": "(765) 584-0004",
+    "state": "IN",
+    "zip": "47394"
+  },
+  "ascension saint vincent salem|in": {
+    "ccn": "151314",
+    "city": "SALEM",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT SALEM",
+    "npi": null,
+    "phone": "(812) 883-5881",
+    "state": "IN",
+    "zip": "47167"
+  },
+  "ascension saint vincent warrick|in": {
+    "ccn": "151325",
+    "city": "BOONVILLE",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT WARRICK",
+    "npi": null,
+    "phone": "(812) 897-4800",
+    "state": "IN",
+    "zip": "47601"
+  },
+  "ascension saint vincent williamsport|in": {
+    "ccn": "151307",
+    "city": "WILLIAMSPORT",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT WILLIAMSPORT",
+    "npi": null,
+    "phone": "(765) 762-4001",
+    "state": "IN",
+    "zip": "47993"
+  },
+  "ascension saint vincents clay county|fl": {
+    "ccn": "100321",
+    "city": "MIDDLEBURG",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT'S CLAY COUNTY",
+    "npi": null,
+    "phone": "(904) 602-1000",
+    "state": "FL",
+    "zip": "32068"
+  },
+  "ascension saint vincents riverside|fl": {
+    "ccn": "100040",
+    "city": "JACKSONVILLE",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT'S RIVERSIDE",
+    "npi": null,
+    "phone": "(904) 308-7300",
+    "state": "FL",
+    "zip": "32204"
+  },
+  "ascension saint vincents saint johns county|fl": {
+    "ccn": "100361",
+    "city": "ST. JOHNS",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT'S ST JOHNS COUNTY",
+    "npi": null,
+    "phone": "(904) 450-6020",
+    "state": "FL",
+    "zip": "32259"
+  },
+  "ascension saint vincents southside|fl": {
+    "ccn": "100307",
+    "city": "JACKSONVILLE",
+    "domain": null,
+    "name": "ASCENSION ST VINCENT'S SOUTHSIDE",
+    "npi": null,
+    "phone": "(904) 296-3700",
+    "state": "FL",
+    "zip": "32216"
   },
   "ascension se wisconsin hospital|wi": {
     "ccn": "520136",
@@ -2369,246 +2609,6 @@
     "state": "TX",
     "zip": "78664"
   },
-  "ascension st francis hospital|wi": {
-    "ccn": "520078",
-    "city": "MILWAUKEE",
-    "domain": null,
-    "name": "ASCENSION ST FRANCIS HOSPITAL",
-    "npi": null,
-    "phone": "(414) 647-5000",
-    "state": "WI",
-    "zip": "53215"
-  },
-  "ascension st john broken arrow|ok": {
-    "ccn": "370235",
-    "city": "BROKEN ARROW",
-    "domain": null,
-    "name": "ASCENSION ST JOHN BROKEN ARROW",
-    "npi": null,
-    "phone": "(918) 994-8100",
-    "state": "OK",
-    "zip": "74012"
-  },
-  "ascension st john jane phillips|ok": {
-    "ccn": "370018",
-    "city": "BARTLESVILLE",
-    "domain": null,
-    "name": "ASCENSION ST JOHN JANE PHILLIPS",
-    "npi": null,
-    "phone": "(918) 333-7200",
-    "state": "OK",
-    "zip": "74006"
-  },
-  "ascension st john medical center|ok": {
-    "ccn": "370114",
-    "city": "TULSA",
-    "domain": null,
-    "name": "ASCENSION ST JOHN MEDICAL CENTER",
-    "npi": null,
-    "phone": "(918) 744-2296",
-    "state": "OK",
-    "zip": "74104"
-  },
-  "ascension st john nowata|ok": {
-    "ccn": "371305",
-    "city": "NOWATA",
-    "domain": null,
-    "name": "ASCENSION ST JOHN NOWATA",
-    "npi": null,
-    "phone": "(918) 273-3102",
-    "state": "OK",
-    "zip": "74048"
-  },
-  "ascension st john sapulpa|ok": {
-    "ccn": "371312",
-    "city": "SAPULPA",
-    "domain": null,
-    "name": "ASCENSION ST JOHN SAPULPA",
-    "npi": null,
-    "phone": "(918) 224-4280",
-    "state": "OK",
-    "zip": "74066"
-  },
-  "ascension st mary s hospital|mi": {
-    "ccn": "230077",
-    "city": "SAGINAW",
-    "domain": null,
-    "name": "ASCENSION ST MARY'S HOSPITAL",
-    "npi": null,
-    "phone": "(989) 776-8000",
-    "state": "MI",
-    "zip": "48601"
-  },
-  "ascension st vincent anderson|in": {
-    "ccn": "150088",
-    "city": "ANDERSON",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT ANDERSON",
-    "npi": null,
-    "phone": "(765) 649-2511",
-    "state": "IN",
-    "zip": "46016"
-  },
-  "ascension st vincent carmel|in": {
-    "ccn": "150157",
-    "city": "CARMEL",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT CARMEL",
-    "npi": null,
-    "phone": "(317) 582-7000",
-    "state": "IN",
-    "zip": "46032"
-  },
-  "ascension st vincent clay|in": {
-    "ccn": "151309",
-    "city": "BRAZIL",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT CLAY",
-    "npi": null,
-    "phone": "(812) 442-2500",
-    "state": "IN",
-    "zip": "47834"
-  },
-  "ascension st vincent evansville|in": {
-    "ccn": "150100",
-    "city": "EVANSVILLE",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT EVANSVILLE",
-    "npi": null,
-    "phone": "(812) 485-4000",
-    "state": "IN",
-    "zip": "47750"
-  },
-  "ascension st vincent fishers|in": {
-    "ccn": "150181",
-    "city": "FISHERS",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT FISHERS",
-    "npi": null,
-    "phone": "(317) 415-9000",
-    "state": "IN",
-    "zip": "46037"
-  },
-  "ascension st vincent hospital|in": {
-    "ccn": "150084",
-    "city": "INDIANAPOLIS",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT HOSPITAL",
-    "npi": null,
-    "phone": "(317) 338-7000",
-    "state": "IN",
-    "zip": "46260"
-  },
-  "ascension st vincent jennings|in": {
-    "ccn": "151303",
-    "city": "NORTH VERNON",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT JENNINGS",
-    "npi": null,
-    "phone": "(812) 352-4228",
-    "state": "IN",
-    "zip": "47265"
-  },
-  "ascension st vincent kokomo|in": {
-    "ccn": "150010",
-    "city": "KOKOMO",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT KOKOMO",
-    "npi": null,
-    "phone": "(765) 452-5611",
-    "state": "IN",
-    "zip": "46904"
-  },
-  "ascension st vincent mercy|in": {
-    "ccn": "151308",
-    "city": "ELWOOD",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT MERCY",
-    "npi": null,
-    "phone": "(765) 552-4743",
-    "state": "IN",
-    "zip": "46036"
-  },
-  "ascension st vincent randolph|in": {
-    "ccn": "151301",
-    "city": "WINCHESTER",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT RANDOLPH",
-    "npi": null,
-    "phone": "(765) 584-0004",
-    "state": "IN",
-    "zip": "47394"
-  },
-  "ascension st vincent s clay county|fl": {
-    "ccn": "100321",
-    "city": "MIDDLEBURG",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT'S CLAY COUNTY",
-    "npi": null,
-    "phone": "(904) 602-1000",
-    "state": "FL",
-    "zip": "32068"
-  },
-  "ascension st vincent s riverside|fl": {
-    "ccn": "100040",
-    "city": "JACKSONVILLE",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT'S RIVERSIDE",
-    "npi": null,
-    "phone": "(904) 308-7300",
-    "state": "FL",
-    "zip": "32204"
-  },
-  "ascension st vincent s southside|fl": {
-    "ccn": "100307",
-    "city": "JACKSONVILLE",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT'S SOUTHSIDE",
-    "npi": null,
-    "phone": "(904) 296-3700",
-    "state": "FL",
-    "zip": "32216"
-  },
-  "ascension st vincent s st johns county|fl": {
-    "ccn": "100361",
-    "city": "ST. JOHNS",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT'S ST JOHNS COUNTY",
-    "npi": null,
-    "phone": "(904) 450-6020",
-    "state": "FL",
-    "zip": "32259"
-  },
-  "ascension st vincent salem|in": {
-    "ccn": "151314",
-    "city": "SALEM",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT SALEM",
-    "npi": null,
-    "phone": "(812) 883-5881",
-    "state": "IN",
-    "zip": "47167"
-  },
-  "ascension st vincent warrick|in": {
-    "ccn": "151325",
-    "city": "BOONVILLE",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT WARRICK",
-    "npi": null,
-    "phone": "(812) 897-4800",
-    "state": "IN",
-    "zip": "47601"
-  },
-  "ascension st vincent williamsport|in": {
-    "ccn": "151307",
-    "city": "WILLIAMSPORT",
-    "domain": null,
-    "name": "ASCENSION ST VINCENT WILLIAMSPORT",
-    "npi": null,
-    "phone": "(765) 762-4001",
-    "state": "IN",
-    "zip": "47993"
-  },
   "ascension via christi hospital manhattan inc|ks": {
     "ccn": "170142",
     "city": "MANHATTAN",
@@ -2629,7 +2629,7 @@
     "state": "KS",
     "zip": "67214"
   },
-  "ascension wisconsin hosp menomonee falls campus|wi": {
+  "ascension wisconsin hospital menomonee falls campus|wi": {
     "ccn": "520214",
     "city": "MENOMONEE FALLS",
     "domain": null,
@@ -3419,6 +3419,16 @@
     "state": "WI",
     "zip": "53213"
   },
+  "aurora saint lukes medical center|wi": {
+    "ccn": "520138",
+    "city": "MILWAUKEE",
+    "domain": null,
+    "name": "AURORA ST LUKES MEDICAL CENTER",
+    "npi": null,
+    "phone": "(414) 649-6000",
+    "state": "WI",
+    "zip": "53215"
+  },
   "aurora san diego|ca": {
     "ccn": "054095",
     "city": "SAN DIEGO",
@@ -3428,16 +3438,6 @@
     "phone": "(858) 487-3200",
     "state": "CA",
     "zip": "92128"
-  },
-  "aurora st lukes medical center|wi": {
-    "ccn": "520138",
-    "city": "MILWAUKEE",
-    "domain": null,
-    "name": "AURORA ST LUKES MEDICAL CENTER",
-    "npi": null,
-    "phone": "(414) 649-6000",
-    "state": "WI",
-    "zip": "53215"
   },
   "aurora vista del mar hospital|ca": {
     "ccn": "054077",
@@ -3649,7 +3649,7 @@
     "state": "SD",
     "zip": "57078"
   },
-  "avera st anthony s hospital|ne": {
+  "avera saint anthonys hospital|ne": {
     "ccn": "281329",
     "city": "O' NEILL",
     "domain": null,
@@ -3659,7 +3659,7 @@
     "state": "NE",
     "zip": "68763"
   },
-  "avera st benedict health center cah|sd": {
+  "avera saint benedict health center cah|sd": {
     "ccn": "431330",
     "city": "PARKSTON",
     "domain": null,
@@ -3669,7 +3669,7 @@
     "state": "SD",
     "zip": "57366"
   },
-  "avera st lukes|sd": {
+  "avera saint lukes|sd": {
     "ccn": "430014",
     "city": "ABERDEEN",
     "domain": null,
@@ -3679,7 +3679,7 @@
     "state": "SD",
     "zip": "57401"
   },
-  "avera st mary s hospital|sd": {
+  "avera saint marys hospital|sd": {
     "ccn": "430015",
     "city": "PIERRE",
     "domain": null,
@@ -4469,7 +4469,7 @@
     "state": "MO",
     "zip": "63110"
   },
-  "barnes jewish st peters hospital|mo": {
+  "barnes jewish saint peters hospital|mo": {
     "ccn": "260191",
     "city": "SAINT PETERS",
     "domain": null,
@@ -4759,6 +4759,16 @@
     "state": "TX",
     "zip": "76262"
   },
+  "baylor saint lukes medical center|tx": {
+    "ccn": "450193",
+    "city": "HOUSTON",
+    "domain": null,
+    "name": "Baylor St Lukes Medical Center",
+    "npi": null,
+    "phone": "(832) 355-1000",
+    "state": "TX",
+    "zip": "77030"
+  },
   "baylor scott and white all saints medical center|tx": {
     "ccn": "450137",
     "city": "FORT WORTH",
@@ -5039,16 +5049,6 @@
     "state": "TX",
     "zip": "75093"
   },
-  "baylor st lukes medical center|tx": {
-    "ccn": "450193",
-    "city": "HOUSTON",
-    "domain": null,
-    "name": "Baylor St Lukes Medical Center",
-    "npi": null,
-    "phone": "(832) 355-1000",
-    "state": "TX",
-    "zip": "77030"
-  },
   "baylor surgical hospital at las colinas|tx": {
     "ccn": "450874",
     "city": "IRVING",
@@ -5219,7 +5219,7 @@
     "state": "LA",
     "zip": "70445"
   },
-  "beacon children s hospital|al": {
+  "beacon childrens hospital|al": {
     "ccn": "014015",
     "city": "LUVERNE",
     "domain": null,
@@ -6129,7 +6129,7 @@
     "state": "IN",
     "zip": "46714"
   },
-  "blythedale children s hospital|ny": {
+  "blythedale childrens hospital|ny": {
     "ccn": "333301",
     "city": "VALHALLA",
     "domain": null,
@@ -6239,6 +6239,36 @@
     "state": "VA",
     "zip": "23223"
   },
+  "bon secours saint francis medical center|va": {
+    "ccn": "490136",
+    "city": "MIDLOTHIAN",
+    "domain": null,
+    "name": "BON SECOURS ST FRANCIS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(804) 594-7400",
+    "state": "VA",
+    "zip": "23114"
+  },
+  "bon secours saint francis xavier hospital|sc": {
+    "ccn": "420065",
+    "city": "CHARLESTON",
+    "domain": null,
+    "name": "BON SECOURS-ST FRANCIS XAVIER HOSPITAL",
+    "npi": null,
+    "phone": "(843) 402-1006",
+    "state": "SC",
+    "zip": "29414"
+  },
+  "bon secours saint marys hospital|va": {
+    "ccn": "490059",
+    "city": "RICHMOND",
+    "domain": null,
+    "name": "BON SECOURS ST MARYS HOSPITAL",
+    "npi": null,
+    "phone": "(804) 285-2011",
+    "state": "VA",
+    "zip": "23226"
+  },
   "bon secours southampton memorial hospital|va": {
     "ccn": "490092",
     "city": "FRANKLIN",
@@ -6268,36 +6298,6 @@
     "phone": "(804) 765-5000",
     "state": "VA",
     "zip": "23805"
-  },
-  "bon secours st francis medical center|va": {
-    "ccn": "490136",
-    "city": "MIDLOTHIAN",
-    "domain": null,
-    "name": "BON SECOURS ST FRANCIS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(804) 594-7400",
-    "state": "VA",
-    "zip": "23114"
-  },
-  "bon secours st francis xavier hospital|sc": {
-    "ccn": "420065",
-    "city": "CHARLESTON",
-    "domain": null,
-    "name": "BON SECOURS-ST FRANCIS XAVIER HOSPITAL",
-    "npi": null,
-    "phone": "(843) 402-1006",
-    "state": "SC",
-    "zip": "29414"
-  },
-  "bon secours st marys hospital|va": {
-    "ccn": "490059",
-    "city": "RICHMOND",
-    "domain": null,
-    "name": "BON SECOURS ST MARYS HOSPITAL",
-    "npi": null,
-    "phone": "(804) 285-2011",
-    "state": "VA",
-    "zip": "23226"
   },
   "bonner general hospital|id": {
     "ccn": "131328",
@@ -6359,7 +6359,7 @@
     "state": "MI",
     "zip": "49048"
   },
-  "boston children s hospital|ma": {
+  "boston childrens hospital|ma": {
     "ccn": "223302",
     "city": "BOSTON",
     "domain": null,
@@ -6619,7 +6619,7 @@
     "state": "MA",
     "zip": "02130"
   },
-  "brigham and women s hospital|ma": {
+  "brigham and womens hospital|ma": {
     "ccn": "220110",
     "city": "BOSTON",
     "domain": null,
@@ -7009,7 +7009,7 @@
     "state": "AL",
     "zip": "35404"
   },
-  "brylin hosp|ny": {
+  "brylin hospital|ny": {
     "ccn": "334022",
     "city": "BUFFALO",
     "domain": null,
@@ -7029,7 +7029,7 @@
     "state": "PA",
     "zip": "19010"
   },
-  "brynn marr hosp|nc": {
+  "brynn marr hospital|nc": {
     "ccn": "344016",
     "city": "JACKSONVILLE",
     "domain": null,
@@ -7159,7 +7159,7 @@
     "state": "GA",
     "zip": "30830"
   },
-  "burleson st joseph health center|tx": {
+  "burleson saint joseph health center|tx": {
     "ccn": "451305",
     "city": "CALDWELL",
     "domain": null,
@@ -7329,7 +7329,7 @@
     "state": "CA",
     "zip": "94109"
   },
-  "california pacific medical ctr davies campus hosp|ca": {
+  "california pacific medical ctr davies campus hospital|ca": {
     "ccn": "050008",
     "city": "SAN FRANCISCO",
     "domain": null,
@@ -8739,7 +8739,7 @@
     "state": "PR",
     "zip": "00693"
   },
-  "centura health penrose st francis health services|co": {
+  "centura health penrose saint francis health services|co": {
     "ccn": "060031",
     "city": "COLORADO SPRINGS",
     "domain": null,
@@ -8749,7 +8749,7 @@
     "state": "CO",
     "zip": "80907"
   },
-  "centura health st anthony hospital|co": {
+  "centura health saint anthony hospital|co": {
     "ccn": "060015",
     "city": "LAKEWOOD",
     "domain": null,
@@ -8759,7 +8759,7 @@
     "state": "CO",
     "zip": "80228"
   },
-  "centura health st anthony north health campus|co": {
+  "centura health saint anthony north health campus|co": {
     "ccn": "060104",
     "city": "WESTMINSTER",
     "domain": null,
@@ -8769,7 +8769,7 @@
     "state": "CO",
     "zip": "80023"
   },
-  "centura st catherine dodge city|ks": {
+  "centura saint catherine dodge city|ks": {
     "ccn": "170175",
     "city": "DODGE CITY",
     "domain": null,
@@ -9179,17 +9179,7 @@
     "state": "NE",
     "zip": "68769"
   },
-  "chi health schuyler|ne": {
-    "ccn": "281323",
-    "city": "SCHUYLER",
-    "domain": null,
-    "name": "CHI HEALTH SCHUYLER",
-    "npi": null,
-    "phone": "(402) 352-2441",
-    "state": "NE",
-    "zip": "68661"
-  },
-  "chi health st elizabeth|ne": {
+  "chi health saint elizabeth|ne": {
     "ccn": "280020",
     "city": "LINCOLN",
     "domain": null,
@@ -9199,7 +9189,7 @@
     "state": "NE",
     "zip": "68510"
   },
-  "chi health st francis|ne": {
+  "chi health saint francis|ne": {
     "ccn": "280023",
     "city": "GRAND ISLAND",
     "domain": null,
@@ -9209,7 +9199,7 @@
     "state": "NE",
     "zip": "68803"
   },
-  "chi health st marys|ne": {
+  "chi health saint marys|ne": {
     "ccn": "281342",
     "city": "NEBRASKA CITY",
     "domain": null,
@@ -9218,6 +9208,16 @@
     "phone": "(402) 873-3321",
     "state": "NE",
     "zip": "68410"
+  },
+  "chi health schuyler|ne": {
+    "ccn": "281323",
+    "city": "SCHUYLER",
+    "domain": null,
+    "name": "CHI HEALTH SCHUYLER",
+    "npi": null,
+    "phone": "(402) 352-2441",
+    "state": "NE",
+    "zip": "68661"
   },
   "chi memorial hospital georgia|ga": {
     "ccn": "110236",
@@ -9249,6 +9249,56 @@
     "state": "ND",
     "zip": "58474"
   },
+  "chi saint alexius health devils lake|nd": {
+    "ccn": "351333",
+    "city": "DEVILS LAKE",
+    "domain": null,
+    "name": "CHI ST ALEXIUS HEALTH DEVILS LAKE",
+    "npi": null,
+    "phone": "(701) 662-2131",
+    "state": "ND",
+    "zip": "58301"
+  },
+  "chi saint alexius health dickinson|nd": {
+    "ccn": "351336",
+    "city": "DICKINSON",
+    "domain": null,
+    "name": "CHI ST ALEXIUS HEALTH DICKINSON",
+    "npi": null,
+    "phone": "(701) 456-4000",
+    "state": "ND",
+    "zip": "58601"
+  },
+  "chi saint alexius health turtle lake|nd": {
+    "ccn": "351304",
+    "city": "TURTLE LAKE",
+    "domain": null,
+    "name": "CHI ST ALEXIUS HEALTH TURTLE LAKE",
+    "npi": null,
+    "phone": "(701) 448-2331",
+    "state": "ND",
+    "zip": "58575"
+  },
+  "chi saint alexius health williston|nd": {
+    "ccn": "351334",
+    "city": "WILLISTON",
+    "domain": null,
+    "name": "CHI ST ALEXIUS HEALTH WILLISTON",
+    "npi": null,
+    "phone": "(701) 774-7400",
+    "state": "ND",
+    "zip": "58801"
+  },
+  "chi saint alexius health|nd": {
+    "ccn": "350002",
+    "city": "BISMARCK",
+    "domain": null,
+    "name": "CHI ST ALEXIUS HEALTH",
+    "npi": null,
+    "phone": "(701) 530-7000",
+    "state": "ND",
+    "zip": "58501"
+  },
   "chi saint joseph berea nf|ky": {
     "ccn": "181329",
     "city": "BEREA",
@@ -9269,57 +9319,7 @@
     "state": "KY",
     "zip": "40004"
   },
-  "chi st alexius health devils lake|nd": {
-    "ccn": "351333",
-    "city": "DEVILS LAKE",
-    "domain": null,
-    "name": "CHI ST ALEXIUS HEALTH DEVILS LAKE",
-    "npi": null,
-    "phone": "(701) 662-2131",
-    "state": "ND",
-    "zip": "58301"
-  },
-  "chi st alexius health dickinson|nd": {
-    "ccn": "351336",
-    "city": "DICKINSON",
-    "domain": null,
-    "name": "CHI ST ALEXIUS HEALTH DICKINSON",
-    "npi": null,
-    "phone": "(701) 456-4000",
-    "state": "ND",
-    "zip": "58601"
-  },
-  "chi st alexius health turtle lake|nd": {
-    "ccn": "351304",
-    "city": "TURTLE LAKE",
-    "domain": null,
-    "name": "CHI ST ALEXIUS HEALTH TURTLE LAKE",
-    "npi": null,
-    "phone": "(701) 448-2331",
-    "state": "ND",
-    "zip": "58575"
-  },
-  "chi st alexius health williston|nd": {
-    "ccn": "351334",
-    "city": "WILLISTON",
-    "domain": null,
-    "name": "CHI ST ALEXIUS HEALTH WILLISTON",
-    "npi": null,
-    "phone": "(701) 774-7400",
-    "state": "ND",
-    "zip": "58801"
-  },
-  "chi st alexius health|nd": {
-    "ccn": "350002",
-    "city": "BISMARCK",
-    "domain": null,
-    "name": "CHI ST ALEXIUS HEALTH",
-    "npi": null,
-    "phone": "(701) 530-7000",
-    "state": "ND",
-    "zip": "58501"
-  },
-  "chi st joseph health regional hospital|tx": {
+  "chi saint joseph health regional hospital|tx": {
     "ccn": "450011",
     "city": "BRYAN",
     "domain": null,
@@ -9329,7 +9329,7 @@
     "state": "TX",
     "zip": "77802"
   },
-  "chi st luke s health brazosport|tx": {
+  "chi saint lukes health brazosport|tx": {
     "ccn": "450072",
     "city": "LAKE JACKSON",
     "domain": null,
@@ -9339,7 +9339,7 @@
     "state": "TX",
     "zip": "77566"
   },
-  "chi st lukes health memorial livingston|tx": {
+  "chi saint lukes health memorial livingston|tx": {
     "ccn": "450395",
     "city": "LIVINGSTON",
     "domain": null,
@@ -9349,7 +9349,7 @@
     "state": "TX",
     "zip": "77351"
   },
-  "chi st lukes health memorial lufkin|tx": {
+  "chi saint lukes health memorial lufkin|tx": {
     "ccn": "450211",
     "city": "LUFKIN",
     "domain": null,
@@ -9359,7 +9359,7 @@
     "state": "TX",
     "zip": "75901"
   },
-  "chi st lukes health memorial san augustine|tx": {
+  "chi saint lukes health memorial san augustine|tx": {
     "ccn": "670783",
     "city": "SAN AUGUSTINE",
     "domain": null,
@@ -9369,7 +9369,7 @@
     "state": "TX",
     "zip": "75972"
   },
-  "chi st lukes lakeside hospital|tx": {
+  "chi saint lukes lakeside hospital|tx": {
     "ccn": "670059",
     "city": "THE WOODLANDS",
     "domain": null,
@@ -9379,7 +9379,7 @@
     "state": "TX",
     "zip": "77384"
   },
-  "chi st vincent hospital hot springs|ar": {
+  "chi saint vincent hospital hot springs|ar": {
     "ccn": "040026",
     "city": "HOT SPRINGS",
     "domain": null,
@@ -9389,7 +9389,7 @@
     "state": "AR",
     "zip": "71903"
   },
-  "chi st vincent infirmary|ar": {
+  "chi saint vincent infirmary|ar": {
     "ccn": "040007",
     "city": "LITTLE ROCK",
     "domain": null,
@@ -9399,7 +9399,7 @@
     "state": "AR",
     "zip": "72205"
   },
-  "chi st vincent morrilton|ar": {
+  "chi saint vincent morrilton|ar": {
     "ccn": "041324",
     "city": "MORRILTON",
     "domain": null,
@@ -9459,7 +9459,7 @@
     "state": "MN",
     "zip": "56201"
   },
-  "children s healthcare of atlanta at scottish rite|ga": {
+  "childrens healthcare of atlanta at scottish rite|ga": {
     "ccn": "113301",
     "city": "ATLANTA",
     "domain": null,
@@ -9469,7 +9469,7 @@
     "state": "GA",
     "zip": "30342"
   },
-  "children s home of pittsburgh|pa": {
+  "childrens home of pittsburgh|pa": {
     "ccn": "393304",
     "city": "PITTSBURGH",
     "domain": null,
@@ -9479,17 +9479,7 @@
     "state": "PA",
     "zip": "15224"
   },
-  "children s hosp of los angeles|ca": {
-    "ccn": "053302",
-    "city": "LOS ANGELES",
-    "domain": null,
-    "name": "CHILDREN'S HOSP OF LOS ANGELES",
-    "npi": null,
-    "phone": "(323) 669-2164",
-    "state": "CA",
-    "zip": "90027"
-  },
-  "children s hospital at mission|ca": {
+  "childrens hospital at mission|ca": {
     "ccn": "053306",
     "city": "MISSION VIEJO",
     "domain": null,
@@ -9499,7 +9489,7 @@
     "state": "CA",
     "zip": "92691"
   },
-  "children s hospital colorado colorado springs|co": {
+  "childrens hospital colorado colorado springs|co": {
     "ccn": "063303",
     "city": "COLORADO SPRINGS",
     "domain": null,
@@ -9509,7 +9499,7 @@
     "state": "CO",
     "zip": "80920"
   },
-  "children s hospital colorado|co": {
+  "childrens hospital colorado|co": {
     "ccn": "063301",
     "city": "AURORA",
     "domain": null,
@@ -9519,7 +9509,17 @@
     "state": "CO",
     "zip": "80045"
   },
-  "children s hospital of michigan|mi": {
+  "childrens hospital of los angeles|ca": {
+    "ccn": "053302",
+    "city": "LOS ANGELES",
+    "domain": null,
+    "name": "CHILDREN'S HOSP OF LOS ANGELES",
+    "npi": null,
+    "phone": "(323) 669-2164",
+    "state": "CA",
+    "zip": "90027"
+  },
+  "childrens hospital of michigan|mi": {
     "ccn": "233300",
     "city": "DETROIT",
     "domain": null,
@@ -9529,7 +9529,7 @@
     "state": "MI",
     "zip": "48201"
   },
-  "children s hospital of orange county|ca": {
+  "childrens hospital of orange county|ca": {
     "ccn": "053304",
     "city": "ORANGE",
     "domain": null,
@@ -9539,7 +9539,7 @@
     "state": "CA",
     "zip": "92868"
   },
-  "children s hospital of philadelphia|pa": {
+  "childrens hospital of philadelphia|pa": {
     "ccn": "393303",
     "city": "PHILADELPHIA",
     "domain": null,
@@ -9549,7 +9549,7 @@
     "state": "PA",
     "zip": "19104"
   },
-  "children s hospital of san antonio|tx": {
+  "childrens hospital of san antonio|tx": {
     "ccn": "453315",
     "city": "SAN ANTONIO",
     "domain": null,
@@ -9558,56 +9558,6 @@
     "phone": "(210) 704-3342",
     "state": "TX",
     "zip": "78207"
-  },
-  "children s hospitals clinics of mn|mn": {
-    "ccn": "243302",
-    "city": "MINNEAPOLIS",
-    "domain": null,
-    "name": "CHILDREN'S HOSPITALS & CLINICS OF MN",
-    "npi": null,
-    "phone": "(612) 813-6112",
-    "state": "MN",
-    "zip": "55404"
-  },
-  "children s mercy south|ks": {
-    "ccn": "173300",
-    "city": "OVERLAND PARK",
-    "domain": null,
-    "name": "CHILDREN'S MERCY SOUTH",
-    "npi": null,
-    "phone": "(913) 696-8000",
-    "state": "KS",
-    "zip": "66211"
-  },
-  "children s national hospital|dc": {
-    "ccn": "093300",
-    "city": "WASHINGTON",
-    "domain": null,
-    "name": "CHILDREN'S NATIONAL HOSPITAL",
-    "npi": null,
-    "phone": "(202) 476-5000",
-    "state": "DC",
-    "zip": "20010"
-  },
-  "children s nebraska|ne": {
-    "ccn": "283301",
-    "city": "OMAHA",
-    "domain": null,
-    "name": "CHILDREN'S NEBRASKA",
-    "npi": null,
-    "phone": "(402) 955-5400",
-    "state": "NE",
-    "zip": "68114"
-  },
-  "children s specialized hospital|nj": {
-    "ccn": "313300",
-    "city": "NEW BRUNSWICK",
-    "domain": null,
-    "name": "CHILDREN'S SPECIALIZED HOSPITAL",
-    "npi": null,
-    "phone": "(732) 258-7050",
-    "state": "NJ",
-    "zip": "08901"
   },
   "childrens hospital of the kings daughters inc|va": {
     "ccn": "493301",
@@ -9639,6 +9589,16 @@
     "state": "WI",
     "zip": "53226"
   },
+  "childrens hospitals clinics of mn|mn": {
+    "ccn": "243302",
+    "city": "MINNEAPOLIS",
+    "domain": null,
+    "name": "CHILDREN'S HOSPITALS & CLINICS OF MN",
+    "npi": null,
+    "phone": "(612) 813-6112",
+    "state": "MN",
+    "zip": "55404"
+  },
   "childrens hospital|la": {
     "ccn": "193300",
     "city": "NEW ORLEANS",
@@ -9668,6 +9628,46 @@
     "phone": "(214) 456-7000",
     "state": "TX",
     "zip": "75235"
+  },
+  "childrens mercy south|ks": {
+    "ccn": "173300",
+    "city": "OVERLAND PARK",
+    "domain": null,
+    "name": "CHILDREN'S MERCY SOUTH",
+    "npi": null,
+    "phone": "(913) 696-8000",
+    "state": "KS",
+    "zip": "66211"
+  },
+  "childrens national hospital|dc": {
+    "ccn": "093300",
+    "city": "WASHINGTON",
+    "domain": null,
+    "name": "CHILDREN'S NATIONAL HOSPITAL",
+    "npi": null,
+    "phone": "(202) 476-5000",
+    "state": "DC",
+    "zip": "20010"
+  },
+  "childrens nebraska|ne": {
+    "ccn": "283301",
+    "city": "OMAHA",
+    "domain": null,
+    "name": "CHILDREN'S NEBRASKA",
+    "npi": null,
+    "phone": "(402) 955-5400",
+    "state": "NE",
+    "zip": "68114"
+  },
+  "childrens specialized hospital|nj": {
+    "ccn": "313300",
+    "city": "NEW BRUNSWICK",
+    "domain": null,
+    "name": "CHILDREN'S SPECIALIZED HOSPITAL",
+    "npi": null,
+    "phone": "(732) 258-7050",
+    "state": "NJ",
+    "zip": "08901"
   },
   "childress regional medical center|tx": {
     "ccn": "450369",
@@ -9929,7 +9929,7 @@
     "state": "LA",
     "zip": "70605"
   },
-  "christus ochsner st patrick hospital|la": {
+  "christus ochsner saint patrick hospital|la": {
     "ccn": "190027",
     "city": "LAKE CHARLES",
     "domain": null,
@@ -9938,6 +9938,36 @@
     "phone": "(337) 436-2511",
     "state": "LA",
     "zip": "70601"
+  },
+  "christus saint frances cabrini hospital|la": {
+    "ccn": "190019",
+    "city": "ALEXANDRIA",
+    "domain": null,
+    "name": "CHRISTUS ST FRANCES CABRINI HOSPITAL",
+    "npi": null,
+    "phone": "(318) 487-1122",
+    "state": "LA",
+    "zip": "71301"
+  },
+  "christus saint michael health system|tx": {
+    "ccn": "450801",
+    "city": "TEXARKANA",
+    "domain": null,
+    "name": "CHRISTUS ST MICHAEL HEALTH SYSTEM",
+    "npi": null,
+    "phone": "(903) 614-1000",
+    "state": "TX",
+    "zip": "75503"
+  },
+  "christus saint vincent regional medical center|nm": {
+    "ccn": "320002",
+    "city": "SANTA FE",
+    "domain": null,
+    "name": "CHRISTUS ST VINCENT REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(505) 913-3361",
+    "state": "NM",
+    "zip": "87505"
   },
   "christus santa rosa hospital san marcos|tx": {
     "ccn": "450272",
@@ -9969,7 +9999,7 @@
     "state": "LA",
     "zip": "71105"
   },
-  "christus southeast texas st elizabeth|tx": {
+  "christus southeast texas saint elizabeth|tx": {
     "ccn": "450034",
     "city": "BEAUMONT",
     "domain": null,
@@ -10029,37 +10059,7 @@
     "state": "TX",
     "zip": "78363"
   },
-  "christus st frances cabrini hospital|la": {
-    "ccn": "190019",
-    "city": "ALEXANDRIA",
-    "domain": null,
-    "name": "CHRISTUS ST FRANCES CABRINI HOSPITAL",
-    "npi": null,
-    "phone": "(318) 487-1122",
-    "state": "LA",
-    "zip": "71301"
-  },
-  "christus st michael health system|tx": {
-    "ccn": "450801",
-    "city": "TEXARKANA",
-    "domain": null,
-    "name": "CHRISTUS ST MICHAEL HEALTH SYSTEM",
-    "npi": null,
-    "phone": "(903) 614-1000",
-    "state": "TX",
-    "zip": "75503"
-  },
-  "christus st vincent regional medical center|nm": {
-    "ccn": "320002",
-    "city": "SANTA FE",
-    "domain": null,
-    "name": "CHRISTUS ST VINCENT REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(505) 913-3361",
-    "state": "NM",
-    "zip": "87505"
-  },
-  "chsli st joseph hospital|ny": {
+  "chsli saint joseph hospital|ny": {
     "ccn": "330332",
     "city": "BETHPAGE",
     "domain": null,
@@ -10089,7 +10089,7 @@
     "state": "OK",
     "zip": "73933"
   },
-  "cincinnati children s hospital medical center|oh": {
+  "cincinnati childrens hospital medical center|oh": {
     "ccn": "363300",
     "city": "CINCINNATI",
     "domain": null,
@@ -10429,7 +10429,7 @@
     "state": "OH",
     "zip": "44011"
   },
-  "cleveland clinic children s hospital for rehab|oh": {
+  "cleveland clinic childrens hospital for rehab|oh": {
     "ccn": "363304",
     "city": "CLEVELAND",
     "domain": null,
@@ -11189,7 +11189,7 @@
     "state": "CA",
     "zip": "93940"
   },
-  "community hospital onaga and st marys campus|ks": {
+  "community hospital onaga and saint marys campus|ks": {
     "ccn": "171354",
     "city": "ONAGA",
     "domain": null,
@@ -11589,7 +11589,7 @@
     "state": "CT",
     "zip": "06508"
   },
-  "connecticut valley hosp|ct": {
+  "connecticut valley hospital|ct": {
     "ccn": "074003",
     "city": "MIDDLETOWN",
     "domain": null,
@@ -12979,7 +12979,7 @@
     "state": "NY",
     "zip": "13856"
   },
-  "dell children s medical center|tx": {
+  "dell childrens medical center|tx": {
     "ccn": "453310",
     "city": "AUSTIN",
     "domain": null,
@@ -13279,15 +13279,35 @@
     "state": "CA",
     "zip": "90036"
   },
-  "doctor s center de san juan|pr": {
-    "ccn": "400006",
-    "city": "SANTURCE",
+  "doctor dan c trigg memorial hospital|nm": {
+    "ccn": "321302",
+    "city": "TUCUMCARI",
     "domain": null,
-    "name": "DOCTOR'S CENTER DE SAN JUAN",
+    "name": "DR DAN C TRIGG MEMORIAL HOSPITAL",
     "npi": null,
-    "phone": "(787) 723-2950",
-    "state": "PR",
-    "zip": "00909"
+    "phone": "(575) 461-7007",
+    "state": "NM",
+    "zip": "88401"
+  },
+  "doctor john c corrigan mental health center|ma": {
+    "ccn": "224028",
+    "city": "FALL RIVER",
+    "domain": null,
+    "name": "DR JOHN C CORRIGAN MENTAL HEALTH CENTER",
+    "npi": null,
+    "phone": "(508) 235-7600",
+    "state": "MA",
+    "zip": "02720"
+  },
+  "doctor solomon carter fuller mental health center|ma": {
+    "ccn": "224040",
+    "city": "BOSTON",
+    "domain": null,
+    "name": "DR SOLOMON CARTER FULLER MENTAL HEALTH CENTER",
+    "npi": null,
+    "phone": "(617) 626-8700",
+    "state": "MA",
+    "zip": "02118"
   },
   "doctors center bayamon|pr": {
     "ccn": "400102",
@@ -13298,6 +13318,16 @@
     "phone": "(787) 622-5420",
     "state": "PR",
     "zip": "00960"
+  },
+  "doctors center de san juan|pr": {
+    "ccn": "400006",
+    "city": "SANTURCE",
+    "domain": null,
+    "name": "DOCTOR'S CENTER DE SAN JUAN",
+    "npi": null,
+    "phone": "(787) 723-2950",
+    "state": "PR",
+    "zip": "00909"
   },
   "doctors center hospital carolina llc|pr": {
     "ccn": "400132",
@@ -13559,37 +13589,7 @@
     "state": "PA",
     "zip": "18901"
   },
-  "dr dan c trigg memorial hospital|nm": {
-    "ccn": "321302",
-    "city": "TUCUMCARI",
-    "domain": null,
-    "name": "DR DAN C TRIGG MEMORIAL HOSPITAL",
-    "npi": null,
-    "phone": "(575) 461-7007",
-    "state": "NM",
-    "zip": "88401"
-  },
-  "dr john c corrigan mental health center|ma": {
-    "ccn": "224028",
-    "city": "FALL RIVER",
-    "domain": null,
-    "name": "DR JOHN C CORRIGAN MENTAL HEALTH CENTER",
-    "npi": null,
-    "phone": "(508) 235-7600",
-    "state": "MA",
-    "zip": "02720"
-  },
-  "dr solomon carter fuller mental health center|ma": {
-    "ccn": "224040",
-    "city": "BOSTON",
-    "domain": null,
-    "name": "DR SOLOMON CARTER FULLER MENTAL HEALTH CENTER",
-    "npi": null,
-    "phone": "(617) 626-8700",
-    "state": "MA",
-    "zip": "02118"
-  },
-  "driscoll children s hospital rio grande valley|tx": {
+  "driscoll childrens hospital rio grande valley|tx": {
     "ccn": "453321",
     "city": "EDINBURG",
     "domain": null,
@@ -14249,7 +14249,7 @@
     "state": "TX",
     "zip": "79902"
   },
-  "el paso children s hospital|tx": {
+  "el paso childrens hospital|tx": {
     "ccn": "453313",
     "city": "EL PASO",
     "domain": null,
@@ -14789,17 +14789,7 @@
     "state": "MN",
     "zip": "55705"
   },
-  "essentia health sandstone|mn": {
-    "ccn": "241309",
-    "city": "SANDSTONE",
-    "domain": null,
-    "name": "ESSENTIA HEALTH SANDSTONE",
-    "npi": null,
-    "phone": "(218) 786-1367",
-    "state": "MN",
-    "zip": "55072"
-  },
-  "essentia health st joseph s medical center|mn": {
+  "essentia health saint josephs medical center|mn": {
     "ccn": "240075",
     "city": "BRAINERD",
     "domain": null,
@@ -14809,7 +14799,17 @@
     "state": "MN",
     "zip": "56401"
   },
-  "essentia health st mary s medical center|mn": {
+  "essentia health saint marys detroit lakes|mn": {
+    "ccn": "240101",
+    "city": "DETROIT LAKES",
+    "domain": null,
+    "name": "ESSENTIA HEALTH ST MARYS - DETROIT LAKES",
+    "npi": null,
+    "phone": "(218) 847-0888",
+    "state": "MN",
+    "zip": "56501"
+  },
+  "essentia health saint marys medical center|mn": {
     "ccn": "240002",
     "city": "DULUTH",
     "domain": null,
@@ -14819,15 +14819,15 @@
     "state": "MN",
     "zip": "55805"
   },
-  "essentia health st marys detroit lakes|mn": {
-    "ccn": "240101",
-    "city": "DETROIT LAKES",
+  "essentia health sandstone|mn": {
+    "ccn": "241309",
+    "city": "SANDSTONE",
     "domain": null,
-    "name": "ESSENTIA HEALTH ST MARYS - DETROIT LAKES",
+    "name": "ESSENTIA HEALTH SANDSTONE",
     "npi": null,
-    "phone": "(218) 847-0888",
+    "phone": "(218) 786-1367",
     "state": "MN",
-    "zip": "56501"
+    "zip": "55072"
   },
   "essentia health virginia|mn": {
     "ccn": "240084",
@@ -15459,7 +15459,7 @@
     "state": "PR",
     "zip": "00739"
   },
-  "firsthealth montgomery memorial hosp|nc": {
+  "firsthealth montgomery memorial hospital|nc": {
     "ccn": "341303",
     "city": "TROY",
     "domain": null,
@@ -15499,7 +15499,7 @@
     "state": "OH",
     "zip": "44857"
   },
-  "fishermen s community hospital|fl": {
+  "fishermens community hospital|fl": {
     "ccn": "101312",
     "city": "MARATHON",
     "domain": null,
@@ -15859,7 +15859,7 @@
     "state": "MT",
     "zip": "59230"
   },
-  "franciscan children s hospital rehab center|ma": {
+  "franciscan childrens hospital rehab center|ma": {
     "ccn": "223300",
     "city": "BRIGHTON",
     "domain": null,
@@ -16299,7 +16299,7 @@
     "state": "MS",
     "zip": "39216"
   },
-  "g werber bryan psych hosp|sc": {
+  "g werber bryan psych hospital|sc": {
     "ccn": "424005",
     "city": "COLUMBIA",
     "domain": null,
@@ -16459,7 +16459,7 @@
     "state": "IL",
     "zip": "62040"
   },
-  "gateways hosp mental health ctr|ca": {
+  "gateways hospital mental health ctr|ca": {
     "ccn": "054028",
     "city": "LOS ANGELES",
     "domain": null,
@@ -16539,7 +16539,7 @@
     "state": "PA",
     "zip": "17822"
   },
-  "geisinger st luke s hospital|pa": {
+  "geisinger saint lukes hospital|pa": {
     "ccn": "390332",
     "city": "ORWIGSBURG",
     "domain": null,
@@ -16699,7 +16699,7 @@
     "state": "MS",
     "zip": "39452"
   },
-  "george washington univ hospital|dc": {
+  "george washington university hospital|dc": {
     "ccn": "090001",
     "city": "WASHINGTON",
     "domain": null,
@@ -16739,16 +16739,6 @@
     "state": "KY",
     "zip": "40324"
   },
-  "georgia regional hosp savannah|ga": {
-    "ccn": "114028",
-    "city": "SAVANNAH",
-    "domain": null,
-    "name": "GEORGIA REGIONAL HOSP SAVANNAH",
-    "npi": null,
-    "phone": "(912) 356-2045",
-    "state": "GA",
-    "zip": "31416"
-  },
   "georgia regional hospital atlanta|ga": {
     "ccn": "114019",
     "city": "DECATUR",
@@ -16758,6 +16748,16 @@
     "phone": "(404) 243-2100",
     "state": "GA",
     "zip": "30034"
+  },
+  "georgia regional hospital savannah|ga": {
+    "ccn": "114028",
+    "city": "SAVANNAH",
+    "domain": null,
+    "name": "GEORGIA REGIONAL HOSP SAVANNAH",
+    "npi": null,
+    "phone": "(912) 356-2045",
+    "state": "GA",
+    "zip": "31416"
   },
   "gettysburg hospital|pa": {
     "ccn": "390065",
@@ -16889,7 +16889,7 @@
     "state": "CA",
     "zip": "91206"
   },
-  "glendale mem hospital hlth center|ca": {
+  "glendale memorial hospital hlth center|ca": {
     "ccn": "050058",
     "city": "GLENDALE",
     "domain": null,
@@ -17209,7 +17209,7 @@
     "state": "TX",
     "zip": "79412"
   },
-  "gracie square hosp|ny": {
+  "gracie square hospital|ny": {
     "ccn": "334048",
     "city": "NEW YORK",
     "domain": null,
@@ -17699,7 +17699,7 @@
     "state": "OK",
     "zip": "73070"
   },
-  "grimes st joseph health center|tx": {
+  "grimes saint joseph health center|tx": {
     "ccn": "451322",
     "city": "NAVASOTA",
     "domain": null,
@@ -17909,7 +17909,7 @@
     "state": "IA",
     "zip": "52175"
   },
-  "gundersen st josephs hospital and clinics|wi": {
+  "gundersen saint josephs hospital and clinics|wi": {
     "ccn": "521304",
     "city": "HILLSBORO",
     "domain": null,
@@ -18029,7 +18029,7 @@
     "state": "AL",
     "zip": "36744"
   },
-  "hale ho ola hamakua|hi": {
+  "hale hoola hamakua|hi": {
     "ccn": "121307",
     "city": "HONOKAA",
     "domain": null,
@@ -19029,6 +19029,16 @@
     "state": "FL",
     "zip": "34972"
   },
+  "hca florida saint petersburg hospital|fl": {
+    "ccn": "100180",
+    "city": "SAINT PETERSBURG",
+    "domain": null,
+    "name": "HCA FLORIDA ST PETERSBURG HOSPITAL",
+    "npi": null,
+    "phone": "(727) 384-1414",
+    "state": "FL",
+    "zip": "33710"
+  },
   "hca florida sarasota doctors hospital|fl": {
     "ccn": "100166",
     "city": "SARASOTA",
@@ -19058,16 +19068,6 @@
     "phone": "(813) 873-6400",
     "state": "FL",
     "zip": "33609"
-  },
-  "hca florida st petersburg hospital|fl": {
-    "ccn": "100180",
-    "city": "SAINT PETERSBURG",
-    "domain": null,
-    "name": "HCA FLORIDA ST PETERSBURG HOSPITAL",
-    "npi": null,
-    "phone": "(727) 384-1414",
-    "state": "FL",
-    "zip": "33710"
   },
   "hca florida trinity hospital|fl": {
     "ccn": "100191",
@@ -19129,7 +19129,7 @@
     "state": "CO",
     "zip": "80229"
   },
-  "hca healthone presbyterian st lukes|co": {
+  "hca healthone presbyterian saint lukes|co": {
     "ccn": "060014",
     "city": "DENVER",
     "domain": null,
@@ -19259,7 +19259,7 @@
     "state": "NY",
     "zip": "12401"
   },
-  "healthbridge children s hospital orange|ca": {
+  "healthbridge childrens hospital orange|ca": {
     "ccn": "053308",
     "city": "ORANGE",
     "domain": null,
@@ -19269,7 +19269,7 @@
     "state": "CA",
     "zip": "92866"
   },
-  "healthbridge childrens s hospital of houston|tx": {
+  "healthbridge childrenss hospital of houston|tx": {
     "ccn": "453309",
     "city": "HOUSTON",
     "domain": null,
@@ -19599,7 +19599,7 @@
     "state": "MI",
     "zip": "48202"
   },
-  "henry ford health st john hospital|mi": {
+  "henry ford health saint john hospital|mi": {
     "ccn": "230165",
     "city": "DETROIT",
     "domain": null,
@@ -20139,7 +20139,7 @@
     "state": "VA",
     "zip": "23803"
   },
-  "hmhp st elizabeth boardman health center|oh": {
+  "hmhp saint elizabeth boardman health center|oh": {
     "ccn": "360276",
     "city": "BOARDMAN",
     "domain": null,
@@ -20489,7 +20489,7 @@
     "state": "AZ",
     "zip": "85260"
   },
-  "honorhealth scottsdale thompson peak med ctr|az": {
+  "honorhealth scottsdale thompson peak medical center|az": {
     "ccn": "030123",
     "city": "SCOTTSDALE",
     "domain": null,
@@ -20779,7 +20779,7 @@
     "state": "PR",
     "zip": "00683"
   },
-  "hospital metropolitano dr pila|pr": {
+  "hospital metropolitano doctor pila|pr": {
     "ccn": "400003",
     "city": "PONCE",
     "domain": null,
@@ -20789,7 +20789,7 @@
     "state": "PR",
     "zip": "00717"
   },
-  "hospital metropolitano dr susoni|pr": {
+  "hospital metropolitano doctor susoni|pr": {
     "ccn": "400117",
     "city": "ARECIBO",
     "domain": null,
@@ -20809,7 +20809,7 @@
     "state": "PR",
     "zip": "00623"
   },
-  "hospital of univ of pennsylvania|pa": {
+  "hospital of university of pennsylvania|pa": {
     "ccn": "390111",
     "city": "PHILADELPHIA",
     "domain": null,
@@ -20819,7 +20819,7 @@
     "state": "PA",
     "zip": "19104"
   },
-  "hospital oncologico dr isaac gonzalez martinez|pr": {
+  "hospital oncologico doctor isaac gonzalez martinez|pr": {
     "ccn": "400012",
     "city": "SAN JUAN",
     "domain": null,
@@ -20929,7 +20929,7 @@
     "state": "PR",
     "zip": "00927"
   },
-  "hospital universitario dr ruiz arnau|pr": {
+  "hospital universitario doctor ruiz arnau|pr": {
     "ccn": "400105",
     "city": "BAYAMON",
     "domain": null,
@@ -20939,7 +20939,7 @@
     "state": "PR",
     "zip": "00956"
   },
-  "hospital upr dr federico trilla|pr": {
+  "hospital upr doctor federico trilla|pr": {
     "ccn": "400112",
     "city": "CAROLINA",
     "domain": null,
@@ -21139,7 +21139,7 @@
     "state": "IL",
     "zip": "62246"
   },
-  "hshs st clare memorial hospital|wi": {
+  "hshs saint clare memorial hospital|wi": {
     "ccn": "521310",
     "city": "OCONTO FALLS",
     "domain": null,
@@ -21149,7 +21149,7 @@
     "state": "WI",
     "zip": "54154"
   },
-  "hshs st elizabeth s hospital|il": {
+  "hshs saint elizabeths hospital|il": {
     "ccn": "140187",
     "city": "O FALLON",
     "domain": null,
@@ -21889,6 +21889,26 @@
     "state": "CO",
     "zip": "80601"
   },
+  "intermountain health saint marys regional hospital|co": {
+    "ccn": "060023",
+    "city": "GRAND JUNCTION",
+    "domain": null,
+    "name": "INTERMOUNTAIN HEALTH ST. MARY'S REGIONAL HOSPITAL",
+    "npi": null,
+    "phone": "(970) 298-2260",
+    "state": "CO",
+    "zip": "81501"
+  },
+  "intermountain health saint vincent regional hospital|mt": {
+    "ccn": "270049",
+    "city": "BILLINGS",
+    "domain": null,
+    "name": "INTERMOUNTAIN HEALTH ST VINCENT REGIONAL HOSPITAL",
+    "npi": null,
+    "phone": "(406) 657-7000",
+    "state": "MT",
+    "zip": "59107"
+  },
   "intermountain health sanpete valley hospital|ut": {
     "ccn": "461303",
     "city": "MOUNT PLEASANT",
@@ -21908,26 +21928,6 @@
     "phone": "(385) 344-5000",
     "state": "UT",
     "zip": "84660"
-  },
-  "intermountain health st mary s regional hospital|co": {
-    "ccn": "060023",
-    "city": "GRAND JUNCTION",
-    "domain": null,
-    "name": "INTERMOUNTAIN HEALTH ST. MARY'S REGIONAL HOSPITAL",
-    "npi": null,
-    "phone": "(970) 298-2260",
-    "state": "CO",
-    "zip": "81501"
-  },
-  "intermountain health st vincent regional hospital|mt": {
-    "ccn": "270049",
-    "city": "BILLINGS",
-    "domain": null,
-    "name": "INTERMOUNTAIN HEALTH ST VINCENT REGIONAL HOSPITAL",
-    "npi": null,
-    "phone": "(406) 657-7000",
-    "state": "MT",
-    "zip": "59107"
   },
   "intermountain health utah valley hospital|ut": {
     "ccn": "460001",
@@ -22759,7 +22759,7 @@
     "state": "NY",
     "zip": "11777"
   },
-  "johns hopkins all children s hospital|fl": {
+  "johns hopkins all childrens hospital|fl": {
     "ccn": "103300",
     "city": "SAINT PETERSBURG",
     "domain": null,
@@ -22998,16 +22998,6 @@
     "phone": "(808) 293-6200",
     "state": "HI",
     "zip": "96731"
-  },
-  "kaiser foundation hosp so sacramento|ca": {
-    "ccn": "050674",
-    "city": "SACRAMENTO",
-    "domain": null,
-    "name": "KAISER FOUNDATION HOSP SO SACRAMENTO",
-    "npi": null,
-    "phone": "(916) 688-2000",
-    "state": "CA",
-    "zip": "95823"
   },
   "kaiser foundation hospital and rehab center|ca": {
     "ccn": "050073",
@@ -23248,6 +23238,16 @@
     "phone": "(707) 571-4000",
     "state": "CA",
     "zip": "95403"
+  },
+  "kaiser foundation hospital so sacramento|ca": {
+    "ccn": "050674",
+    "city": "SACRAMENTO",
+    "domain": null,
+    "name": "KAISER FOUNDATION HOSP SO SACRAMENTO",
+    "npi": null,
+    "phone": "(916) 688-2000",
+    "state": "CA",
+    "zip": "95823"
   },
   "kaiser foundation hospital south bay|ca": {
     "ccn": "050411",
@@ -23769,26 +23769,6 @@
     "state": "TX",
     "zip": "76849"
   },
-  "king s daughters medical center brookhaven|ms": {
-    "ccn": "250057",
-    "city": "BROOKHAVEN",
-    "domain": null,
-    "name": "KING'S DAUGHTERS MEDICAL CENTER-BROOKHAVEN",
-    "npi": null,
-    "phone": "(601) 833-6011",
-    "state": "MS",
-    "zip": "39601"
-  },
-  "king s daughters medical center|ky": {
-    "ccn": "180009",
-    "city": "ASHLAND",
-    "domain": null,
-    "name": "KING'S DAUGHTERS' MEDICAL CENTER",
-    "npi": null,
-    "phone": "(606) 408-4401",
-    "state": "KY",
-    "zip": "41101"
-  },
   "kingman healthcare center|ks": {
     "ccn": "171378",
     "city": "KINGMAN",
@@ -23819,6 +23799,16 @@
     "state": "NY",
     "zip": "11203"
   },
+  "kings daughters medical center brookhaven|ms": {
+    "ccn": "250057",
+    "city": "BROOKHAVEN",
+    "domain": null,
+    "name": "KING'S DAUGHTERS MEDICAL CENTER-BROOKHAVEN",
+    "npi": null,
+    "phone": "(601) 833-6011",
+    "state": "MS",
+    "zip": "39601"
+  },
   "kings daughters medical center ohio|oh": {
     "ccn": "360361",
     "city": "PORTSMOUTH",
@@ -23828,6 +23818,16 @@
     "phone": "(740) 991-4000",
     "state": "OH",
     "zip": "45662"
+  },
+  "kings daughters medical center|ky": {
+    "ccn": "180009",
+    "city": "ASHLAND",
+    "domain": null,
+    "name": "KING'S DAUGHTERS' MEDICAL CENTER",
+    "npi": null,
+    "phone": "(606) 408-4401",
+    "state": "KY",
+    "zip": "41101"
   },
   "kingsboro psychiatric hospital|ny": {
     "ccn": "334063",
@@ -24359,7 +24359,7 @@
     "state": "AL",
     "zip": "35565"
   },
-  "lakeland hospital st joseph|mi": {
+  "lakeland hospital saint joseph|mi": {
     "ccn": "230021",
     "city": "ST JOSEPH",
     "domain": null,
@@ -24409,7 +24409,7 @@
     "state": "FL",
     "zip": "33430"
   },
-  "lakeside women s hospital a member of integris he|ok": {
+  "lakeside womens hospital a member of integris he|ok": {
     "ccn": "370199",
     "city": "OKLAHOMA CITY",
     "domain": null,
@@ -24839,7 +24839,7 @@
     "state": "FL",
     "zip": "33901"
   },
-  "lee s summit medical center|mo": {
+  "lees summit medical center|mo": {
     "ccn": "260190",
     "city": "LEES SUMMIT",
     "domain": null,
@@ -25579,7 +25579,7 @@
     "state": "WV",
     "zip": "25601"
   },
-  "loma linda university children s hospital|ca": {
+  "loma linda university childrens hospital|ca": {
     "ccn": "050778",
     "city": "LOMA LINDA",
     "domain": null,
@@ -25879,7 +25879,7 @@
     "state": "NM",
     "zip": "87114"
   },
-  "lovelace women s hospital|nm": {
+  "lovelace womens hospital|nm": {
     "ccn": "320017",
     "city": "ALBUQUERQUE",
     "domain": null,
@@ -25969,7 +25969,7 @@
     "state": "IA",
     "zip": "50049"
   },
-  "lucile salter packard children s hsp at stanford|ca": {
+  "lucile salter packard childrens hsp at stanford|ca": {
     "ccn": "053305",
     "city": "PALO ALTO",
     "domain": null,
@@ -26059,6 +26059,16 @@
     "state": "MN",
     "zip": "55337"
   },
+  "m health fairview saint johns hospital|mn": {
+    "ccn": "240210",
+    "city": "MAPLEWOOD",
+    "domain": null,
+    "name": "M HEALTH FAIRVIEW ST JOHN'S HOSPITAL",
+    "npi": null,
+    "phone": "(651) 232-7000",
+    "state": "MN",
+    "zip": "55109"
+  },
   "m health fairview southdale hospital|mn": {
     "ccn": "240078",
     "city": "EDINA",
@@ -26068,16 +26078,6 @@
     "phone": "(952) 924-5000",
     "state": "MN",
     "zip": "55435"
-  },
-  "m health fairview st john s hospital|mn": {
-    "ccn": "240210",
-    "city": "MAPLEWOOD",
-    "domain": null,
-    "name": "M HEALTH FAIRVIEW ST JOHN'S HOSPITAL",
-    "npi": null,
-    "phone": "(651) 232-7000",
-    "state": "MN",
-    "zip": "55109"
   },
   "m health fairview university of mn medical center|mn": {
     "ccn": "240080",
@@ -26259,7 +26259,7 @@
     "state": "SD",
     "zip": "57042"
   },
-  "madison st joseph health center|tx": {
+  "madison saint joseph health center|tx": {
     "ccn": "451316",
     "city": "MADISONVILLE",
     "domain": null,
@@ -26509,7 +26509,7 @@
     "state": "FL",
     "zip": "34208"
   },
-  "manati medical center dr otero lopez|pr": {
+  "manati medical center doctor otero lopez|pr": {
     "ccn": "400114",
     "city": "MANATI",
     "domain": null,
@@ -26919,7 +26919,7 @@
     "state": "WI",
     "zip": "54449"
   },
-  "martha s vineyard hospital inc|ma": {
+  "marthas vineyard hospital inc|ma": {
     "ccn": "221300",
     "city": "OAK BLUFFS",
     "domain": null,
@@ -26979,7 +26979,7 @@
     "state": "KY",
     "zip": "41749"
   },
-  "mary bridge children s hospital|wa": {
+  "mary bridge childrens hospital|wa": {
     "ccn": "503301",
     "city": "TACOMA",
     "domain": null,
@@ -27179,7 +27179,7 @@
     "state": "TN",
     "zip": "38401"
   },
-  "mayaguez medical center dr ramon emeterio betances|pr": {
+  "mayaguez medical center doctor ramon emeterio betances|pr": {
     "ccn": "400103",
     "city": "MAYAGUEZ",
     "domain": null,
@@ -27339,7 +27339,7 @@
     "state": "WI",
     "zip": "54751"
   },
-  "mayo clinic health system st james|mn": {
+  "mayo clinic health system saint james|mn": {
     "ccn": "241333",
     "city": "ST JAMES",
     "domain": null,
@@ -28109,7 +28109,7 @@
     "state": "MD",
     "zip": "20832"
   },
-  "medstar saint mary s hospital|md": {
+  "medstar saint marys hospital|md": {
     "ccn": "210028",
     "city": "LEONARDTOWN",
     "domain": null,
@@ -28179,7 +28179,7 @@
     "state": "MA",
     "zip": "02176"
   },
-  "memorial care miller children s women s hosp lb|ca": {
+  "memorial care miller childrens womens hospital lb|ca": {
     "ccn": "053309",
     "city": "LONG BEACH",
     "domain": null,
@@ -28899,7 +28899,7 @@
     "state": "KY",
     "zip": "42003"
   },
-  "mercy health saint mary s|mi": {
+  "mercy health saint marys|mi": {
     "ccn": "230059",
     "city": "GRAND RAPIDS",
     "domain": null,
@@ -28909,7 +28909,7 @@
     "state": "MI",
     "zip": "49503"
   },
-  "mercy health st rita s medical center|oh": {
+  "mercy health saint ritas medical center|oh": {
     "ccn": "360066",
     "city": "LIMA",
     "domain": null,
@@ -29229,6 +29229,16 @@
     "state": "KS",
     "zip": "66762"
   },
+  "mercy hospital saint louis|mo": {
+    "ccn": "260020",
+    "city": "SAINT LOUIS",
+    "domain": null,
+    "name": "MERCY HOSPITAL ST LOUIS",
+    "npi": null,
+    "phone": "(314) 251-6000",
+    "state": "MO",
+    "zip": "63141"
+  },
   "mercy hospital southeast|mo": {
     "ccn": "260110",
     "city": "CAPE GIRARDEAU",
@@ -29258,16 +29268,6 @@
     "phone": "(417) 820-2000",
     "state": "MO",
     "zip": "65804"
-  },
-  "mercy hospital st louis|mo": {
-    "ccn": "260020",
-    "city": "SAINT LOUIS",
-    "domain": null,
-    "name": "MERCY HOSPITAL ST LOUIS",
-    "npi": null,
-    "phone": "(314) 251-6000",
-    "state": "MO",
-    "zip": "63141"
   },
   "mercy hospital stoddard|mo": {
     "ccn": "260160",
@@ -29369,7 +29369,7 @@
     "state": "IA",
     "zip": "50659"
   },
-  "mercy medical center of mt shasta|ca": {
+  "mercy medical center of mount shasta|ca": {
     "ccn": "051319",
     "city": "MOUNT SHASTA",
     "domain": null,
@@ -29469,6 +29469,26 @@
     "state": "OH",
     "zip": "44053"
   },
+  "mercy saint francis hospital|mo": {
+    "ccn": "261335",
+    "city": "MOUNTAIN VIEW",
+    "domain": null,
+    "name": "MERCY ST FRANCIS HOSPITAL",
+    "npi": null,
+    "phone": "(417) 934-7000",
+    "state": "MO",
+    "zip": "65548"
+  },
+  "mercy saint vincent medical center|oh": {
+    "ccn": "360112",
+    "city": "TOLEDO",
+    "domain": null,
+    "name": "MERCY ST VINCENT MEDICAL CENTER",
+    "npi": null,
+    "phone": "(419) 251-3232",
+    "state": "OH",
+    "zip": "43608"
+  },
   "mercy san juan medical center|ca": {
     "ccn": "050516",
     "city": "CARMICHAEL",
@@ -29488,26 +29508,6 @@
     "phone": "(620) 783-1732",
     "state": "KS",
     "zip": "66739"
-  },
-  "mercy st francis hospital|mo": {
-    "ccn": "261335",
-    "city": "MOUNTAIN VIEW",
-    "domain": null,
-    "name": "MERCY ST FRANCIS HOSPITAL",
-    "npi": null,
-    "phone": "(417) 934-7000",
-    "state": "MO",
-    "zip": "65548"
-  },
-  "mercy st vincent medical center|oh": {
-    "ccn": "360112",
-    "city": "TOLEDO",
-    "domain": null,
-    "name": "MERCY ST VINCENT MEDICAL CENTER",
-    "npi": null,
-    "phone": "(419) 251-3232",
-    "state": "OH",
-    "zip": "43608"
   },
   "mercy walworth hospital medical center|wi": {
     "ccn": "521357",
@@ -29699,7 +29699,7 @@
     "state": "MS",
     "zip": "39402"
   },
-  "merit health women s hospital|ms": {
+  "merit health womens hospital|ms": {
     "ccn": "250136",
     "city": "FLOWOOD",
     "domain": null,
@@ -30019,7 +30019,7 @@
     "state": "MA",
     "zip": "01701"
   },
-  "mh st joseph warren hospital|oh": {
+  "mh saint joseph warren hospital|oh": {
     "ccn": "360161",
     "city": "WARREN",
     "domain": null,
@@ -30809,7 +30809,7 @@
     "state": "NY",
     "zip": "10802"
   },
-  "montefiore st luke s cornwall|ny": {
+  "montefiore saint lukes cornwall|ny": {
     "ccn": "330264",
     "city": "NEWBURGH",
     "domain": null,
@@ -31049,7 +31049,7 @@
     "state": "FL",
     "zip": "34652"
   },
-  "mosaic life care at st joseph|mo": {
+  "mosaic life care at saint joseph|mo": {
     "ccn": "260006",
     "city": "SAINT JOSEPH",
     "domain": null,
@@ -31088,6 +31088,16 @@
     "phone": "(336) 832-7000",
     "state": "NC",
     "zip": "27401"
+  },
+  "mount ascutney hospital|vt": {
+    "ccn": "471302",
+    "city": "WINDSOR",
+    "domain": null,
+    "name": "MT ASCUTNEY HOSPITAL",
+    "npi": null,
+    "phone": "(802) 674-6711",
+    "state": "VT",
+    "zip": "05089"
   },
   "mount auburn hospital|ma": {
     "ccn": "220002",
@@ -31139,7 +31149,7 @@
     "state": "OH",
     "zip": "43054"
   },
-  "mount carmel st ann s|oh": {
+  "mount carmel saint anns|oh": {
     "ccn": "360012",
     "city": "WESTERVILLE",
     "domain": null,
@@ -31158,6 +31168,16 @@
     "phone": "(207) 288-5081",
     "state": "ME",
     "zip": "04609"
+  },
+  "mount graham regional medical center|az": {
+    "ccn": "031319",
+    "city": "SAFFORD",
+    "domain": null,
+    "name": "MT. GRAHAM REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(928) 348-4000",
+    "state": "AZ",
+    "zip": "85546"
   },
   "mount grant general hospital|nv": {
     "ccn": "291300",
@@ -31189,6 +31209,26 @@
     "state": "SC",
     "zip": "29466"
   },
+  "mount saint marys hospital health center|ny": {
+    "ccn": "330188",
+    "city": "LEWISTON",
+    "domain": null,
+    "name": "MOUNT ST. MARY'S HOSPITAL & HEALTH CENTER",
+    "npi": null,
+    "phone": "(716) 297-4800",
+    "state": "NY",
+    "zip": "14092"
+  },
+  "mount san rafael hospital|co": {
+    "ccn": "061321",
+    "city": "TRINIDAD",
+    "domain": null,
+    "name": "MT SAN RAFAEL HOSPITAL",
+    "npi": null,
+    "phone": "(719) 846-9213",
+    "state": "CO",
+    "zip": "81082"
+  },
   "mount sinai beth israel|ny": {
     "ccn": "330169",
     "city": "NEW YORK",
@@ -31198,6 +31238,16 @@
     "phone": "(212) 420-2000",
     "state": "NY",
     "zip": "10003"
+  },
+  "mount sinai hospital medical center|il": {
+    "ccn": "140018",
+    "city": "CHICAGO",
+    "domain": null,
+    "name": "MT SINAI HOSPITAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(773) 542-2000",
+    "state": "IL",
+    "zip": "60608"
   },
   "mount sinai hospital|ny": {
     "ccn": "330024",
@@ -31238,16 +31288,6 @@
     "phone": "(212) 523-4000",
     "state": "NY",
     "zip": "10019"
-  },
-  "mount st mary s hospital health center|ny": {
-    "ccn": "330188",
-    "city": "LEWISTON",
-    "domain": null,
-    "name": "MOUNT ST. MARY'S HOSPITAL & HEALTH CENTER",
-    "npi": null,
-    "phone": "(716) 297-4800",
-    "state": "NY",
-    "zip": "14092"
   },
   "mount washington pediatric hospital|md": {
     "ccn": "213300",
@@ -31388,46 +31428,6 @@
     "phone": "(601) 351-8000",
     "state": "MS",
     "zip": "39193"
-  },
-  "mt ascutney hospital|vt": {
-    "ccn": "471302",
-    "city": "WINDSOR",
-    "domain": null,
-    "name": "MT ASCUTNEY HOSPITAL",
-    "npi": null,
-    "phone": "(802) 674-6711",
-    "state": "VT",
-    "zip": "05089"
-  },
-  "mt graham regional medical center|az": {
-    "ccn": "031319",
-    "city": "SAFFORD",
-    "domain": null,
-    "name": "MT. GRAHAM REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(928) 348-4000",
-    "state": "AZ",
-    "zip": "85546"
-  },
-  "mt san rafael hospital|co": {
-    "ccn": "061321",
-    "city": "TRINIDAD",
-    "domain": null,
-    "name": "MT SAN RAFAEL HOSPITAL",
-    "npi": null,
-    "phone": "(719) 846-9213",
-    "state": "CO",
-    "zip": "81082"
-  },
-  "mt sinai hospital medical center|il": {
-    "ccn": "140018",
-    "city": "CHICAGO",
-    "domain": null,
-    "name": "MT SINAI HOSPITAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(773) 542-2000",
-    "state": "IL",
-    "zip": "60608"
   },
   "muenster memorial hospital|tx": {
     "ccn": "451335",
@@ -31829,7 +31829,7 @@
     "state": "AR",
     "zip": "71901"
   },
-  "nationwide children s hospital toledo llc|oh": {
+  "nationwide childrens hospital toledo llc|oh": {
     "ccn": "363309",
     "city": "TOLEDO",
     "domain": null,
@@ -31839,7 +31839,7 @@
     "state": "OH",
     "zip": "43608"
   },
-  "nationwide children s hospital|oh": {
+  "nationwide childrens hospital|oh": {
     "ccn": "363305",
     "city": "COLUMBUS",
     "domain": null,
@@ -31959,7 +31959,7 @@
     "state": "KS",
     "zip": "66538"
   },
-  "nemours children s hospital delaware|de": {
+  "nemours childrens hospital delaware|de": {
     "ccn": "083300",
     "city": "WILMINGTON",
     "domain": null,
@@ -32339,7 +32339,7 @@
     "state": "NY",
     "zip": "14437"
   },
-  "nicklaus children s hospital|fl": {
+  "nicklaus childrens hospital|fl": {
     "ccn": "103301",
     "city": "MIAMI",
     "domain": null,
@@ -33599,7 +33599,7 @@
     "state": "KY",
     "zip": "40202"
   },
-  "norton king s daughters health|in": {
+  "norton kings daughters health|in": {
     "ccn": "150069",
     "city": "MADISON",
     "domain": null,
@@ -33789,7 +33789,7 @@
     "state": "CA",
     "zip": "94945"
   },
-  "noxubee general critical access hosp|ms": {
+  "noxubee general critical access hospital|ms": {
     "ccn": "251307",
     "city": "MACON",
     "domain": null,
@@ -33848,16 +33848,6 @@
     "phone": "(212) 263-7300",
     "state": "NY",
     "zip": "10016"
-  },
-  "o connor hospital|ny": {
-    "ccn": "331305",
-    "city": "DELHI",
-    "domain": null,
-    "name": "O'CONNOR HOSPITAL",
-    "npi": null,
-    "phone": "(607) 746-0300",
-    "state": "NY",
-    "zip": "13753"
   },
   "o u medical center|ok": {
     "ccn": "370093",
@@ -34249,7 +34239,7 @@
     "state": "LA",
     "zip": "71202"
   },
-  "ochsner lsu health shreveport st mary medical cent|la": {
+  "ochsner lsu health shreveport saint mary medical cent|la": {
     "ccn": "190317",
     "city": "SHREVEPORT",
     "domain": null,
@@ -34319,17 +34309,7 @@
     "state": "MS",
     "zip": "39301"
   },
-  "ochsner scott regional|ms": {
-    "ccn": "251323",
-    "city": "MORTON",
-    "domain": null,
-    "name": "OCHSNER SCOTT REGIONAL",
-    "npi": null,
-    "phone": "(601) 732-6301",
-    "state": "MS",
-    "zip": "39117"
-  },
-  "ochsner st anne general hospital|la": {
+  "ochsner saint anne general hospital|la": {
     "ccn": "191324",
     "city": "RACELAND",
     "domain": null,
@@ -34339,7 +34319,7 @@
     "state": "LA",
     "zip": "70394"
   },
-  "ochsner st martin hospital|la": {
+  "ochsner saint martin hospital|la": {
     "ccn": "191302",
     "city": "BREAUX BRIDGE",
     "domain": null,
@@ -34349,7 +34329,7 @@
     "state": "LA",
     "zip": "70517"
   },
-  "ochsner st mary|la": {
+  "ochsner saint mary|la": {
     "ccn": "190014",
     "city": "MORGAN CITY",
     "domain": null,
@@ -34358,6 +34338,16 @@
     "phone": "(985) 384-2200",
     "state": "LA",
     "zip": "70380"
+  },
+  "ochsner scott regional|ms": {
+    "ccn": "251323",
+    "city": "MORTON",
+    "domain": null,
+    "name": "OCHSNER SCOTT REGIONAL",
+    "npi": null,
+    "phone": "(601) 732-6301",
+    "state": "MS",
+    "zip": "39117"
   },
   "ochsner stennis memorial hospital|ms": {
     "ccn": "251335",
@@ -34388,6 +34378,16 @@
     "phone": "(601) 776-6925",
     "state": "MS",
     "zip": "39355"
+  },
+  "oconnor hospital|ny": {
+    "ccn": "331305",
+    "city": "DELHI",
+    "domain": null,
+    "name": "O'CONNOR HOSPITAL",
+    "npi": null,
+    "phone": "(607) 746-0300",
+    "state": "NY",
+    "zip": "13753"
   },
   "oconomowoc memorial hospital|wi": {
     "ccn": "520062",
@@ -34499,7 +34499,7 @@
     "state": "OH",
     "zip": "43338"
   },
-  "ohiohealth o bleness hospital|oh": {
+  "ohiohealth obleness hospital|oh": {
     "ccn": "360014",
     "city": "ATHENS",
     "domain": null,
@@ -34839,6 +34839,16 @@
     "state": "FL",
     "zip": "32955"
   },
+  "orlando health saint cloud hospital|fl": {
+    "ccn": "100302",
+    "city": "SAINT CLOUD",
+    "domain": null,
+    "name": "ORLANDO HEALTH ST CLOUD HOSPITAL",
+    "npi": null,
+    "phone": "(407) 892-2135",
+    "state": "FL",
+    "zip": "34769"
+  },
   "orlando health sebastian river hospital|fl": {
     "ccn": "100217",
     "city": "SEBASTIAN",
@@ -34858,16 +34868,6 @@
     "phone": "(352) 394-4071",
     "state": "FL",
     "zip": "34711"
-  },
-  "orlando health st cloud hospital|fl": {
-    "ccn": "100302",
-    "city": "SAINT CLOUD",
-    "domain": null,
-    "name": "ORLANDO HEALTH ST CLOUD HOSPITAL",
-    "npi": null,
-    "phone": "(407) 892-2135",
-    "state": "FL",
-    "zip": "34769"
   },
   "orlando health|fl": {
     "ccn": "100006",
@@ -34909,7 +34909,7 @@
     "state": "CA",
     "zip": "95966"
   },
-  "orthocolorado hosp at st anthony med campus|co": {
+  "orthocolorado hospital at saint anthony med campus|co": {
     "ccn": "060124",
     "city": "LAKEWOOD",
     "domain": null,
@@ -35029,7 +35029,7 @@
     "state": "IL",
     "zip": "61832"
   },
-  "osf saint anthony s health center|il": {
+  "osf saint anthonys health center|il": {
     "ccn": "140052",
     "city": "ALTON",
     "domain": null,
@@ -35058,6 +35058,16 @@
     "phone": "(815) 433-3100",
     "state": "IL",
     "zip": "61350"
+  },
+  "osf saint francis hospital and medical group|mi": {
+    "ccn": "231337",
+    "city": "ESCANABA",
+    "domain": null,
+    "name": "OSF ST FRANCIS HOSPITAL AND MEDICAL GROUP",
+    "npi": null,
+    "phone": "(906) 786-3311",
+    "state": "MI",
+    "zip": "49829"
   },
   "osf saint katharine medical center|il": {
     "ccn": "140012",
@@ -35088,16 +35098,6 @@
     "phone": "(815) 539-7461",
     "state": "IL",
     "zip": "61342"
-  },
-  "osf st francis hospital and medical group|mi": {
-    "ccn": "231337",
-    "city": "ESCANABA",
-    "domain": null,
-    "name": "OSF ST FRANCIS HOSPITAL AND MEDICAL GROUP",
-    "npi": null,
-    "phone": "(906) 786-3311",
-    "state": "MI",
-    "zip": "49829"
   },
   "osmond general hospital|ne": {
     "ccn": "281347",
@@ -35259,7 +35259,7 @@
     "state": "WA",
     "zip": "98004"
   },
-  "overland park reg med ctr|ks": {
+  "overland park reg medical center|ks": {
     "ccn": "170176",
     "city": "OVERLAND PARK",
     "domain": null,
@@ -35369,7 +35369,7 @@
     "state": "MO",
     "zip": "65775"
   },
-  "p h s indian hosp at belcourt quentin n burdick|nd": {
+  "p h s indian hospital at belcourt quentin n burdick|nd": {
     "ccn": "350063",
     "city": "BELCOURT",
     "domain": null,
@@ -36139,6 +36139,16 @@
     "state": "WA",
     "zip": "98250"
   },
+  "peacehealth saint john medical center|wa": {
+    "ccn": "500041",
+    "city": "LONGVIEW",
+    "domain": null,
+    "name": "PEACEHEALTH ST JOHN MEDICAL CENTER",
+    "npi": null,
+    "phone": "(360) 414-2000",
+    "state": "WA",
+    "zip": "98632"
+  },
   "peacehealth southwest medical center|wa": {
     "ccn": "500050",
     "city": "VANCOUVER",
@@ -36148,16 +36158,6 @@
     "phone": "(360) 256-2000",
     "state": "WA",
     "zip": "98664"
-  },
-  "peacehealth st john medical center|wa": {
-    "ccn": "500041",
-    "city": "LONGVIEW",
-    "domain": null,
-    "name": "PEACEHEALTH ST JOHN MEDICAL CENTER",
-    "npi": null,
-    "phone": "(360) 414-2000",
-    "state": "WA",
-    "zip": "98632"
   },
   "peacehealth united general medical center|wa": {
     "ccn": "501329",
@@ -36409,7 +36409,7 @@
     "state": "PA",
     "zip": "17601"
   },
-  "penn state health st joseph|pa": {
+  "penn state health saint joseph|pa": {
     "ccn": "390096",
     "city": "READING",
     "domain": null,
@@ -36719,7 +36719,7 @@
     "state": "GA",
     "zip": "31791"
   },
-  "phoenix children s hospital|az": {
+  "phoenix childrens hospital|az": {
     "ccn": "033302",
     "city": "PHOENIX",
     "domain": null,
@@ -37359,7 +37359,7 @@
     "state": "VA",
     "zip": "23805"
   },
-  "port st lucie hospital|fl": {
+  "port saint lucie hospital|fl": {
     "ccn": "104070",
     "city": "PORT SAINT LUCIE",
     "domain": null,
@@ -37519,7 +37519,7 @@
     "state": "MN",
     "zip": "56531"
   },
-  "prairie st john s|nd": {
+  "prairie saint johns|nd": {
     "ccn": "354004",
     "city": "FARGO",
     "domain": null,
@@ -37609,6 +37609,16 @@
     "state": "IL",
     "zip": "60657"
   },
+  "presence saint marys hospital|il": {
+    "ccn": "140155",
+    "city": "KANKAKEE",
+    "domain": null,
+    "name": "PRESENCE ST MARYS HOSPITAL",
+    "npi": null,
+    "phone": "(815) 937-2490",
+    "state": "IL",
+    "zip": "60901"
+  },
   "presence saints mary and elizabeth medical center|il": {
     "ccn": "140180",
     "city": "CHICAGO",
@@ -37618,16 +37628,6 @@
     "phone": "(312) 770-2000",
     "state": "IL",
     "zip": "60622"
-  },
-  "presence st marys hospital|il": {
-    "ccn": "140155",
-    "city": "KANKAKEE",
-    "domain": null,
-    "name": "PRESENCE ST MARYS HOSPITAL",
-    "npi": null,
-    "phone": "(815) 937-2490",
-    "state": "IL",
-    "zip": "60901"
   },
   "presentation medical center|nd": {
     "ccn": "351316",
@@ -37659,7 +37659,7 @@
     "state": "LA",
     "zip": "70346"
   },
-  "primary children s hospital|ut": {
+  "primary childrens hospital|ut": {
     "ccn": "463301",
     "city": "SALT LAKE CITY",
     "domain": null,
@@ -37879,7 +37879,7 @@
     "state": "WA",
     "zip": "99350"
   },
-  "prov sacred hrt med ctr childs hosp|wa": {
+  "prov sacred hrt medical center childs hospital|wa": {
     "ccn": "500054",
     "city": "SPOKANE",
     "domain": null,
@@ -37959,7 +37959,7 @@
     "state": "AK",
     "zip": "99615"
   },
-  "providence little co of mary med ctr san pedro|ca": {
+  "providence little co of mary medical center san pedro|ca": {
     "ccn": "050078",
     "city": "SAN PEDRO",
     "domain": null,
@@ -37969,7 +37969,7 @@
     "state": "CA",
     "zip": "90732"
   },
-  "providence little company of mary med ctr torrance|ca": {
+  "providence little company of mary medical center torrance|ca": {
     "ccn": "050353",
     "city": "TORRANCE",
     "domain": null,
@@ -38089,6 +38089,36 @@
     "state": "WA",
     "zip": "98201"
   },
+  "providence saint joseph hospital|ca": {
+    "ccn": "050069",
+    "city": "ORANGE",
+    "domain": null,
+    "name": "PROVIDENCE ST. JOSEPH HOSPITAL",
+    "npi": null,
+    "phone": "(714) 633-9111",
+    "state": "CA",
+    "zip": "92868"
+  },
+  "providence saint joseph hospital|wa": {
+    "ccn": "501309",
+    "city": "CHEWELAH",
+    "domain": null,
+    "name": "PROVIDENCE ST JOSEPH HOSPITAL",
+    "npi": null,
+    "phone": "(509) 935-8211",
+    "state": "WA",
+    "zip": "99109"
+  },
+  "providence saint joseph medical center|mt": {
+    "ccn": "271343",
+    "city": "POLSON",
+    "domain": null,
+    "name": "PROVIDENCE ST JOSEPH MEDICAL CENTER",
+    "npi": null,
+    "phone": "(406) 883-5377",
+    "state": "MT",
+    "zip": "59860"
+  },
   "providence saint joseph medical ctr|ca": {
     "ccn": "050235",
     "city": "BURBANK",
@@ -38098,6 +38128,56 @@
     "phone": "(818) 843-5111",
     "state": "CA",
     "zip": "91505"
+  },
+  "providence saint jude medical center|ca": {
+    "ccn": "050168",
+    "city": "FULLERTON",
+    "domain": null,
+    "name": "PROVIDENCE ST. JUDE MEDICAL CENTER",
+    "npi": null,
+    "phone": "(714) 992-3000",
+    "state": "CA",
+    "zip": "92835"
+  },
+  "providence saint mary medical center|ca": {
+    "ccn": "050300",
+    "city": "APPLE VALLEY",
+    "domain": null,
+    "name": "PROVIDENCE ST MARY MEDICAL CENTER",
+    "npi": null,
+    "phone": "(760) 242-2311",
+    "state": "CA",
+    "zip": "92307"
+  },
+  "providence saint mary medical center|wa": {
+    "ccn": "500002",
+    "city": "WALLA WALLA",
+    "domain": null,
+    "name": "PROVIDENCE ST MARY MEDICAL CENTER",
+    "npi": null,
+    "phone": "(509) 522-5900",
+    "state": "WA",
+    "zip": "99362"
+  },
+  "providence saint peter hospital|wa": {
+    "ccn": "500024",
+    "city": "OLYMPIA",
+    "domain": null,
+    "name": "PROVIDENCE ST PETER HOSPITAL",
+    "npi": null,
+    "phone": "(360) 493-7179",
+    "state": "WA",
+    "zip": "98506"
+  },
+  "providence saint vincent medical center|or": {
+    "ccn": "380004",
+    "city": "PORTLAND",
+    "domain": null,
+    "name": "PROVIDENCE ST VINCENT MEDICAL CENTER",
+    "npi": null,
+    "phone": "(503) 216-1234",
+    "state": "OR",
+    "zip": "97225"
   },
   "providence santa rosa memorial hospital|ca": {
     "ccn": "050174",
@@ -38128,86 +38208,6 @@
     "phone": "(907) 224-5205",
     "state": "AK",
     "zip": "99664"
-  },
-  "providence st joseph hospital|ca": {
-    "ccn": "050069",
-    "city": "ORANGE",
-    "domain": null,
-    "name": "PROVIDENCE ST. JOSEPH HOSPITAL",
-    "npi": null,
-    "phone": "(714) 633-9111",
-    "state": "CA",
-    "zip": "92868"
-  },
-  "providence st joseph hospital|wa": {
-    "ccn": "501309",
-    "city": "CHEWELAH",
-    "domain": null,
-    "name": "PROVIDENCE ST JOSEPH HOSPITAL",
-    "npi": null,
-    "phone": "(509) 935-8211",
-    "state": "WA",
-    "zip": "99109"
-  },
-  "providence st joseph medical center|mt": {
-    "ccn": "271343",
-    "city": "POLSON",
-    "domain": null,
-    "name": "PROVIDENCE ST JOSEPH MEDICAL CENTER",
-    "npi": null,
-    "phone": "(406) 883-5377",
-    "state": "MT",
-    "zip": "59860"
-  },
-  "providence st jude medical center|ca": {
-    "ccn": "050168",
-    "city": "FULLERTON",
-    "domain": null,
-    "name": "PROVIDENCE ST. JUDE MEDICAL CENTER",
-    "npi": null,
-    "phone": "(714) 992-3000",
-    "state": "CA",
-    "zip": "92835"
-  },
-  "providence st mary medical center|ca": {
-    "ccn": "050300",
-    "city": "APPLE VALLEY",
-    "domain": null,
-    "name": "PROVIDENCE ST MARY MEDICAL CENTER",
-    "npi": null,
-    "phone": "(760) 242-2311",
-    "state": "CA",
-    "zip": "92307"
-  },
-  "providence st mary medical center|wa": {
-    "ccn": "500002",
-    "city": "WALLA WALLA",
-    "domain": null,
-    "name": "PROVIDENCE ST MARY MEDICAL CENTER",
-    "npi": null,
-    "phone": "(509) 522-5900",
-    "state": "WA",
-    "zip": "99362"
-  },
-  "providence st peter hospital|wa": {
-    "ccn": "500024",
-    "city": "OLYMPIA",
-    "domain": null,
-    "name": "PROVIDENCE ST PETER HOSPITAL",
-    "npi": null,
-    "phone": "(360) 493-7179",
-    "state": "WA",
-    "zip": "98506"
-  },
-  "providence st vincent medical center|or": {
-    "ccn": "380004",
-    "city": "PORTLAND",
-    "domain": null,
-    "name": "PROVIDENCE ST VINCENT MEDICAL CENTER",
-    "npi": null,
-    "phone": "(503) 216-1234",
-    "state": "OR",
-    "zip": "97225"
   },
   "providence va medical center|ri": {
     "ccn": "41005F",
@@ -38419,7 +38419,7 @@
     "state": "MS",
     "zip": "38646"
   },
-  "rady children s hospital san diego|ca": {
+  "rady childrens hospital san diego|ca": {
     "ccn": "053303",
     "city": "SAN DIEGO",
     "domain": null,
@@ -39199,7 +39199,7 @@
     "state": "KY",
     "zip": "42103"
   },
-  "river crest hosp|tx": {
+  "river crest hospital|tx": {
     "ccn": "454064",
     "city": "SAN ANGELO",
     "domain": null,
@@ -39269,16 +39269,6 @@
     "state": "FL",
     "zip": "32216"
   },
-  "river s edge hospital clinic|mn": {
-    "ccn": "241334",
-    "city": "ST PETER",
-    "domain": null,
-    "name": "RIVER'S EDGE HOSPITAL & CLINIC",
-    "npi": null,
-    "phone": "(507) 931-2200",
-    "state": "MN",
-    "zip": "56082"
-  },
   "river vista behavioral health|ca": {
     "ccn": "054160",
     "city": "MADERA",
@@ -39308,6 +39298,16 @@
     "phone": "(318) 757-6551",
     "state": "LA",
     "zip": "71334"
+  },
+  "rivers edge hospital clinic|mn": {
+    "ccn": "241334",
+    "city": "ST PETER",
+    "domain": null,
+    "name": "RIVER'S EDGE HOSPITAL & CLINIC",
+    "npi": null,
+    "phone": "(507) 931-2200",
+    "state": "MN",
+    "zip": "56082"
   },
   "rivers health|wv": {
     "ccn": "510012",
@@ -39649,7 +39649,7 @@
     "state": "DE",
     "zip": "19713"
   },
-  "rockland children s psychiatric center|ny": {
+  "rockland childrens psychiatric center|ny": {
     "ccn": "334066",
     "city": "ORANGEBURG",
     "domain": null,
@@ -39799,7 +39799,7 @@
     "state": "SC",
     "zip": "29401"
   },
-  "roper st francis hospital berkeley inc|sc": {
+  "roper saint francis hospital berkeley inc|sc": {
     "ccn": "420110",
     "city": "SUMMERVILLE",
     "domain": null,
@@ -39979,7 +39979,7 @@
     "state": "IL",
     "zip": "60612"
   },
-  "rusk state hosp|tx": {
+  "rusk state hospital|tx": {
     "ccn": "454009",
     "city": "RUSK",
     "domain": null,
@@ -40139,7 +40139,7 @@
     "state": "OR",
     "zip": "97477"
   },
-  "sagamore children s psychiatric center|ny": {
+  "sagamore childrens psychiatric center|ny": {
     "ccn": "334064",
     "city": "DIX HILLS",
     "domain": null,
@@ -40199,6 +40199,26 @@
     "state": "CA",
     "zip": "93720"
   },
+  "saint alexius medical center|il": {
+    "ccn": "140290",
+    "city": "HOFFMAN ESTATES",
+    "domain": null,
+    "name": "ST ALEXIUS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(847) 843-2000",
+    "state": "IL",
+    "zip": "60169"
+  },
+  "saint alphonsus medical center baker city|or": {
+    "ccn": "381315",
+    "city": "BAKER CITY",
+    "domain": null,
+    "name": "ST. ALPHONSUS MEDICAL CENTER - BAKER CITY",
+    "npi": null,
+    "phone": "(541) 523-6461",
+    "state": "OR",
+    "zip": "97814"
+  },
   "saint alphonsus medical center nampa|id": {
     "ccn": "130013",
     "city": "NAMPA",
@@ -40229,7 +40249,17 @@
     "state": "ID",
     "zip": "83706"
   },
-  "saint anne s hospital|ma": {
+  "saint andrews hospital|nd": {
+    "ccn": "351307",
+    "city": "BOTTINEAU",
+    "domain": null,
+    "name": "ST ANDREW'S HOSPITAL",
+    "npi": null,
+    "phone": "(701) 228-9300",
+    "state": "ND",
+    "zip": "58318"
+  },
+  "saint annes hospital|ma": {
     "ccn": "220020",
     "city": "FALL RIVER",
     "domain": null,
@@ -40238,6 +40268,16 @@
     "phone": "(508) 674-5600",
     "state": "MA",
     "zip": "02721"
+  },
+  "saint anthony community hospital|ny": {
+    "ccn": "330205",
+    "city": "WARWICK",
+    "domain": null,
+    "name": "ST ANTHONY COMMUNITY HOSPITAL",
+    "npi": null,
+    "phone": "(845) 986-2276",
+    "state": "NY",
+    "zip": "10990"
   },
   "saint anthony hospital|il": {
     "ccn": "140095",
@@ -40249,6 +40289,26 @@
     "state": "IL",
     "zip": "60623"
   },
+  "saint anthony hospital|or": {
+    "ccn": "381319",
+    "city": "PENDLETON",
+    "domain": null,
+    "name": "ST ANTHONY HOSPITAL",
+    "npi": null,
+    "phone": "(541) 276-5121",
+    "state": "OR",
+    "zip": "97801"
+  },
+  "saint anthony hospital|wa": {
+    "ccn": "500151",
+    "city": "GIG HARBOR",
+    "domain": null,
+    "name": "ST ANTHONY HOSPITAL",
+    "npi": null,
+    "phone": "(253) 530-2050",
+    "state": "WA",
+    "zip": "98332"
+  },
   "saint anthony medical center|il": {
     "ccn": "140233",
     "city": "ROCKFORD",
@@ -40258,6 +40318,46 @@
     "phone": "(815) 226-2000",
     "state": "IL",
     "zip": "61108"
+  },
+  "saint anthony regional hospital nursing home|ia": {
+    "ccn": "161382",
+    "city": "CARROLL",
+    "domain": null,
+    "name": "ST ANTHONY REGIONAL HOSPITAL & NURSING HOME",
+    "npi": null,
+    "phone": "(712) 792-3581",
+    "state": "IA",
+    "zip": "51401"
+  },
+  "saint anthony summit medical center|co": {
+    "ccn": "060118",
+    "city": "FRISCO",
+    "domain": null,
+    "name": "ST ANTHONY SUMMIT MEDICAL CENTER",
+    "npi": null,
+    "phone": "(970) 668-3300",
+    "state": "CO",
+    "zip": "80443"
+  },
+  "saint anthonys hospital|fl": {
+    "ccn": "100067",
+    "city": "SAINT PETERSBURG",
+    "domain": null,
+    "name": "ST ANTHONYS HOSPITAL",
+    "npi": null,
+    "phone": "(727) 825-1100",
+    "state": "FL",
+    "zip": "33705"
+  },
+  "saint anthonys memorial hospital|il": {
+    "ccn": "140032",
+    "city": "EFFINGHAM",
+    "domain": null,
+    "name": "ST ANTHONYS MEMORIAL HOSPITAL",
+    "npi": null,
+    "phone": "(217) 342-2121",
+    "state": "IL",
+    "zip": "62401"
   },
   "saint barnabas behavioral health center|nj": {
     "ccn": "314022",
@@ -40269,6 +40369,66 @@
     "state": "NJ",
     "zip": "08755"
   },
+  "saint barnabas hospital|ny": {
+    "ccn": "330399",
+    "city": "BRONX",
+    "domain": null,
+    "name": "ST BARNABAS HOSPITAL",
+    "npi": null,
+    "phone": "(212) 960-9000",
+    "state": "NY",
+    "zip": "10457"
+  },
+  "saint bernard hospital|il": {
+    "ccn": "140103",
+    "city": "CHICAGO",
+    "domain": null,
+    "name": "ST BERNARD HOSPITAL",
+    "npi": null,
+    "phone": "(773) 962-3900",
+    "state": "IL",
+    "zip": "60621"
+  },
+  "saint bernard parish hospital|la": {
+    "ccn": "190308",
+    "city": "CHALMETTE",
+    "domain": null,
+    "name": "ST BERNARD PARISH HOSPITAL",
+    "npi": null,
+    "phone": "(504) 826-9500",
+    "state": "LA",
+    "zip": "70043"
+  },
+  "saint bernardine medical center|ca": {
+    "ccn": "050129",
+    "city": "SAN BERNARDINO",
+    "domain": null,
+    "name": "ST BERNARDINE MEDICAL CENTER",
+    "npi": null,
+    "phone": "(909) 883-8711",
+    "state": "CA",
+    "zip": "92404"
+  },
+  "saint bernards five rivers medical center|ar": {
+    "ccn": "040779",
+    "city": "POCAHONTAS",
+    "domain": null,
+    "name": "ST BERNARDS FIVE RIVERS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(870) 892-6000",
+    "state": "AR",
+    "zip": "72455"
+  },
+  "saint bernards medical center|ar": {
+    "ccn": "040020",
+    "city": "JONESBORO",
+    "domain": null,
+    "name": "ST BERNARDS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(870) 972-4100",
+    "state": "AR",
+    "zip": "72401"
+  },
   "saint camillus medical center|tx": {
     "ccn": "670121",
     "city": "HURST",
@@ -40279,7 +40439,137 @@
     "state": "TX",
     "zip": "76054"
   },
-  "saint clare s hospital denville campus|nj": {
+  "saint catherine hospital garden city|ks": {
+    "ccn": "170023",
+    "city": "GARDEN CITY",
+    "domain": null,
+    "name": "ST. CATHERINE HOSPITAL - GARDEN CITY",
+    "npi": null,
+    "phone": "(620) 225-8400",
+    "state": "KS",
+    "zip": "67846"
+  },
+  "saint catherine hospital inc|in": {
+    "ccn": "150008",
+    "city": "EAST CHICAGO",
+    "domain": null,
+    "name": "ST CATHERINE HOSPITAL INC",
+    "npi": null,
+    "phone": "(219) 392-7004",
+    "state": "IN",
+    "zip": "46312"
+  },
+  "saint catherine of siena hospital|ny": {
+    "ccn": "330401",
+    "city": "SMITHTOWN",
+    "domain": null,
+    "name": "ST CATHERINE OF SIENA HOSPITAL",
+    "npi": null,
+    "phone": "(631) 862-3000",
+    "state": "NY",
+    "zip": "11787"
+  },
+  "saint charles hospital|ny": {
+    "ccn": "330246",
+    "city": "PORT JEFFERSON",
+    "domain": null,
+    "name": "ST CHARLES HOSPITAL",
+    "npi": null,
+    "phone": "(631) 474-6000",
+    "state": "NY",
+    "zip": "11777"
+  },
+  "saint charles madras|or": {
+    "ccn": "381324",
+    "city": "MADRAS",
+    "domain": null,
+    "name": "ST CHARLES MADRAS",
+    "npi": null,
+    "phone": "(541) 475-3882",
+    "state": "OR",
+    "zip": "97741"
+  },
+  "saint charles medical center bend|or": {
+    "ccn": "380047",
+    "city": "BEND",
+    "domain": null,
+    "name": "ST CHARLES MEDICAL CENTER - BEND",
+    "npi": null,
+    "phone": "(541) 382-4321",
+    "state": "OR",
+    "zip": "97701"
+  },
+  "saint charles medical center prineville|or": {
+    "ccn": "381313",
+    "city": "PRINEVILLE",
+    "domain": null,
+    "name": "ST CHARLES MEDICAL CENTER PRINEVILLE",
+    "npi": null,
+    "phone": "(541) 447-6254",
+    "state": "OR",
+    "zip": "97754"
+  },
+  "saint charles parish hospital|la": {
+    "ccn": "190079",
+    "city": "LULING",
+    "domain": null,
+    "name": "ST CHARLES PARISH HOSPITAL",
+    "npi": null,
+    "phone": "(985) 785-3644",
+    "state": "LA",
+    "zip": "70070"
+  },
+  "saint charles surgical hospital|la": {
+    "ccn": "190300",
+    "city": "NEW ORLEANS",
+    "domain": null,
+    "name": "ST CHARLES SURGICAL HOSPITAL",
+    "npi": null,
+    "phone": "(504) 529-6600",
+    "state": "LA",
+    "zip": "70130"
+  },
+  "saint christophers hospital for children|pa": {
+    "ccn": "393307",
+    "city": "PHILADELPHIA",
+    "domain": null,
+    "name": "ST CHRISTOPHER'S HOSPITAL FOR CHILDREN",
+    "npi": null,
+    "phone": "(215) 427-5000",
+    "state": "PA",
+    "zip": "19134"
+  },
+  "saint clair hospital|pa": {
+    "ccn": "390228",
+    "city": "PITTSBURGH",
+    "domain": null,
+    "name": "ST CLAIR HOSPITAL",
+    "npi": null,
+    "phone": "(412) 942-4000",
+    "state": "PA",
+    "zip": "15243"
+  },
+  "saint claire regional medical center|ky": {
+    "ccn": "180018",
+    "city": "MOREHEAD",
+    "domain": null,
+    "name": "ST CLAIRE REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(606) 783-6500",
+    "state": "KY",
+    "zip": "40351"
+  },
+  "saint clare hospital|wa": {
+    "ccn": "500021",
+    "city": "LAKEWOOD",
+    "domain": null,
+    "name": "ST CLARE HOSPITAL",
+    "npi": null,
+    "phone": "(253) 588-1711",
+    "state": "WA",
+    "zip": "98499"
+  },
+  "saint clares hospital denville campus|nj": {
     "ccn": "310050",
     "city": "DENVILLE",
     "domain": null,
@@ -40288,6 +40578,176 @@
     "phone": "(973) 983-5569",
     "state": "NJ",
     "zip": "07834"
+  },
+  "saint cloud hospital|mn": {
+    "ccn": "240036",
+    "city": "SAINT CLOUD",
+    "domain": null,
+    "name": "ST CLOUD HOSPITAL",
+    "npi": null,
+    "phone": "(320) 255-5661",
+    "state": "MN",
+    "zip": "56303"
+  },
+  "saint cloud va medical center|mn": {
+    "ccn": "24002F",
+    "city": "ST. CLOUD",
+    "domain": null,
+    "name": "ST CLOUD VA MEDICAL CENTER",
+    "npi": null,
+    "phone": "(320) 252-1670",
+    "state": "MN",
+    "zip": "56303"
+  },
+  "saint croix regional medical center|wi": {
+    "ccn": "521337",
+    "city": "SAINT CROIX FALLS",
+    "domain": null,
+    "name": "ST CROIX REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(715) 483-0247",
+    "state": "WI",
+    "zip": "54024"
+  },
+  "saint davids medical center|tx": {
+    "ccn": "450431",
+    "city": "AUSTIN",
+    "domain": null,
+    "name": "ST DAVID'S MEDICAL CENTER",
+    "npi": null,
+    "phone": "(512) 476-7111",
+    "state": "TX",
+    "zip": "78705"
+  },
+  "saint davids south austin medical center|tx": {
+    "ccn": "450713",
+    "city": "AUSTIN",
+    "domain": null,
+    "name": "ST DAVID'S SOUTH AUSTIN MEDICAL CENTER",
+    "npi": null,
+    "phone": "(512) 448-7107",
+    "state": "TX",
+    "zip": "78704"
+  },
+  "saint dominic jackson memorial hospital|ms": {
+    "ccn": "250048",
+    "city": "JACKSON",
+    "domain": null,
+    "name": "ST DOMINIC-JACKSON MEMORIAL HOSPITAL",
+    "npi": null,
+    "phone": "(601) 200-2000",
+    "state": "MS",
+    "zip": "39216"
+  },
+  "saint elizabeth community hospital|ca": {
+    "ccn": "050042",
+    "city": "RED BLUFF",
+    "domain": null,
+    "name": "ST ELIZABETH COMMUNITY HOSPITAL",
+    "npi": null,
+    "phone": "(530) 529-8000",
+    "state": "CA",
+    "zip": "96080"
+  },
+  "saint elizabeth dearborn hospital|in": {
+    "ccn": "150086",
+    "city": "LAWRENCEBURG",
+    "domain": null,
+    "name": "ST ELIZABETH DEARBORN HOSPITAL",
+    "npi": null,
+    "phone": "(812) 537-1010",
+    "state": "IN",
+    "zip": "47025"
+  },
+  "saint elizabeth edgewood|ky": {
+    "ccn": "180035",
+    "city": "EDGEWOOD",
+    "domain": null,
+    "name": "ST ELIZABETH EDGEWOOD",
+    "npi": null,
+    "phone": "(859) 301-2000",
+    "state": "KY",
+    "zip": "41017"
+  },
+  "saint elizabeth florence|ky": {
+    "ccn": "180045",
+    "city": "FLORENCE",
+    "domain": null,
+    "name": "ST ELIZABETH FLORENCE",
+    "npi": null,
+    "phone": "(859) 212-5220",
+    "state": "KY",
+    "zip": "41042"
+  },
+  "saint elizabeth ft thomas|ky": {
+    "ccn": "180001",
+    "city": "FORT THOMAS",
+    "domain": null,
+    "name": "ST ELIZABETH FT THOMAS",
+    "npi": null,
+    "phone": "(859) 572-3100",
+    "state": "KY",
+    "zip": "41075"
+  },
+  "saint elizabeth grant|ky": {
+    "ccn": "181311",
+    "city": "WILLIAMSTOWN",
+    "domain": null,
+    "name": "ST ELIZABETH GRANT",
+    "npi": null,
+    "phone": "(859) 824-8105",
+    "state": "KY",
+    "zip": "41097"
+  },
+  "saint elizabeth hospital|co": {
+    "ccn": "060044",
+    "city": "FORT MORGAN",
+    "domain": null,
+    "name": "ST ELIZABETH HOSPITAL",
+    "npi": null,
+    "phone": "(970) 867-3391",
+    "state": "CO",
+    "zip": "80701"
+  },
+  "saint elizabeth hospital|wa": {
+    "ccn": "501335",
+    "city": "ENUMCLAW",
+    "domain": null,
+    "name": "ST ELIZABETH HOSPITAL",
+    "npi": null,
+    "phone": "(360) 825-2505",
+    "state": "WA",
+    "zip": "98022"
+  },
+  "saint elizabeth medical center|mn": {
+    "ccn": "241335",
+    "city": "WABASHA",
+    "domain": null,
+    "name": "ST ELIZABETH MEDICAL CENTER",
+    "npi": null,
+    "phone": "(651) 565-4531",
+    "state": "MN",
+    "zip": "55981"
+  },
+  "saint elizabeth youngstown hospital|oh": {
+    "ccn": "360064",
+    "city": "YOUNGSTOWN",
+    "domain": null,
+    "name": "ST ELIZABETH YOUNGSTOWN HOSPITAL",
+    "npi": null,
+    "phone": "(330) 480-3022",
+    "state": "OH",
+    "zip": "44501"
+  },
+  "saint elizabeths hospital|dc": {
+    "ccn": "094001",
+    "city": "WASHINGTON",
+    "domain": null,
+    "name": "ST ELIZABETHS HOSPITAL",
+    "npi": null,
+    "phone": "(202) 299-5500",
+    "state": "DC",
+    "zip": "20032"
   },
   "saint francis bartlett medical center|tn": {
     "ccn": "440228",
@@ -40298,6 +40758,36 @@
     "phone": "(901) 820-7050",
     "state": "TN",
     "zip": "38133"
+  },
+  "saint francis community hospital|wa": {
+    "ccn": "500141",
+    "city": "FEDERAL WAY",
+    "domain": null,
+    "name": "ST FRANCIS COMMUNITY HOSPITAL",
+    "npi": null,
+    "phone": "(253) 944-8100",
+    "state": "WA",
+    "zip": "98003"
+  },
+  "saint francis downtown|sc": {
+    "ccn": "420023",
+    "city": "GREENVILLE",
+    "domain": null,
+    "name": "ST FRANCIS-DOWNTOWN",
+    "npi": null,
+    "phone": "(800) 805-5678",
+    "state": "SC",
+    "zip": "29601"
+  },
+  "saint francis hospital emory healthcare|ga": {
+    "ccn": "110129",
+    "city": "COLUMBUS",
+    "domain": null,
+    "name": "ST FRANCIS HOSPITAL- EMORY HEALTHCARE",
+    "npi": null,
+    "phone": "(706) 596-4020",
+    "state": "GA",
+    "zip": "31995"
   },
   "saint francis hospital evanston|il": {
     "ccn": "140080",
@@ -40319,6 +40809,26 @@
     "state": "OK",
     "zip": "74136"
   },
+  "saint francis hospital interquest|co": {
+    "ccn": "060133",
+    "city": "COLORADO SPRINGS",
+    "domain": null,
+    "name": "ST FRANCIS HOSPITAL - INTERQUEST",
+    "npi": null,
+    "phone": "(719) 757-7000",
+    "state": "CO",
+    "zip": "80921"
+  },
+  "saint francis hospital medical center|ct": {
+    "ccn": "070002",
+    "city": "HARTFORD",
+    "domain": null,
+    "name": "ST FRANCIS HOSPITAL & MEDICAL CENTER",
+    "npi": null,
+    "phone": "(860) 714-5541",
+    "state": "CT",
+    "zip": "06105"
+  },
   "saint francis hospital muskogee|ok": {
     "ccn": "370025",
     "city": "MUSKOGEE",
@@ -40339,6 +40849,16 @@
     "state": "OK",
     "zip": "74133"
   },
+  "saint francis hospital the heart center|ny": {
+    "ccn": "330182",
+    "city": "ROSLYN",
+    "domain": null,
+    "name": "ST FRANCIS HOSPITAL - THE HEART CENTER",
+    "npi": null,
+    "phone": "(516) 562-6000",
+    "state": "NY",
+    "zip": "11576"
+  },
   "saint francis hospital vinita inc|ok": {
     "ccn": "370237",
     "city": "VINITA",
@@ -40348,6 +40868,36 @@
     "phone": "(918) 256-7551",
     "state": "OK",
     "zip": "74301"
+  },
+  "saint francis hospital|de": {
+    "ccn": "080003",
+    "city": "WILMINGTON",
+    "domain": null,
+    "name": "ST FRANCIS HOSPITAL",
+    "npi": null,
+    "phone": "(302) 421-4100",
+    "state": "DE",
+    "zip": "19805"
+  },
+  "saint francis hospital|il": {
+    "ccn": "141350",
+    "city": "LITCHFIELD",
+    "domain": null,
+    "name": "ST FRANCIS HOSPITAL",
+    "npi": null,
+    "phone": "(217) 324-2191",
+    "state": "IL",
+    "zip": "62056"
+  },
+  "saint francis hospital|tn": {
+    "ccn": "440183",
+    "city": "MEMPHIS",
+    "domain": null,
+    "name": "ST FRANCIS HOSPITAL",
+    "npi": null,
+    "phone": "(901) 765-1000",
+    "state": "TN",
+    "zip": "38119"
   },
   "saint francis medical center|ca": {
     "ccn": "050104",
@@ -40369,6 +40919,26 @@
     "state": "IL",
     "zip": "61637"
   },
+  "saint francis medical center|la": {
+    "ccn": "190125",
+    "city": "MONROE",
+    "domain": null,
+    "name": "ST FRANCIS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(318) 966-4000",
+    "state": "LA",
+    "zip": "71201"
+  },
+  "saint francis medical center|mn": {
+    "ccn": "241377",
+    "city": "BRECKENRIDGE",
+    "domain": null,
+    "name": "ST FRANCIS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(218) 643-3000",
+    "state": "MN",
+    "zip": "56520"
+  },
   "saint francis medical center|mo": {
     "ccn": "260183",
     "city": "CAPE GIRARDEAU",
@@ -40378,6 +40948,66 @@
     "phone": "(573) 331-3000",
     "state": "MO",
     "zip": "63703"
+  },
+  "saint francis memorial hospital|ne": {
+    "ccn": "281322",
+    "city": "WEST POINT",
+    "domain": null,
+    "name": "ST FRANCIS MEMORIAL HOSPITAL",
+    "npi": null,
+    "phone": "(402) 372-2404",
+    "state": "NE",
+    "zip": "68788"
+  },
+  "saint francis regional medical center|mn": {
+    "ccn": "240104",
+    "city": "SHAKOPEE",
+    "domain": null,
+    "name": "ST FRANCIS REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(952) 428-3000",
+    "state": "MN",
+    "zip": "55379"
+  },
+  "saint gabriels hospital|mn": {
+    "ccn": "241370",
+    "city": "LITTLE FALLS",
+    "domain": null,
+    "name": "ST GABRIELS HOSPITAL",
+    "npi": null,
+    "phone": "(320) 632-5441",
+    "state": "MN",
+    "zip": "56345"
+  },
+  "saint george regional hospital|ut": {
+    "ccn": "460021",
+    "city": "ST GEORGE",
+    "domain": null,
+    "name": "ST. GEORGE REGIONAL HOSPITAL",
+    "npi": null,
+    "phone": "(435) 251-2100",
+    "state": "UT",
+    "zip": "84790"
+  },
+  "saint helena parish hospital|la": {
+    "ccn": "191300",
+    "city": "GREENSBURG",
+    "domain": null,
+    "name": "ST HELENA PARISH HOSPITAL",
+    "npi": null,
+    "phone": "(225) 222-6111",
+    "state": "LA",
+    "zip": "70441"
+  },
+  "saint james behavioral health hospital inc|la": {
+    "ccn": "194088",
+    "city": "GONZALES",
+    "domain": null,
+    "name": "ST JAMES BEHAVIORAL HEALTH HOSPITAL, INC",
+    "npi": null,
+    "phone": "(225) 647-7524",
+    "state": "LA",
+    "zip": "70737"
   },
   "saint james hospital|il": {
     "ccn": "140161",
@@ -40389,6 +41019,46 @@
     "state": "IL",
     "zip": "61764"
   },
+  "saint james hospital|mt": {
+    "ccn": "270017",
+    "city": "BUTTE",
+    "domain": null,
+    "name": "ST JAMES HOSPITAL",
+    "npi": null,
+    "phone": "(406) 723-2500",
+    "state": "MT",
+    "zip": "59701"
+  },
+  "saint james hospital|ny": {
+    "ccn": "330151",
+    "city": "HORNELL",
+    "domain": null,
+    "name": "ST JAMES HOSPITAL",
+    "npi": null,
+    "phone": "(607) 324-8000",
+    "state": "NY",
+    "zip": "14843"
+  },
+  "saint james parish hospital|la": {
+    "ccn": "191305",
+    "city": "LUTCHER",
+    "domain": null,
+    "name": "ST JAMES PARISH HOSPITAL",
+    "npi": null,
+    "phone": "(225) 869-5512",
+    "state": "LA",
+    "zip": "70071"
+  },
+  "saint joe mercy hospital system livonia|mi": {
+    "ccn": "230002",
+    "city": "LIVONIA",
+    "domain": null,
+    "name": "ST JOE MERCY HOSPITAL SYSTEM LIVONIA",
+    "npi": null,
+    "phone": "(734) 655-4800",
+    "state": "MI",
+    "zip": "48154"
+  },
   "saint john hospital|ks": {
     "ccn": "170009",
     "city": "LEAVENWORTH",
@@ -40399,7 +41069,27 @@
     "state": "KS",
     "zip": "66048"
   },
-  "saint john s health center|ca": {
+  "saint john owasso|ok": {
+    "ccn": "370227",
+    "city": "OWASSO",
+    "domain": null,
+    "name": "ST JOHN OWASSO",
+    "npi": null,
+    "phone": "(918) 274-5100",
+    "state": "OK",
+    "zip": "74055"
+  },
+  "saint johns episcopal hospital at south shore|ny": {
+    "ccn": "330395",
+    "city": "FAR ROCKAWAY",
+    "domain": null,
+    "name": "ST JOHN'S EPISCOPAL HOSPITAL AT SOUTH SHORE",
+    "npi": null,
+    "phone": "(718) 869-7000",
+    "state": "NY",
+    "zip": "11691"
+  },
+  "saint johns health center|ca": {
     "ccn": "050290",
     "city": "SANTA MONICA",
     "domain": null,
@@ -40408,6 +41098,46 @@
     "phone": "(310) 829-5511",
     "state": "CA",
     "zip": "90404"
+  },
+  "saint johns hospital|il": {
+    "ccn": "140053",
+    "city": "SPRINGFIELD",
+    "domain": null,
+    "name": "ST JOHNS HOSPITAL",
+    "npi": null,
+    "phone": "(217) 544-6464",
+    "state": "IL",
+    "zip": "62769"
+  },
+  "saint johns medical center|wy": {
+    "ccn": "530015",
+    "city": "JACKSON",
+    "domain": null,
+    "name": "ST JOHNS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(307) 733-3636",
+    "state": "WY",
+    "zip": "83001"
+  },
+  "saint johns regional medical center|ca": {
+    "ccn": "050082",
+    "city": "OXNARD",
+    "domain": null,
+    "name": "ST JOHNS REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(805) 988-2500",
+    "state": "CA",
+    "zip": "93030"
+  },
+  "saint johns riverside hospital|ny": {
+    "ccn": "330208",
+    "city": "YONKERS",
+    "domain": null,
+    "name": "ST JOHN'S RIVERSIDE HOSPITAL",
+    "npi": null,
+    "phone": "(914) 964-4444",
+    "state": "NY",
+    "zip": "10701"
   },
   "saint joseph east|ky": {
     "ccn": "180143",
@@ -40418,6 +41148,16 @@
     "phone": "(859) 967-5000",
     "state": "KY",
     "zip": "40509"
+  },
+  "saint joseph health system llc|in": {
+    "ccn": "150047",
+    "city": "FORT WAYNE",
+    "domain": null,
+    "name": "ST JOSEPH HEALTH SYSTEM, LLC",
+    "npi": null,
+    "phone": "(260) 425-3000",
+    "state": "IN",
+    "zip": "46802"
   },
   "saint joseph hospital elgin|il": {
     "ccn": "140217",
@@ -40449,6 +41189,36 @@
     "state": "KY",
     "zip": "40504"
   },
+  "saint joseph hospital|me": {
+    "ccn": "200001",
+    "city": "BANGOR",
+    "domain": null,
+    "name": "ST JOSEPH HOSPITAL",
+    "npi": null,
+    "phone": "(207) 262-1000",
+    "state": "ME",
+    "zip": "04401"
+  },
+  "saint joseph hospital|nh": {
+    "ccn": "300011",
+    "city": "NASHUA",
+    "domain": null,
+    "name": "ST JOSEPH HOSPITAL",
+    "npi": null,
+    "phone": "(603) 882-3000",
+    "state": "NH",
+    "zip": "03060"
+  },
+  "saint joseph hospital|wa": {
+    "ccn": "500030",
+    "city": "BELLINGHAM",
+    "domain": null,
+    "name": "ST JOSEPH HOSPITAL",
+    "npi": null,
+    "phone": "(360) 734-5400",
+    "state": "WA",
+    "zip": "98225"
+  },
   "saint joseph london|ky": {
     "ccn": "180011",
     "city": "LONDON",
@@ -40460,14 +41230,54 @@
     "zip": "40741"
   },
   "saint joseph medical center|il": {
-    "ccn": "140007",
-    "city": "JOLIET",
+    "ccn": "140162",
+    "city": "BLOOMINGTON",
     "domain": null,
-    "name": "SAINT JOSEPH MEDICAL CENTER",
+    "name": "ST JOSEPH MEDICAL CENTER",
     "npi": null,
-    "phone": "(815) 725-7133",
+    "phone": "(309) 662-3311",
     "state": "IL",
-    "zip": "60435"
+    "zip": "61701"
+  },
+  "saint joseph medical center|mo": {
+    "ccn": "260085",
+    "city": "KANSAS CITY",
+    "domain": null,
+    "name": "ST JOSEPH MEDICAL CENTER",
+    "npi": null,
+    "phone": "(816) 942-4400",
+    "state": "MO",
+    "zip": "64114"
+  },
+  "saint joseph medical center|tx": {
+    "ccn": "450035",
+    "city": "HOUSTON",
+    "domain": null,
+    "name": "ST JOSEPH MEDICAL CENTER",
+    "npi": null,
+    "phone": "(713) 757-1000",
+    "state": "TX",
+    "zip": "77002"
+  },
+  "saint joseph medical center|wa": {
+    "ccn": "500108",
+    "city": "TACOMA",
+    "domain": null,
+    "name": "ST JOSEPH MEDICAL CENTER",
+    "npi": null,
+    "phone": "(253) 627-4101",
+    "state": "WA",
+    "zip": "98405"
+  },
+  "saint joseph memorial hospital|il": {
+    "ccn": "141334",
+    "city": "MURPHYSBORO",
+    "domain": null,
+    "name": "ST JOSEPH MEMORIAL HOSPITAL",
+    "npi": null,
+    "phone": "(618) 684-3156",
+    "state": "IL",
+    "zip": "62966"
   },
   "saint joseph mount sterling|ky": {
     "ccn": "180064",
@@ -40489,6 +41299,16 @@
     "state": "IN",
     "zip": "46563"
   },
+  "saint joseph regional medical center|id": {
+    "ccn": "130003",
+    "city": "LEWISTON",
+    "domain": null,
+    "name": "ST JOSEPH REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(208) 799-5300",
+    "state": "ID",
+    "zip": "83501"
+  },
   "saint joseph regional medical center|in": {
     "ccn": "150012",
     "city": "MISHAWAKA",
@@ -40499,7 +41319,57 @@
     "state": "IN",
     "zip": "46545"
   },
-  "saint joseph s hospital of atlanta inc|ga": {
+  "saint josephs area health services|mn": {
+    "ccn": "241380",
+    "city": "PARK RAPIDS",
+    "domain": null,
+    "name": "ST JOSEPHS AREA  HEALTH SERVICES",
+    "npi": null,
+    "phone": "(218) 732-3311",
+    "state": "MN",
+    "zip": "56470"
+  },
+  "saint josephs behavioral health center|ca": {
+    "ccn": "054123",
+    "city": "STOCKTON",
+    "domain": null,
+    "name": "ST JOSEPH'S BEHAVIORAL HEALTH CENTER",
+    "npi": null,
+    "phone": "(209) 461-2000",
+    "state": "CA",
+    "zip": "95204"
+  },
+  "saint josephs community hospital west bend|wi": {
+    "ccn": "520063",
+    "city": "WEST BEND",
+    "domain": null,
+    "name": "ST JOSEPHS COMMUNITY HOSPITAL WEST BEND",
+    "npi": null,
+    "phone": "(262) 334-5533",
+    "state": "WI",
+    "zip": "53095"
+  },
+  "saint josephs hospital and medical center|az": {
+    "ccn": "030024",
+    "city": "PHOENIX",
+    "domain": null,
+    "name": "ST JOSEPHS HOSPITAL AND MEDICAL CENTER",
+    "npi": null,
+    "phone": "(602) 406-8225",
+    "state": "AZ",
+    "zip": "85013"
+  },
+  "saint josephs hospital health center|ny": {
+    "ccn": "330140",
+    "city": "SYRACUSE",
+    "domain": null,
+    "name": "ST JOSEPH'S HOSPITAL HEALTH CENTER",
+    "npi": null,
+    "phone": "(315) 448-5111",
+    "state": "NY",
+    "zip": "13203"
+  },
+  "saint josephs hospital of atlanta inc|ga": {
     "ccn": "110082",
     "city": "ATLANTA",
     "domain": null,
@@ -40509,7 +41379,177 @@
     "state": "GA",
     "zip": "30342"
   },
-  "saint luke s east hospital|mo": {
+  "saint josephs hospital of buckhannon inc|wv": {
+    "ccn": "511321",
+    "city": "BUCKHANNON",
+    "domain": null,
+    "name": "ST JOSEPH'S HOSPITAL OF BUCKHANNON, INC",
+    "npi": null,
+    "phone": "(304) 472-2000",
+    "state": "WV",
+    "zip": "26201"
+  },
+  "saint josephs hospital savannah|ga": {
+    "ccn": "110043",
+    "city": "SAVANNAH",
+    "domain": null,
+    "name": "ST JOSEPH'S HOSPITAL - SAVANNAH",
+    "npi": null,
+    "phone": "(912) 819-4100",
+    "state": "GA",
+    "zip": "31419"
+  },
+  "saint josephs hospital|az": {
+    "ccn": "030011",
+    "city": "TUCSON",
+    "domain": null,
+    "name": "ST JOSEPH'S HOSPITAL",
+    "npi": null,
+    "phone": "(520) 873-3000",
+    "state": "AZ",
+    "zip": "85711"
+  },
+  "saint josephs hospital|fl": {
+    "ccn": "100075",
+    "city": "TAMPA",
+    "domain": null,
+    "name": "ST JOSEPHS HOSPITAL",
+    "npi": null,
+    "phone": "(813) 870-4398",
+    "state": "FL",
+    "zip": "33607"
+  },
+  "saint josephs hospital|il": {
+    "ccn": "141336",
+    "city": "HIGHLAND",
+    "domain": null,
+    "name": "ST JOSEPH'S HOSPITAL",
+    "npi": null,
+    "phone": "(618) 651-2600",
+    "state": "IL",
+    "zip": "62249"
+  },
+  "saint josephs medical center of stockton|ca": {
+    "ccn": "050084",
+    "city": "STOCKTON",
+    "domain": null,
+    "name": "ST JOSEPH'S MEDICAL CENTER OF STOCKTON",
+    "npi": null,
+    "phone": "(209) 943-2000",
+    "state": "CA",
+    "zip": "95204"
+  },
+  "saint josephs medical center|ny": {
+    "ccn": "330006",
+    "city": "YONKERS",
+    "domain": null,
+    "name": "ST JOSEPH'S MEDICAL CENTER",
+    "npi": null,
+    "phone": "(914) 378-7000",
+    "state": "NY",
+    "zip": "10701"
+  },
+  "saint josephs university medical center inc|nj": {
+    "ccn": "310019",
+    "city": "PATERSON",
+    "domain": null,
+    "name": "ST JOSEPH'S UNIVERSITY MEDICAL CENTER INC",
+    "npi": null,
+    "phone": "(973) 754-2010",
+    "state": "NJ",
+    "zip": "07503"
+  },
+  "saint jude childrens research hospital|tn": {
+    "ccn": "443302",
+    "city": "MEMPHIS",
+    "domain": null,
+    "name": "ST JUDE CHILDRENS RESEARCH HOSPITAL",
+    "npi": null,
+    "phone": "(901) 495-3300",
+    "state": "TN",
+    "zip": "38105"
+  },
+  "saint lawrence psychiatric center|ny": {
+    "ccn": "334003",
+    "city": "OGDENSBURG",
+    "domain": null,
+    "name": "ST LAWRENCE PSYCHIATRIC CENTER",
+    "npi": null,
+    "phone": "(315) 541-2071",
+    "state": "NY",
+    "zip": "13669"
+  },
+  "saint louis childrens hospital|mo": {
+    "ccn": "263301",
+    "city": "SAINT LOUIS",
+    "domain": null,
+    "name": "ST LOUIS CHILDRENS HOSPITAL",
+    "npi": null,
+    "phone": "(314) 454-6000",
+    "state": "MO",
+    "zip": "63110"
+  },
+  "saint louis forensic treatment center|mo": {
+    "ccn": "264010",
+    "city": "SAINT LOUIS",
+    "domain": null,
+    "name": "ST LOUIS FORENSIC TREATMENT CENTER",
+    "npi": null,
+    "phone": "(314) 644-8000",
+    "state": "MO",
+    "zip": "63139"
+  },
+  "saint louis john cochran va medical center|mo": {
+    "ccn": "26009F",
+    "city": "ST. LOUIS",
+    "domain": null,
+    "name": "ST LOUIS-JOHN COCHRAN VA MEDICAL CENTER",
+    "npi": null,
+    "phone": "(314) 652-4100",
+    "state": "MO",
+    "zip": "63106"
+  },
+  "saint lucie medical center|fl": {
+    "ccn": "100260",
+    "city": "PORT SAINT LUCIE",
+    "domain": null,
+    "name": "ST LUCIE MEDICAL CENTER",
+    "npi": null,
+    "phone": "(772) 335-4000",
+    "state": "FL",
+    "zip": "34952"
+  },
+  "saint luke community hospital|mt": {
+    "ccn": "271325",
+    "city": "RONAN",
+    "domain": null,
+    "name": "ST LUKE COMMUNITY HOSPITAL",
+    "npi": null,
+    "phone": "(406) 676-4441",
+    "state": "MT",
+    "zip": "59864"
+  },
+  "saint luke hospital living center|ks": {
+    "ccn": "171356",
+    "city": "MARION",
+    "domain": null,
+    "name": "ST LUKE HOSPITAL & LIVING CENTER",
+    "npi": null,
+    "phone": "(620) 382-2177",
+    "state": "KS",
+    "zip": "66861"
+  },
+  "saint lukes des peres hospital|mo": {
+    "ccn": "260176",
+    "city": "ST LOUIS",
+    "domain": null,
+    "name": "ST LUKE'S DES PERES HOSPITAL",
+    "npi": null,
+    "phone": "(314) 966-9100",
+    "state": "MO",
+    "zip": "63122"
+  },
+  "saint lukes east hospital|mo": {
     "ccn": "260216",
     "city": "LEES SUMMIT",
     "domain": null,
@@ -40519,15 +41559,205 @@
     "state": "MO",
     "zip": "64086"
   },
-  "saint luke s south hospital|ks": {
-    "ccn": "170185",
-    "city": "OVERLAND PARK",
+  "saint lukes elmore medical center|id": {
+    "ccn": "131311",
+    "city": "MOUNTAIN HOME",
     "domain": null,
-    "name": "SAINT LUKE'S SOUTH HOSPITAL",
+    "name": "ST LUKE'S ELMORE MEDICAL CENTER",
     "npi": null,
-    "phone": "(913) 317-3303",
-    "state": "KS",
-    "zip": "66213"
+    "phone": "(208) 587-8401",
+    "state": "ID",
+    "zip": "83647"
+  },
+  "saint lukes hospital anderson campus|pa": {
+    "ccn": "390326",
+    "city": "EASTON",
+    "domain": null,
+    "name": "ST LUKE'S HOSPITAL - ANDERSON CAMPUS",
+    "npi": null,
+    "phone": "(484) 503-3000",
+    "state": "PA",
+    "zip": "18045"
+  },
+  "saint lukes hospital at the vintage|tx": {
+    "ccn": "670075",
+    "city": "HOUSTON",
+    "domain": null,
+    "name": "ST LUKE'S HOSPITAL AT THE VINTAGE",
+    "npi": null,
+    "phone": "(832) 534-5000",
+    "state": "TX",
+    "zip": "77070"
+  },
+  "saint lukes hospital bethlehem|pa": {
+    "ccn": "390049",
+    "city": "BETHLEHEM",
+    "domain": null,
+    "name": "ST LUKES HOSPITAL BETHLEHEM",
+    "npi": null,
+    "phone": "(484) 526-4000",
+    "state": "PA",
+    "zip": "18015"
+  },
+  "saint lukes hospital carbon campus|pa": {
+    "ccn": "390335",
+    "city": "LEHIGHTON",
+    "domain": null,
+    "name": "ST LUKE'S HOSPITAL - CARBON CAMPUS",
+    "npi": null,
+    "phone": "(610) 377-7001",
+    "state": "PA",
+    "zip": "18235"
+  },
+  "saint lukes hospital easton campus|pa": {
+    "ccn": "390162",
+    "city": "EASTON",
+    "domain": null,
+    "name": "ST LUKE'S HOSPITAL - EASTON CAMPUS",
+    "npi": null,
+    "phone": "(610) 250-4076",
+    "state": "PA",
+    "zip": "18042"
+  },
+  "saint lukes hospital grand view campus|pa": {
+    "ccn": "390057",
+    "city": "SELLERSVILLE",
+    "domain": null,
+    "name": "ST LUKE'S HOSPITAL - GRAND VIEW CAMPUS",
+    "npi": null,
+    "phone": "(215) 453-4000",
+    "state": "PA",
+    "zip": "18960"
+  },
+  "saint lukes hospital monroe campus|pa": {
+    "ccn": "390330",
+    "city": "STROUDSBURG",
+    "domain": null,
+    "name": "ST LUKE'S HOSPITAL - MONROE CAMPUS",
+    "npi": null,
+    "phone": "(272) 212-1000",
+    "state": "PA",
+    "zip": "18360"
+  },
+  "saint lukes hospital of kansas city|mo": {
+    "ccn": "260138",
+    "city": "KANSAS CITY",
+    "domain": null,
+    "name": "ST LUKES HOSPITAL OF KANSAS CITY",
+    "npi": null,
+    "phone": "(816) 932-2000",
+    "state": "MO",
+    "zip": "64111"
+  },
+  "saint lukes hospital upper bucks campus|pa": {
+    "ccn": "390035",
+    "city": "QUAKERTOWN",
+    "domain": null,
+    "name": "ST LUKE'S HOSPITAL - UPPER BUCKS CAMPUS",
+    "npi": null,
+    "phone": "(267) 985-1000",
+    "state": "PA",
+    "zip": "18951"
+  },
+  "saint lukes hospital|ia": {
+    "ccn": "160045",
+    "city": "CEDAR RAPIDS",
+    "domain": null,
+    "name": "ST LUKES HOSPITAL",
+    "npi": null,
+    "phone": "(319) 369-7211",
+    "state": "IA",
+    "zip": "52402"
+  },
+  "saint lukes hospital|mn": {
+    "ccn": "240047",
+    "city": "DULUTH",
+    "domain": null,
+    "name": "ST LUKES HOSPITAL",
+    "npi": null,
+    "phone": "(218) 249-5555",
+    "state": "MN",
+    "zip": "55805"
+  },
+  "saint lukes hospital|mo": {
+    "ccn": "260179",
+    "city": "CHESTERFIELD",
+    "domain": null,
+    "name": "ST LUKES HOSPITAL",
+    "npi": null,
+    "phone": "(314) 434-1500",
+    "state": "MO",
+    "zip": "63017"
+  },
+  "saint lukes hospital|nc": {
+    "ccn": "341322",
+    "city": "COLUMBUS",
+    "domain": null,
+    "name": "ST LUKES HOSPITAL",
+    "npi": null,
+    "phone": "(828) 894-3311",
+    "state": "NC",
+    "zip": "28722"
+  },
+  "saint lukes hospital|nd": {
+    "ccn": "351325",
+    "city": "CROSBY",
+    "domain": null,
+    "name": "ST LUKE'S HOSPITAL",
+    "npi": null,
+    "phone": "(701) 965-6384",
+    "state": "ND",
+    "zip": "58730"
+  },
+  "saint lukes jerome|id": {
+    "ccn": "131310",
+    "city": "JEROME",
+    "domain": null,
+    "name": "ST LUKE'S JEROME",
+    "npi": null,
+    "phone": "(208) 324-4301",
+    "state": "ID",
+    "zip": "83338"
+  },
+  "saint lukes magic valley medical center|id": {
+    "ccn": "130002",
+    "city": "TWIN FALLS",
+    "domain": null,
+    "name": "ST LUKES MAGIC VALLEY MEDICAL CENTER",
+    "npi": null,
+    "phone": "(208) 814-1000",
+    "state": "ID",
+    "zip": "83301"
+  },
+  "saint lukes mccall|id": {
+    "ccn": "131312",
+    "city": "MCCALL",
+    "domain": null,
+    "name": "ST LUKE'S MCCALL",
+    "npi": null,
+    "phone": "(208) 630-2395",
+    "state": "ID",
+    "zip": "83638"
+  },
+  "saint lukes miners memorial hospital|pa": {
+    "ccn": "390183",
+    "city": "COALDALE",
+    "domain": null,
+    "name": "ST LUKE'S MINERS MEMORIAL HOSPITAL",
+    "npi": null,
+    "phone": "(570) 645-2131",
+    "state": "PA",
+    "zip": "18218"
+  },
+  "saint lukes nampa medical center|id": {
+    "ccn": "130071",
+    "city": "NAMPA",
+    "domain": null,
+    "name": "ST LUKE'S NAMPA MEDICAL CENTER",
+    "npi": null,
+    "phone": "(208) 505-2000",
+    "state": "ID",
+    "zip": "83687"
   },
   "saint lukes north hospital|mo": {
     "ccn": "260062",
@@ -40539,7 +41769,207 @@
     "state": "MO",
     "zip": "64154"
   },
-  "saint mary s hospital|ct": {
+  "saint lukes patients medical center|tx": {
+    "ccn": "670031",
+    "city": "PASADENA",
+    "domain": null,
+    "name": "ST LUKE'S PATIENTS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(281) 487-0700",
+    "state": "TX",
+    "zip": "77505"
+  },
+  "saint lukes regional medical center|ia": {
+    "ccn": "160146",
+    "city": "SIOUX CITY",
+    "domain": null,
+    "name": "ST LUKES REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(712) 279-3500",
+    "state": "IA",
+    "zip": "51104"
+  },
+  "saint lukes regional medical center|id": {
+    "ccn": "130006",
+    "city": "BOISE",
+    "domain": null,
+    "name": "ST LUKE'S REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(208) 381-2222",
+    "state": "ID",
+    "zip": "83712"
+  },
+  "saint lukes south hospital|ks": {
+    "ccn": "170185",
+    "city": "OVERLAND PARK",
+    "domain": null,
+    "name": "SAINT LUKE'S SOUTH HOSPITAL",
+    "npi": null,
+    "phone": "(913) 317-3303",
+    "state": "KS",
+    "zip": "66213"
+  },
+  "saint lukes sugar land hospital|tx": {
+    "ccn": "670053",
+    "city": "SUGAR LAND",
+    "domain": null,
+    "name": "ST LUKE'S SUGAR LAND HOSPITAL",
+    "npi": null,
+    "phone": "(281) 637-7000",
+    "state": "TX",
+    "zip": "77478"
+  },
+  "saint lukes the woodlands hospital|tx": {
+    "ccn": "450862",
+    "city": "THE WOODLANDS",
+    "domain": null,
+    "name": "ST LUKE'S THE WOODLANDS HOSPITAL",
+    "npi": null,
+    "phone": "(936) 266-4050",
+    "state": "TX",
+    "zip": "77384"
+  },
+  "saint lukes warren hospital|nj": {
+    "ccn": "310060",
+    "city": "PHILLIPSBURG",
+    "domain": null,
+    "name": "ST LUKE'S WARREN HOSPITAL",
+    "npi": null,
+    "phone": "(908) 847-6700",
+    "state": "NJ",
+    "zip": "08865"
+  },
+  "saint lukes wood river medical center|id": {
+    "ccn": "131323",
+    "city": "KETCHUM",
+    "domain": null,
+    "name": "ST LUKE'S WOOD RIVER MEDICAL CENTER",
+    "npi": null,
+    "phone": "(208) 727-8800",
+    "state": "ID",
+    "zip": "83340"
+  },
+  "saint marks hospital|ut": {
+    "ccn": "460047",
+    "city": "SALT LAKE CITY",
+    "domain": null,
+    "name": "ST MARK'S HOSPITAL",
+    "npi": null,
+    "phone": "(801) 268-7111",
+    "state": "UT",
+    "zip": "84124"
+  },
+  "saint mary corwin hospital|co": {
+    "ccn": "060012",
+    "city": "PUEBLO",
+    "domain": null,
+    "name": "ST MARY-CORWIN HOSPITAL",
+    "npi": null,
+    "phone": "(719) 557-4000",
+    "state": "CO",
+    "zip": "81004"
+  },
+  "saint mary medical center inc|in": {
+    "ccn": "150034",
+    "city": "HOBART",
+    "domain": null,
+    "name": "ST MARY MEDICAL CENTER INC",
+    "npi": null,
+    "phone": "(219) 947-6196",
+    "state": "IN",
+    "zip": "46342"
+  },
+  "saint mary medical center|ca": {
+    "ccn": "050191",
+    "city": "LONG BEACH",
+    "domain": null,
+    "name": "ST MARY MEDICAL CENTER",
+    "npi": null,
+    "phone": "(562) 491-9000",
+    "state": "CA",
+    "zip": "90813"
+  },
+  "saint mary medical center|il": {
+    "ccn": "140064",
+    "city": "GALESBURG",
+    "domain": null,
+    "name": "ST MARY MEDICAL CENTER",
+    "npi": null,
+    "phone": "(309) 344-3161",
+    "state": "IL",
+    "zip": "61401"
+  },
+  "saint mary medical center|pa": {
+    "ccn": "390258",
+    "city": "LANGHORNE",
+    "domain": null,
+    "name": "ST MARY MEDICAL CENTER",
+    "npi": null,
+    "phone": "(215) 750-2003",
+    "state": "PA",
+    "zip": "19047"
+  },
+  "saint marys general hospital|nj": {
+    "ccn": "310006",
+    "city": "PASSAIC",
+    "domain": null,
+    "name": "ST MARY'S GENERAL HOSPITAL",
+    "npi": null,
+    "phone": "(973) 365-4300",
+    "state": "NJ",
+    "zip": "07055"
+  },
+  "saint marys good samaritan hospital|ga": {
+    "ccn": "111329",
+    "city": "GREENSBORO",
+    "domain": null,
+    "name": "ST MARYS GOOD SAMARITAN HOSPITAL",
+    "npi": null,
+    "phone": "(706) 453-7331",
+    "state": "GA",
+    "zip": "30642"
+  },
+  "saint marys healthcare|ny": {
+    "ccn": "330047",
+    "city": "AMSTERDAM",
+    "domain": null,
+    "name": "ST MARY'S HEALTHCARE",
+    "npi": null,
+    "phone": "(518) 842-1900",
+    "state": "NY",
+    "zip": "12010"
+  },
+  "saint marys hospital medical ctr|wi": {
+    "ccn": "520097",
+    "city": "GREEN BAY",
+    "domain": null,
+    "name": "ST MARYS HOSPITAL MEDICAL CTR",
+    "npi": null,
+    "phone": "(920) 498-4200",
+    "state": "WI",
+    "zip": "54303"
+  },
+  "saint marys hospital superior|wi": {
+    "ccn": "521329",
+    "city": "SUPERIOR",
+    "domain": null,
+    "name": "ST MARYS HOSPITAL SUPERIOR",
+    "npi": null,
+    "phone": "(715) 817-7000",
+    "state": "WI",
+    "zip": "54880"
+  },
+  "saint marys hospital|az": {
+    "ccn": "030010",
+    "city": "TUCSON",
+    "domain": null,
+    "name": "ST. MARY'S HOSPITAL",
+    "npi": null,
+    "phone": "(520) 872-3000",
+    "state": "AZ",
+    "zip": "85745"
+  },
+  "saint marys hospital|ct": {
     "ccn": "070016",
     "city": "WATERBURY",
     "domain": null,
@@ -40549,7 +41979,87 @@
     "state": "CT",
     "zip": "06706"
   },
-  "saint mary s regional medical center|nv": {
+  "saint marys hospital|ga": {
+    "ccn": "110006",
+    "city": "ATHENS",
+    "domain": null,
+    "name": "ST MARY'S HOSPITAL",
+    "npi": null,
+    "phone": "(706) 389-3000",
+    "state": "GA",
+    "zip": "30606"
+  },
+  "saint marys hospital|id": {
+    "ccn": "131321",
+    "city": "COTTONWOOD",
+    "domain": null,
+    "name": "ST MARY'S HOSPITAL",
+    "npi": null,
+    "phone": "(208) 962-3251",
+    "state": "ID",
+    "zip": "83522"
+  },
+  "saint marys hospital|il": {
+    "ccn": "140166",
+    "city": "DECATUR",
+    "domain": null,
+    "name": "ST MARYS HOSPITAL",
+    "npi": null,
+    "phone": "(217) 464-2966",
+    "state": "IL",
+    "zip": "62521"
+  },
+  "saint marys medical center|fl": {
+    "ccn": "100288",
+    "city": "WEST PALM BEACH",
+    "domain": null,
+    "name": "ST MARY'S MEDICAL CENTER",
+    "npi": null,
+    "phone": "(561) 840-6202",
+    "state": "FL",
+    "zip": "33407"
+  },
+  "saint marys medical center|mo": {
+    "ccn": "260193",
+    "city": "BLUE SPRINGS",
+    "domain": null,
+    "name": "ST MARY'S MEDICAL CENTER",
+    "npi": null,
+    "phone": "(816) 228-5900",
+    "state": "MO",
+    "zip": "64014"
+  },
+  "saint marys medical center|wv": {
+    "ccn": "510007",
+    "city": "HUNTINGTON",
+    "domain": null,
+    "name": "ST MARYS MEDICAL CENTER",
+    "npi": null,
+    "phone": "(304) 526-1234",
+    "state": "WV",
+    "zip": "25702"
+  },
+  "saint marys regional medical center|ar": {
+    "ccn": "040041",
+    "city": "RUSSELLVILLE",
+    "domain": null,
+    "name": "ST MARYS REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(479) 968-2841",
+    "state": "AR",
+    "zip": "72801"
+  },
+  "saint marys regional medical center|me": {
+    "ccn": "200034",
+    "city": "LEWISTON",
+    "domain": null,
+    "name": "ST MARY'S REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(207) 777-8100",
+    "state": "ME",
+    "zip": "04243"
+  },
+  "saint marys regional medical center|nv": {
     "ccn": "290009",
     "city": "RENO",
     "domain": null,
@@ -40559,7 +42069,17 @@
     "state": "NV",
     "zip": "89503"
   },
-  "saint mary s standish community hospital|mi": {
+  "saint marys regional medical center|ok": {
+    "ccn": "370026",
+    "city": "ENID",
+    "domain": null,
+    "name": "ST MARY'S REGIONAL MEDICAL CENTER",
+    "npi": null,
+    "phone": "(580) 233-6100",
+    "state": "OK",
+    "zip": "73701"
+  },
+  "saint marys standish community hospital|mi": {
     "ccn": "231305",
     "city": "STANDISH",
     "domain": null,
@@ -40569,7 +42089,17 @@
     "state": "MI",
     "zip": "48658"
   },
-  "saint michael s medical center|nj": {
+  "saint michaels hospital cah|sd": {
+    "ccn": "431327",
+    "city": "TYNDALL",
+    "domain": null,
+    "name": "ST MICHAEL'S HOSPITAL - CAH",
+    "npi": null,
+    "phone": "(605) 589-2100",
+    "state": "SD",
+    "zip": "57066"
+  },
+  "saint michaels medical center|nj": {
     "ccn": "310096",
     "city": "NEWARK",
     "domain": null,
@@ -40579,7 +42109,57 @@
     "state": "NJ",
     "zip": "07102"
   },
-  "saint peter s university hospital|nj": {
+  "saint michaels medical hospital llc|tx": {
+    "ccn": "670314",
+    "city": "SUGAR LAND",
+    "domain": null,
+    "name": "ST MICHAELS MEDICAL HOSPITAL LLC",
+    "npi": null,
+    "phone": "(281) 980-4357",
+    "state": "TX",
+    "zip": "77479"
+  },
+  "saint nicholas hospital|wi": {
+    "ccn": "520044",
+    "city": "SHEBOYGAN",
+    "domain": null,
+    "name": "ST NICHOLAS HOSPITAL",
+    "npi": null,
+    "phone": "(920) 459-8300",
+    "state": "WI",
+    "zip": "53081"
+  },
+  "saint patrick hospital|mt": {
+    "ccn": "270014",
+    "city": "MISSOULA",
+    "domain": null,
+    "name": "ST. PATRICK HOSPITAL",
+    "npi": null,
+    "phone": "(406) 543-7271",
+    "state": "MT",
+    "zip": "59802"
+  },
+  "saint peters health|mt": {
+    "ccn": "270003",
+    "city": "HELENA",
+    "domain": null,
+    "name": "ST PETERS HEALTH",
+    "npi": null,
+    "phone": "(406) 442-2480",
+    "state": "MT",
+    "zip": "59601"
+  },
+  "saint peters hospital|ny": {
+    "ccn": "330057",
+    "city": "ALBANY",
+    "domain": null,
+    "name": "ST PETER'S HOSPITAL",
+    "npi": null,
+    "phone": "(518) 525-1550",
+    "state": "NY",
+    "zip": "12208"
+  },
+  "saint peters university hospital|nj": {
     "ccn": "310070",
     "city": "NEW BRUNSWICK",
     "domain": null,
@@ -40629,6 +42209,36 @@
     "state": "NV",
     "zip": "89052"
   },
+  "saint rose hospital|ca": {
+    "ccn": "050002",
+    "city": "HAYWARD",
+    "domain": null,
+    "name": "ST ROSE HOSPITAL",
+    "npi": null,
+    "phone": "(510) 782-6200",
+    "state": "CA",
+    "zip": "94545"
+  },
+  "saint simons by the sea|ga": {
+    "ccn": "114016",
+    "city": "SAINT SIMONS ISLAND",
+    "domain": null,
+    "name": "ST SIMONS-BY-THE-SEA",
+    "npi": null,
+    "phone": "(912) 638-1999",
+    "state": "GA",
+    "zip": "31522"
+  },
+  "saint tammany parish hospital|la": {
+    "ccn": "190045",
+    "city": "COVINGTON",
+    "domain": null,
+    "name": "ST TAMMANY PARISH HOSPITAL",
+    "npi": null,
+    "phone": "(985) 898-4000",
+    "state": "LA",
+    "zip": "70433"
+  },
   "saint thomas hickman hospital|tn": {
     "ccn": "441300",
     "city": "CENTERVILLE",
@@ -40659,6 +42269,16 @@
     "state": "TN",
     "zip": "37203"
   },
+  "saint thomas more hospital|co": {
+    "ccn": "061344",
+    "city": "CANON CITY",
+    "domain": null,
+    "name": "ST THOMAS MORE HOSPITAL",
+    "npi": null,
+    "phone": "(719) 285-2000",
+    "state": "CO",
+    "zip": "81212"
+  },
   "saint thomas river park hospital|tn": {
     "ccn": "440151",
     "city": "MCMINNVILLE",
@@ -40679,6 +42299,46 @@
     "state": "TN",
     "zip": "37129"
   },
+  "saint veronica|ks": {
+    "ccn": "174027",
+    "city": "BEL AIRE",
+    "domain": null,
+    "name": "ST VERONICA",
+    "npi": null,
+    "phone": "(316) 744-2020",
+    "state": "KS",
+    "zip": "67226"
+  },
+  "saint vincent general hospital district|co": {
+    "ccn": "061319",
+    "city": "LEADVILLE",
+    "domain": null,
+    "name": "ST VINCENT GENERAL HOSPITAL DISTRICT",
+    "npi": null,
+    "phone": "(719) 486-0230",
+    "state": "CO",
+    "zip": "80461"
+  },
+  "saint vincent heart center|in": {
+    "ccn": "150153",
+    "city": "CARMEL",
+    "domain": null,
+    "name": "ST VINCENT HEART CENTER",
+    "npi": null,
+    "phone": "(317) 583-5000",
+    "state": "IN",
+    "zip": "46290"
+  },
+  "saint vincent hospital|ma": {
+    "ccn": "220176",
+    "city": "WORCESTER",
+    "domain": null,
+    "name": "ST VINCENT HOSPITAL",
+    "npi": null,
+    "phone": "(508) 363-5000",
+    "state": "MA",
+    "zip": "01608"
+  },
   "saint vincent hospital|pa": {
     "ccn": "390009",
     "city": "ERIE",
@@ -40688,6 +42348,86 @@
     "phone": "(814) 452-5111",
     "state": "PA",
     "zip": "16544"
+  },
+  "saint vincent hospital|wi": {
+    "ccn": "520075",
+    "city": "GREEN BAY",
+    "domain": null,
+    "name": "ST VINCENT HOSPITAL",
+    "npi": null,
+    "phone": "(920) 433-0111",
+    "state": "WI",
+    "zip": "54301"
+  },
+  "saint vincent medical center north|ar": {
+    "ccn": "040137",
+    "city": "SHERWOOD",
+    "domain": null,
+    "name": "ST VINCENT MEDICAL CENTER/NORTH",
+    "npi": null,
+    "phone": "(501) 552-7100",
+    "state": "AR",
+    "zip": "72120"
+  },
+  "saint vincents birmingham|al": {
+    "ccn": "010056",
+    "city": "BIRMINGHAM",
+    "domain": null,
+    "name": "ST VINCENT'S BIRMINGHAM",
+    "npi": null,
+    "phone": "(205) 939-7000",
+    "state": "AL",
+    "zip": "35205"
+  },
+  "saint vincents blount|al": {
+    "ccn": "011305",
+    "city": "ONEONTA",
+    "domain": null,
+    "name": "ST VINCENTS BLOUNT",
+    "npi": null,
+    "phone": "(205) 274-3000",
+    "state": "AL",
+    "zip": "35121"
+  },
+  "saint vincents chilton|al": {
+    "ccn": "010173",
+    "city": "CLANTON",
+    "domain": null,
+    "name": "ST VINCENT'S CHILTON",
+    "npi": null,
+    "phone": "(205) 258-4400",
+    "state": "AL",
+    "zip": "35045"
+  },
+  "saint vincents east|al": {
+    "ccn": "010011",
+    "city": "BIRMINGHAM",
+    "domain": null,
+    "name": "ST. VINCENT'S EAST",
+    "npi": null,
+    "phone": "(205) 838-3122",
+    "state": "AL",
+    "zip": "35235"
+  },
+  "saint vincents medical center|ct": {
+    "ccn": "070028",
+    "city": "BRIDGEPORT",
+    "domain": null,
+    "name": "ST VINCENT'S MEDICAL CENTER",
+    "npi": null,
+    "phone": "(203) 576-5551",
+    "state": "CT",
+    "zip": "06606"
+  },
+  "saint vincents saint clair|al": {
+    "ccn": "010130",
+    "city": "PELL CITY",
+    "domain": null,
+    "name": "ST VINCENT'S ST CLAIR",
+    "npi": null,
+    "phone": "(205) 338-3301",
+    "state": "AL",
+    "zip": "35125"
   },
   "sakakawea medical center cah|nd": {
     "ccn": "351310",
@@ -40949,7 +42689,7 @@
     "state": "CA",
     "zip": "91786"
   },
-  "san antonio state hosp state school|tx": {
+  "san antonio state hospital state school|tx": {
     "ccn": "454011",
     "city": "SAN ANTONIO",
     "domain": null,
@@ -41419,7 +43159,7 @@
     "state": "NM",
     "zip": "87501"
   },
-  "santa monica ucla med ctr orthopaedic hospital|ca": {
+  "santa monica ucla medical center orthopaedic hospital|ca": {
     "ccn": "050112",
     "city": "SANTA MONICA",
     "domain": null,
@@ -41749,7 +43489,7 @@
     "state": "LA",
     "zip": "70806"
   },
-  "seattle children s hospital|wa": {
+  "seattle childrens hospital|wa": {
     "ccn": "503300",
     "city": "SEATTLE",
     "domain": null,
@@ -42299,7 +44039,7 @@
     "state": "CA",
     "zip": "91403"
   },
-  "shodair children s hospital|mt": {
+  "shodair childrens hospital|mt": {
     "ccn": "274004",
     "city": "HELENA",
     "domain": null,
@@ -42759,7 +44499,7 @@
     "state": "WA",
     "zip": "98271"
   },
-  "smp health st aloisius|nd": {
+  "smp health saint aloisius|nd": {
     "ccn": "351327",
     "city": "HARVEY",
     "domain": null,
@@ -42909,7 +44649,7 @@
     "state": "ND",
     "zip": "58495"
   },
-  "south central reg med ctr|ms": {
+  "south central reg medical center|ms": {
     "ccn": "250058",
     "city": "LAUREL",
     "domain": null,
@@ -43009,7 +44749,7 @@
     "state": "MS",
     "zip": "39475"
   },
-  "south oaks hosp|ny": {
+  "south oaks hospital|ny": {
     "ccn": "334027",
     "city": "AMITYVILLE",
     "domain": null,
@@ -43809,7 +45549,7 @@
     "state": "AR",
     "zip": "72704"
   },
-  "ssm health depaul hospital st louis|mo": {
+  "ssm health depaul hospital saint louis|mo": {
     "ccn": "260104",
     "city": "BRIDGETON",
     "domain": null,
@@ -43818,6 +45558,56 @@
     "phone": "(314) 344-6000",
     "state": "MO",
     "zip": "63044"
+  },
+  "ssm health saint agnes hospital fond du lac|wi": {
+    "ccn": "520088",
+    "city": "FOND DU LAC",
+    "domain": null,
+    "name": "SSM HEALTH ST AGNES HOSPITAL-FOND DU LAC",
+    "npi": null,
+    "phone": "(920) 929-2300",
+    "state": "WI",
+    "zip": "54935"
+  },
+  "ssm health saint anthony hospital midwest|ok": {
+    "ccn": "370094",
+    "city": "MIDWEST CITY",
+    "domain": null,
+    "name": "SSM HEALTH ST ANTHONY HOSPITAL - MIDWEST",
+    "npi": null,
+    "phone": "(405) 610-4411",
+    "state": "OK",
+    "zip": "73110"
+  },
+  "ssm health saint anthony hospital oklahoma city|ok": {
+    "ccn": "370037",
+    "city": "OKLAHOMA CITY",
+    "domain": null,
+    "name": "SSM HEALTH ST ANTHONY HOSPITAL - OKLAHOMA CITY",
+    "npi": null,
+    "phone": "(405) 272-7000",
+    "state": "OK",
+    "zip": "73101"
+  },
+  "ssm health saint anthony hospital shawnee|ok": {
+    "ccn": "370149",
+    "city": "SHAWNEE",
+    "domain": null,
+    "name": "SSM HEALTH ST ANTHONY HOSPITAL - SHAWNEE",
+    "npi": null,
+    "phone": "(405) 273-2270",
+    "state": "OK",
+    "zip": "74801"
+  },
+  "ssm health saint clare hospital baraboo|wi": {
+    "ccn": "520057",
+    "city": "BARABOO",
+    "domain": null,
+    "name": "SSM HEALTH ST CLARE HOSPITAL - BARABOO",
+    "npi": null,
+    "phone": "(608) 356-1400",
+    "state": "WI",
+    "zip": "53913"
   },
   "ssm health saint louis university hospital|mo": {
     "ccn": "260105",
@@ -43829,57 +45619,7 @@
     "state": "MO",
     "zip": "63104"
   },
-  "ssm health st agnes hospital fond du lac|wi": {
-    "ccn": "520088",
-    "city": "FOND DU LAC",
-    "domain": null,
-    "name": "SSM HEALTH ST AGNES HOSPITAL-FOND DU LAC",
-    "npi": null,
-    "phone": "(920) 929-2300",
-    "state": "WI",
-    "zip": "54935"
-  },
-  "ssm health st anthony hospital midwest|ok": {
-    "ccn": "370094",
-    "city": "MIDWEST CITY",
-    "domain": null,
-    "name": "SSM HEALTH ST ANTHONY HOSPITAL - MIDWEST",
-    "npi": null,
-    "phone": "(405) 610-4411",
-    "state": "OK",
-    "zip": "73110"
-  },
-  "ssm health st anthony hospital oklahoma city|ok": {
-    "ccn": "370037",
-    "city": "OKLAHOMA CITY",
-    "domain": null,
-    "name": "SSM HEALTH ST ANTHONY HOSPITAL - OKLAHOMA CITY",
-    "npi": null,
-    "phone": "(405) 272-7000",
-    "state": "OK",
-    "zip": "73101"
-  },
-  "ssm health st anthony hospital shawnee|ok": {
-    "ccn": "370149",
-    "city": "SHAWNEE",
-    "domain": null,
-    "name": "SSM HEALTH ST ANTHONY HOSPITAL - SHAWNEE",
-    "npi": null,
-    "phone": "(405) 273-2270",
-    "state": "OK",
-    "zip": "74801"
-  },
-  "ssm health st clare hospital baraboo|wi": {
-    "ccn": "520057",
-    "city": "BARABOO",
-    "domain": null,
-    "name": "SSM HEALTH ST CLARE HOSPITAL - BARABOO",
-    "npi": null,
-    "phone": "(608) 356-1400",
-    "state": "WI",
-    "zip": "53913"
-  },
-  "ssm health st mary s hospital centralia|il": {
+  "ssm health saint marys hospital centralia|il": {
     "ccn": "140034",
     "city": "CENTRALIA",
     "domain": null,
@@ -43889,7 +45629,7 @@
     "state": "IL",
     "zip": "62801"
   },
-  "ssm health st mary s hospital janesville|wi": {
+  "ssm health saint marys hospital janesville|wi": {
     "ccn": "520208",
     "city": "JANESVILLE",
     "domain": null,
@@ -43899,7 +45639,7 @@
     "state": "WI",
     "zip": "53546"
   },
-  "ssm health st mary s hospital jefferson city|mo": {
+  "ssm health saint marys hospital jefferson city|mo": {
     "ccn": "260011",
     "city": "JEFFERSON CITY",
     "domain": null,
@@ -43909,7 +45649,7 @@
     "state": "MO",
     "zip": "65109"
   },
-  "ssm health st mary s hospital madison|wi": {
+  "ssm health saint marys hospital madison|wi": {
     "ccn": "520083",
     "city": "MADISON",
     "domain": null,
@@ -43919,7 +45659,7 @@
     "state": "WI",
     "zip": "53715"
   },
-  "ssm health st mary s hospital st louis|mo": {
+  "ssm health saint marys hospital saint louis|mo": {
     "ccn": "260091",
     "city": "SAINT LOUIS",
     "domain": null,
@@ -43929,7 +45669,7 @@
     "state": "MO",
     "zip": "63117"
   },
-  "ssm st clare health center|mo": {
+  "ssm saint clare health center|mo": {
     "ccn": "260081",
     "city": "FENTON",
     "domain": null,
@@ -43939,7 +45679,7 @@
     "state": "MO",
     "zip": "63026"
   },
-  "ssm st joseph health center|mo": {
+  "ssm saint joseph health center|mo": {
     "ccn": "260005",
     "city": "SAINT CHARLES",
     "domain": null,
@@ -43949,7 +45689,7 @@
     "state": "MO",
     "zip": "63301"
   },
-  "ssm st joseph hospital west|mo": {
+  "ssm saint joseph hospital west|mo": {
     "ccn": "260200",
     "city": "LAKE SAINT LOUIS",
     "domain": null,
@@ -43958,1766 +45698,6 @@
     "phone": "(636) 625-5200",
     "state": "MO",
     "zip": "63367"
-  },
-  "st alexius medical center|il": {
-    "ccn": "140290",
-    "city": "HOFFMAN ESTATES",
-    "domain": null,
-    "name": "ST ALEXIUS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(847) 843-2000",
-    "state": "IL",
-    "zip": "60169"
-  },
-  "st alphonsus medical center baker city|or": {
-    "ccn": "381315",
-    "city": "BAKER CITY",
-    "domain": null,
-    "name": "ST. ALPHONSUS MEDICAL CENTER - BAKER CITY",
-    "npi": null,
-    "phone": "(541) 523-6461",
-    "state": "OR",
-    "zip": "97814"
-  },
-  "st andrew s hospital|nd": {
-    "ccn": "351307",
-    "city": "BOTTINEAU",
-    "domain": null,
-    "name": "ST ANDREW'S HOSPITAL",
-    "npi": null,
-    "phone": "(701) 228-9300",
-    "state": "ND",
-    "zip": "58318"
-  },
-  "st anthony community hospital|ny": {
-    "ccn": "330205",
-    "city": "WARWICK",
-    "domain": null,
-    "name": "ST ANTHONY COMMUNITY HOSPITAL",
-    "npi": null,
-    "phone": "(845) 986-2276",
-    "state": "NY",
-    "zip": "10990"
-  },
-  "st anthony hospital|or": {
-    "ccn": "381319",
-    "city": "PENDLETON",
-    "domain": null,
-    "name": "ST ANTHONY HOSPITAL",
-    "npi": null,
-    "phone": "(541) 276-5121",
-    "state": "OR",
-    "zip": "97801"
-  },
-  "st anthony hospital|wa": {
-    "ccn": "500151",
-    "city": "GIG HARBOR",
-    "domain": null,
-    "name": "ST ANTHONY HOSPITAL",
-    "npi": null,
-    "phone": "(253) 530-2050",
-    "state": "WA",
-    "zip": "98332"
-  },
-  "st anthony regional hospital nursing home|ia": {
-    "ccn": "161382",
-    "city": "CARROLL",
-    "domain": null,
-    "name": "ST ANTHONY REGIONAL HOSPITAL & NURSING HOME",
-    "npi": null,
-    "phone": "(712) 792-3581",
-    "state": "IA",
-    "zip": "51401"
-  },
-  "st anthony summit medical center|co": {
-    "ccn": "060118",
-    "city": "FRISCO",
-    "domain": null,
-    "name": "ST ANTHONY SUMMIT MEDICAL CENTER",
-    "npi": null,
-    "phone": "(970) 668-3300",
-    "state": "CO",
-    "zip": "80443"
-  },
-  "st anthonys hospital|fl": {
-    "ccn": "100067",
-    "city": "SAINT PETERSBURG",
-    "domain": null,
-    "name": "ST ANTHONYS HOSPITAL",
-    "npi": null,
-    "phone": "(727) 825-1100",
-    "state": "FL",
-    "zip": "33705"
-  },
-  "st anthonys memorial hospital|il": {
-    "ccn": "140032",
-    "city": "EFFINGHAM",
-    "domain": null,
-    "name": "ST ANTHONYS MEMORIAL HOSPITAL",
-    "npi": null,
-    "phone": "(217) 342-2121",
-    "state": "IL",
-    "zip": "62401"
-  },
-  "st barnabas hospital|ny": {
-    "ccn": "330399",
-    "city": "BRONX",
-    "domain": null,
-    "name": "ST BARNABAS HOSPITAL",
-    "npi": null,
-    "phone": "(212) 960-9000",
-    "state": "NY",
-    "zip": "10457"
-  },
-  "st bernard hospital|il": {
-    "ccn": "140103",
-    "city": "CHICAGO",
-    "domain": null,
-    "name": "ST BERNARD HOSPITAL",
-    "npi": null,
-    "phone": "(773) 962-3900",
-    "state": "IL",
-    "zip": "60621"
-  },
-  "st bernard parish hospital|la": {
-    "ccn": "190308",
-    "city": "CHALMETTE",
-    "domain": null,
-    "name": "ST BERNARD PARISH HOSPITAL",
-    "npi": null,
-    "phone": "(504) 826-9500",
-    "state": "LA",
-    "zip": "70043"
-  },
-  "st bernardine medical center|ca": {
-    "ccn": "050129",
-    "city": "SAN BERNARDINO",
-    "domain": null,
-    "name": "ST BERNARDINE MEDICAL CENTER",
-    "npi": null,
-    "phone": "(909) 883-8711",
-    "state": "CA",
-    "zip": "92404"
-  },
-  "st bernards five rivers medical center|ar": {
-    "ccn": "040779",
-    "city": "POCAHONTAS",
-    "domain": null,
-    "name": "ST BERNARDS FIVE RIVERS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(870) 892-6000",
-    "state": "AR",
-    "zip": "72455"
-  },
-  "st bernards medical center|ar": {
-    "ccn": "040020",
-    "city": "JONESBORO",
-    "domain": null,
-    "name": "ST BERNARDS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(870) 972-4100",
-    "state": "AR",
-    "zip": "72401"
-  },
-  "st catherine hospital garden city|ks": {
-    "ccn": "170023",
-    "city": "GARDEN CITY",
-    "domain": null,
-    "name": "ST. CATHERINE HOSPITAL - GARDEN CITY",
-    "npi": null,
-    "phone": "(620) 225-8400",
-    "state": "KS",
-    "zip": "67846"
-  },
-  "st catherine hospital inc|in": {
-    "ccn": "150008",
-    "city": "EAST CHICAGO",
-    "domain": null,
-    "name": "ST CATHERINE HOSPITAL INC",
-    "npi": null,
-    "phone": "(219) 392-7004",
-    "state": "IN",
-    "zip": "46312"
-  },
-  "st catherine of siena hospital|ny": {
-    "ccn": "330401",
-    "city": "SMITHTOWN",
-    "domain": null,
-    "name": "ST CATHERINE OF SIENA HOSPITAL",
-    "npi": null,
-    "phone": "(631) 862-3000",
-    "state": "NY",
-    "zip": "11787"
-  },
-  "st charles hospital|ny": {
-    "ccn": "330246",
-    "city": "PORT JEFFERSON",
-    "domain": null,
-    "name": "ST CHARLES HOSPITAL",
-    "npi": null,
-    "phone": "(631) 474-6000",
-    "state": "NY",
-    "zip": "11777"
-  },
-  "st charles madras|or": {
-    "ccn": "381324",
-    "city": "MADRAS",
-    "domain": null,
-    "name": "ST CHARLES MADRAS",
-    "npi": null,
-    "phone": "(541) 475-3882",
-    "state": "OR",
-    "zip": "97741"
-  },
-  "st charles medical center bend|or": {
-    "ccn": "380047",
-    "city": "BEND",
-    "domain": null,
-    "name": "ST CHARLES MEDICAL CENTER - BEND",
-    "npi": null,
-    "phone": "(541) 382-4321",
-    "state": "OR",
-    "zip": "97701"
-  },
-  "st charles medical center prineville|or": {
-    "ccn": "381313",
-    "city": "PRINEVILLE",
-    "domain": null,
-    "name": "ST CHARLES MEDICAL CENTER PRINEVILLE",
-    "npi": null,
-    "phone": "(541) 447-6254",
-    "state": "OR",
-    "zip": "97754"
-  },
-  "st charles parish hospital|la": {
-    "ccn": "190079",
-    "city": "LULING",
-    "domain": null,
-    "name": "ST CHARLES PARISH HOSPITAL",
-    "npi": null,
-    "phone": "(985) 785-3644",
-    "state": "LA",
-    "zip": "70070"
-  },
-  "st charles surgical hospital|la": {
-    "ccn": "190300",
-    "city": "NEW ORLEANS",
-    "domain": null,
-    "name": "ST CHARLES SURGICAL HOSPITAL",
-    "npi": null,
-    "phone": "(504) 529-6600",
-    "state": "LA",
-    "zip": "70130"
-  },
-  "st christopher s hospital for children|pa": {
-    "ccn": "393307",
-    "city": "PHILADELPHIA",
-    "domain": null,
-    "name": "ST CHRISTOPHER'S HOSPITAL FOR CHILDREN",
-    "npi": null,
-    "phone": "(215) 427-5000",
-    "state": "PA",
-    "zip": "19134"
-  },
-  "st clair hospital|pa": {
-    "ccn": "390228",
-    "city": "PITTSBURGH",
-    "domain": null,
-    "name": "ST CLAIR HOSPITAL",
-    "npi": null,
-    "phone": "(412) 942-4000",
-    "state": "PA",
-    "zip": "15243"
-  },
-  "st claire regional medical center|ky": {
-    "ccn": "180018",
-    "city": "MOREHEAD",
-    "domain": null,
-    "name": "ST CLAIRE REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(606) 783-6500",
-    "state": "KY",
-    "zip": "40351"
-  },
-  "st clare hospital|wa": {
-    "ccn": "500021",
-    "city": "LAKEWOOD",
-    "domain": null,
-    "name": "ST CLARE HOSPITAL",
-    "npi": null,
-    "phone": "(253) 588-1711",
-    "state": "WA",
-    "zip": "98499"
-  },
-  "st cloud hospital|mn": {
-    "ccn": "240036",
-    "city": "SAINT CLOUD",
-    "domain": null,
-    "name": "ST CLOUD HOSPITAL",
-    "npi": null,
-    "phone": "(320) 255-5661",
-    "state": "MN",
-    "zip": "56303"
-  },
-  "st cloud va medical center|mn": {
-    "ccn": "24002F",
-    "city": "ST. CLOUD",
-    "domain": null,
-    "name": "ST CLOUD VA MEDICAL CENTER",
-    "npi": null,
-    "phone": "(320) 252-1670",
-    "state": "MN",
-    "zip": "56303"
-  },
-  "st croix regional medical center|wi": {
-    "ccn": "521337",
-    "city": "SAINT CROIX FALLS",
-    "domain": null,
-    "name": "ST CROIX REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(715) 483-0247",
-    "state": "WI",
-    "zip": "54024"
-  },
-  "st david s medical center|tx": {
-    "ccn": "450431",
-    "city": "AUSTIN",
-    "domain": null,
-    "name": "ST DAVID'S MEDICAL CENTER",
-    "npi": null,
-    "phone": "(512) 476-7111",
-    "state": "TX",
-    "zip": "78705"
-  },
-  "st david s south austin medical center|tx": {
-    "ccn": "450713",
-    "city": "AUSTIN",
-    "domain": null,
-    "name": "ST DAVID'S SOUTH AUSTIN MEDICAL CENTER",
-    "npi": null,
-    "phone": "(512) 448-7107",
-    "state": "TX",
-    "zip": "78704"
-  },
-  "st dominic jackson memorial hospital|ms": {
-    "ccn": "250048",
-    "city": "JACKSON",
-    "domain": null,
-    "name": "ST DOMINIC-JACKSON MEMORIAL HOSPITAL",
-    "npi": null,
-    "phone": "(601) 200-2000",
-    "state": "MS",
-    "zip": "39216"
-  },
-  "st elizabeth community hospital|ca": {
-    "ccn": "050042",
-    "city": "RED BLUFF",
-    "domain": null,
-    "name": "ST ELIZABETH COMMUNITY HOSPITAL",
-    "npi": null,
-    "phone": "(530) 529-8000",
-    "state": "CA",
-    "zip": "96080"
-  },
-  "st elizabeth dearborn hospital|in": {
-    "ccn": "150086",
-    "city": "LAWRENCEBURG",
-    "domain": null,
-    "name": "ST ELIZABETH DEARBORN HOSPITAL",
-    "npi": null,
-    "phone": "(812) 537-1010",
-    "state": "IN",
-    "zip": "47025"
-  },
-  "st elizabeth edgewood|ky": {
-    "ccn": "180035",
-    "city": "EDGEWOOD",
-    "domain": null,
-    "name": "ST ELIZABETH EDGEWOOD",
-    "npi": null,
-    "phone": "(859) 301-2000",
-    "state": "KY",
-    "zip": "41017"
-  },
-  "st elizabeth florence|ky": {
-    "ccn": "180045",
-    "city": "FLORENCE",
-    "domain": null,
-    "name": "ST ELIZABETH FLORENCE",
-    "npi": null,
-    "phone": "(859) 212-5220",
-    "state": "KY",
-    "zip": "41042"
-  },
-  "st elizabeth ft thomas|ky": {
-    "ccn": "180001",
-    "city": "FORT THOMAS",
-    "domain": null,
-    "name": "ST ELIZABETH FT THOMAS",
-    "npi": null,
-    "phone": "(859) 572-3100",
-    "state": "KY",
-    "zip": "41075"
-  },
-  "st elizabeth grant|ky": {
-    "ccn": "181311",
-    "city": "WILLIAMSTOWN",
-    "domain": null,
-    "name": "ST ELIZABETH GRANT",
-    "npi": null,
-    "phone": "(859) 824-8105",
-    "state": "KY",
-    "zip": "41097"
-  },
-  "st elizabeth hospital|co": {
-    "ccn": "060044",
-    "city": "FORT MORGAN",
-    "domain": null,
-    "name": "ST ELIZABETH HOSPITAL",
-    "npi": null,
-    "phone": "(970) 867-3391",
-    "state": "CO",
-    "zip": "80701"
-  },
-  "st elizabeth hospital|wa": {
-    "ccn": "501335",
-    "city": "ENUMCLAW",
-    "domain": null,
-    "name": "ST ELIZABETH HOSPITAL",
-    "npi": null,
-    "phone": "(360) 825-2505",
-    "state": "WA",
-    "zip": "98022"
-  },
-  "st elizabeth medical center|mn": {
-    "ccn": "241335",
-    "city": "WABASHA",
-    "domain": null,
-    "name": "ST ELIZABETH MEDICAL CENTER",
-    "npi": null,
-    "phone": "(651) 565-4531",
-    "state": "MN",
-    "zip": "55981"
-  },
-  "st elizabeth youngstown hospital|oh": {
-    "ccn": "360064",
-    "city": "YOUNGSTOWN",
-    "domain": null,
-    "name": "ST ELIZABETH YOUNGSTOWN HOSPITAL",
-    "npi": null,
-    "phone": "(330) 480-3022",
-    "state": "OH",
-    "zip": "44501"
-  },
-  "st elizabeths hospital|dc": {
-    "ccn": "094001",
-    "city": "WASHINGTON",
-    "domain": null,
-    "name": "ST ELIZABETHS HOSPITAL",
-    "npi": null,
-    "phone": "(202) 299-5500",
-    "state": "DC",
-    "zip": "20032"
-  },
-  "st francis community hospital|wa": {
-    "ccn": "500141",
-    "city": "FEDERAL WAY",
-    "domain": null,
-    "name": "ST FRANCIS COMMUNITY HOSPITAL",
-    "npi": null,
-    "phone": "(253) 944-8100",
-    "state": "WA",
-    "zip": "98003"
-  },
-  "st francis downtown|sc": {
-    "ccn": "420023",
-    "city": "GREENVILLE",
-    "domain": null,
-    "name": "ST FRANCIS-DOWNTOWN",
-    "npi": null,
-    "phone": "(800) 805-5678",
-    "state": "SC",
-    "zip": "29601"
-  },
-  "st francis hospital emory healthcare|ga": {
-    "ccn": "110129",
-    "city": "COLUMBUS",
-    "domain": null,
-    "name": "ST FRANCIS HOSPITAL- EMORY HEALTHCARE",
-    "npi": null,
-    "phone": "(706) 596-4020",
-    "state": "GA",
-    "zip": "31995"
-  },
-  "st francis hospital interquest|co": {
-    "ccn": "060133",
-    "city": "COLORADO SPRINGS",
-    "domain": null,
-    "name": "ST FRANCIS HOSPITAL - INTERQUEST",
-    "npi": null,
-    "phone": "(719) 757-7000",
-    "state": "CO",
-    "zip": "80921"
-  },
-  "st francis hospital medical center|ct": {
-    "ccn": "070002",
-    "city": "HARTFORD",
-    "domain": null,
-    "name": "ST FRANCIS HOSPITAL & MEDICAL CENTER",
-    "npi": null,
-    "phone": "(860) 714-5541",
-    "state": "CT",
-    "zip": "06105"
-  },
-  "st francis hospital the heart center|ny": {
-    "ccn": "330182",
-    "city": "ROSLYN",
-    "domain": null,
-    "name": "ST FRANCIS HOSPITAL - THE HEART CENTER",
-    "npi": null,
-    "phone": "(516) 562-6000",
-    "state": "NY",
-    "zip": "11576"
-  },
-  "st francis hospital|de": {
-    "ccn": "080003",
-    "city": "WILMINGTON",
-    "domain": null,
-    "name": "ST FRANCIS HOSPITAL",
-    "npi": null,
-    "phone": "(302) 421-4100",
-    "state": "DE",
-    "zip": "19805"
-  },
-  "st francis hospital|il": {
-    "ccn": "141350",
-    "city": "LITCHFIELD",
-    "domain": null,
-    "name": "ST FRANCIS HOSPITAL",
-    "npi": null,
-    "phone": "(217) 324-2191",
-    "state": "IL",
-    "zip": "62056"
-  },
-  "st francis hospital|tn": {
-    "ccn": "440183",
-    "city": "MEMPHIS",
-    "domain": null,
-    "name": "ST FRANCIS HOSPITAL",
-    "npi": null,
-    "phone": "(901) 765-1000",
-    "state": "TN",
-    "zip": "38119"
-  },
-  "st francis medical center|la": {
-    "ccn": "190125",
-    "city": "MONROE",
-    "domain": null,
-    "name": "ST FRANCIS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(318) 966-4000",
-    "state": "LA",
-    "zip": "71201"
-  },
-  "st francis medical center|mn": {
-    "ccn": "241377",
-    "city": "BRECKENRIDGE",
-    "domain": null,
-    "name": "ST FRANCIS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(218) 643-3000",
-    "state": "MN",
-    "zip": "56520"
-  },
-  "st francis memorial hospital|ne": {
-    "ccn": "281322",
-    "city": "WEST POINT",
-    "domain": null,
-    "name": "ST FRANCIS MEMORIAL HOSPITAL",
-    "npi": null,
-    "phone": "(402) 372-2404",
-    "state": "NE",
-    "zip": "68788"
-  },
-  "st francis regional medical center|mn": {
-    "ccn": "240104",
-    "city": "SHAKOPEE",
-    "domain": null,
-    "name": "ST FRANCIS REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(952) 428-3000",
-    "state": "MN",
-    "zip": "55379"
-  },
-  "st gabriels hospital|mn": {
-    "ccn": "241370",
-    "city": "LITTLE FALLS",
-    "domain": null,
-    "name": "ST GABRIELS HOSPITAL",
-    "npi": null,
-    "phone": "(320) 632-5441",
-    "state": "MN",
-    "zip": "56345"
-  },
-  "st george regional hospital|ut": {
-    "ccn": "460021",
-    "city": "ST GEORGE",
-    "domain": null,
-    "name": "ST. GEORGE REGIONAL HOSPITAL",
-    "npi": null,
-    "phone": "(435) 251-2100",
-    "state": "UT",
-    "zip": "84790"
-  },
-  "st helena parish hospital|la": {
-    "ccn": "191300",
-    "city": "GREENSBURG",
-    "domain": null,
-    "name": "ST HELENA PARISH HOSPITAL",
-    "npi": null,
-    "phone": "(225) 222-6111",
-    "state": "LA",
-    "zip": "70441"
-  },
-  "st james behavioral health hospital inc|la": {
-    "ccn": "194088",
-    "city": "GONZALES",
-    "domain": null,
-    "name": "ST JAMES BEHAVIORAL HEALTH HOSPITAL, INC",
-    "npi": null,
-    "phone": "(225) 647-7524",
-    "state": "LA",
-    "zip": "70737"
-  },
-  "st james hospital|mt": {
-    "ccn": "270017",
-    "city": "BUTTE",
-    "domain": null,
-    "name": "ST JAMES HOSPITAL",
-    "npi": null,
-    "phone": "(406) 723-2500",
-    "state": "MT",
-    "zip": "59701"
-  },
-  "st james hospital|ny": {
-    "ccn": "330151",
-    "city": "HORNELL",
-    "domain": null,
-    "name": "ST JAMES HOSPITAL",
-    "npi": null,
-    "phone": "(607) 324-8000",
-    "state": "NY",
-    "zip": "14843"
-  },
-  "st james parish hospital|la": {
-    "ccn": "191305",
-    "city": "LUTCHER",
-    "domain": null,
-    "name": "ST JAMES PARISH HOSPITAL",
-    "npi": null,
-    "phone": "(225) 869-5512",
-    "state": "LA",
-    "zip": "70071"
-  },
-  "st joe mercy hospital system livonia|mi": {
-    "ccn": "230002",
-    "city": "LIVONIA",
-    "domain": null,
-    "name": "ST JOE MERCY HOSPITAL SYSTEM LIVONIA",
-    "npi": null,
-    "phone": "(734) 655-4800",
-    "state": "MI",
-    "zip": "48154"
-  },
-  "st john owasso|ok": {
-    "ccn": "370227",
-    "city": "OWASSO",
-    "domain": null,
-    "name": "ST JOHN OWASSO",
-    "npi": null,
-    "phone": "(918) 274-5100",
-    "state": "OK",
-    "zip": "74055"
-  },
-  "st john s episcopal hospital at south shore|ny": {
-    "ccn": "330395",
-    "city": "FAR ROCKAWAY",
-    "domain": null,
-    "name": "ST JOHN'S EPISCOPAL HOSPITAL AT SOUTH SHORE",
-    "npi": null,
-    "phone": "(718) 869-7000",
-    "state": "NY",
-    "zip": "11691"
-  },
-  "st john s riverside hospital|ny": {
-    "ccn": "330208",
-    "city": "YONKERS",
-    "domain": null,
-    "name": "ST JOHN'S RIVERSIDE HOSPITAL",
-    "npi": null,
-    "phone": "(914) 964-4444",
-    "state": "NY",
-    "zip": "10701"
-  },
-  "st johns hospital|il": {
-    "ccn": "140053",
-    "city": "SPRINGFIELD",
-    "domain": null,
-    "name": "ST JOHNS HOSPITAL",
-    "npi": null,
-    "phone": "(217) 544-6464",
-    "state": "IL",
-    "zip": "62769"
-  },
-  "st johns medical center|wy": {
-    "ccn": "530015",
-    "city": "JACKSON",
-    "domain": null,
-    "name": "ST JOHNS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(307) 733-3636",
-    "state": "WY",
-    "zip": "83001"
-  },
-  "st johns regional medical center|ca": {
-    "ccn": "050082",
-    "city": "OXNARD",
-    "domain": null,
-    "name": "ST JOHNS REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(805) 988-2500",
-    "state": "CA",
-    "zip": "93030"
-  },
-  "st joseph health system llc|in": {
-    "ccn": "150047",
-    "city": "FORT WAYNE",
-    "domain": null,
-    "name": "ST JOSEPH HEALTH SYSTEM, LLC",
-    "npi": null,
-    "phone": "(260) 425-3000",
-    "state": "IN",
-    "zip": "46802"
-  },
-  "st joseph hospital|me": {
-    "ccn": "200001",
-    "city": "BANGOR",
-    "domain": null,
-    "name": "ST JOSEPH HOSPITAL",
-    "npi": null,
-    "phone": "(207) 262-1000",
-    "state": "ME",
-    "zip": "04401"
-  },
-  "st joseph hospital|nh": {
-    "ccn": "300011",
-    "city": "NASHUA",
-    "domain": null,
-    "name": "ST JOSEPH HOSPITAL",
-    "npi": null,
-    "phone": "(603) 882-3000",
-    "state": "NH",
-    "zip": "03060"
-  },
-  "st joseph hospital|wa": {
-    "ccn": "500030",
-    "city": "BELLINGHAM",
-    "domain": null,
-    "name": "ST JOSEPH HOSPITAL",
-    "npi": null,
-    "phone": "(360) 734-5400",
-    "state": "WA",
-    "zip": "98225"
-  },
-  "st joseph medical center|il": {
-    "ccn": "140162",
-    "city": "BLOOMINGTON",
-    "domain": null,
-    "name": "ST JOSEPH MEDICAL CENTER",
-    "npi": null,
-    "phone": "(309) 662-3311",
-    "state": "IL",
-    "zip": "61701"
-  },
-  "st joseph medical center|mo": {
-    "ccn": "260085",
-    "city": "KANSAS CITY",
-    "domain": null,
-    "name": "ST JOSEPH MEDICAL CENTER",
-    "npi": null,
-    "phone": "(816) 942-4400",
-    "state": "MO",
-    "zip": "64114"
-  },
-  "st joseph medical center|tx": {
-    "ccn": "450035",
-    "city": "HOUSTON",
-    "domain": null,
-    "name": "ST JOSEPH MEDICAL CENTER",
-    "npi": null,
-    "phone": "(713) 757-1000",
-    "state": "TX",
-    "zip": "77002"
-  },
-  "st joseph medical center|wa": {
-    "ccn": "500108",
-    "city": "TACOMA",
-    "domain": null,
-    "name": "ST JOSEPH MEDICAL CENTER",
-    "npi": null,
-    "phone": "(253) 627-4101",
-    "state": "WA",
-    "zip": "98405"
-  },
-  "st joseph memorial hospital|il": {
-    "ccn": "141334",
-    "city": "MURPHYSBORO",
-    "domain": null,
-    "name": "ST JOSEPH MEMORIAL HOSPITAL",
-    "npi": null,
-    "phone": "(618) 684-3156",
-    "state": "IL",
-    "zip": "62966"
-  },
-  "st joseph regional medical center|id": {
-    "ccn": "130003",
-    "city": "LEWISTON",
-    "domain": null,
-    "name": "ST JOSEPH REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(208) 799-5300",
-    "state": "ID",
-    "zip": "83501"
-  },
-  "st joseph s behavioral health center|ca": {
-    "ccn": "054123",
-    "city": "STOCKTON",
-    "domain": null,
-    "name": "ST JOSEPH'S BEHAVIORAL HEALTH CENTER",
-    "npi": null,
-    "phone": "(209) 461-2000",
-    "state": "CA",
-    "zip": "95204"
-  },
-  "st joseph s hospital health center|ny": {
-    "ccn": "330140",
-    "city": "SYRACUSE",
-    "domain": null,
-    "name": "ST JOSEPH'S HOSPITAL HEALTH CENTER",
-    "npi": null,
-    "phone": "(315) 448-5111",
-    "state": "NY",
-    "zip": "13203"
-  },
-  "st joseph s hospital of buckhannon inc|wv": {
-    "ccn": "511321",
-    "city": "BUCKHANNON",
-    "domain": null,
-    "name": "ST JOSEPH'S HOSPITAL OF BUCKHANNON, INC",
-    "npi": null,
-    "phone": "(304) 472-2000",
-    "state": "WV",
-    "zip": "26201"
-  },
-  "st joseph s hospital savannah|ga": {
-    "ccn": "110043",
-    "city": "SAVANNAH",
-    "domain": null,
-    "name": "ST JOSEPH'S HOSPITAL - SAVANNAH",
-    "npi": null,
-    "phone": "(912) 819-4100",
-    "state": "GA",
-    "zip": "31419"
-  },
-  "st joseph s hospital|az": {
-    "ccn": "030011",
-    "city": "TUCSON",
-    "domain": null,
-    "name": "ST JOSEPH'S HOSPITAL",
-    "npi": null,
-    "phone": "(520) 873-3000",
-    "state": "AZ",
-    "zip": "85711"
-  },
-  "st joseph s hospital|il": {
-    "ccn": "141336",
-    "city": "HIGHLAND",
-    "domain": null,
-    "name": "ST JOSEPH'S HOSPITAL",
-    "npi": null,
-    "phone": "(618) 651-2600",
-    "state": "IL",
-    "zip": "62249"
-  },
-  "st joseph s medical center of stockton|ca": {
-    "ccn": "050084",
-    "city": "STOCKTON",
-    "domain": null,
-    "name": "ST JOSEPH'S MEDICAL CENTER OF STOCKTON",
-    "npi": null,
-    "phone": "(209) 943-2000",
-    "state": "CA",
-    "zip": "95204"
-  },
-  "st joseph s medical center|ny": {
-    "ccn": "330006",
-    "city": "YONKERS",
-    "domain": null,
-    "name": "ST JOSEPH'S MEDICAL CENTER",
-    "npi": null,
-    "phone": "(914) 378-7000",
-    "state": "NY",
-    "zip": "10701"
-  },
-  "st joseph s university medical center inc|nj": {
-    "ccn": "310019",
-    "city": "PATERSON",
-    "domain": null,
-    "name": "ST JOSEPH'S UNIVERSITY MEDICAL CENTER INC",
-    "npi": null,
-    "phone": "(973) 754-2010",
-    "state": "NJ",
-    "zip": "07503"
-  },
-  "st josephs area health services|mn": {
-    "ccn": "241380",
-    "city": "PARK RAPIDS",
-    "domain": null,
-    "name": "ST JOSEPHS AREA  HEALTH SERVICES",
-    "npi": null,
-    "phone": "(218) 732-3311",
-    "state": "MN",
-    "zip": "56470"
-  },
-  "st josephs community hospital west bend|wi": {
-    "ccn": "520063",
-    "city": "WEST BEND",
-    "domain": null,
-    "name": "ST JOSEPHS COMMUNITY HOSPITAL WEST BEND",
-    "npi": null,
-    "phone": "(262) 334-5533",
-    "state": "WI",
-    "zip": "53095"
-  },
-  "st josephs hospital and medical center|az": {
-    "ccn": "030024",
-    "city": "PHOENIX",
-    "domain": null,
-    "name": "ST JOSEPHS HOSPITAL AND MEDICAL CENTER",
-    "npi": null,
-    "phone": "(602) 406-8225",
-    "state": "AZ",
-    "zip": "85013"
-  },
-  "st josephs hospital|fl": {
-    "ccn": "100075",
-    "city": "TAMPA",
-    "domain": null,
-    "name": "ST JOSEPHS HOSPITAL",
-    "npi": null,
-    "phone": "(813) 870-4398",
-    "state": "FL",
-    "zip": "33607"
-  },
-  "st josephs hospital|il": {
-    "ccn": "140145",
-    "city": "BREESE",
-    "domain": null,
-    "name": "ST JOSEPHS HOSPITAL",
-    "npi": null,
-    "phone": "(618) 526-4511",
-    "state": "IL",
-    "zip": "62230"
-  },
-  "st jude childrens research hospital|tn": {
-    "ccn": "443302",
-    "city": "MEMPHIS",
-    "domain": null,
-    "name": "ST JUDE CHILDRENS RESEARCH HOSPITAL",
-    "npi": null,
-    "phone": "(901) 495-3300",
-    "state": "TN",
-    "zip": "38105"
-  },
-  "st lawrence psychiatric center|ny": {
-    "ccn": "334003",
-    "city": "OGDENSBURG",
-    "domain": null,
-    "name": "ST LAWRENCE PSYCHIATRIC CENTER",
-    "npi": null,
-    "phone": "(315) 541-2071",
-    "state": "NY",
-    "zip": "13669"
-  },
-  "st louis childrens hospital|mo": {
-    "ccn": "263301",
-    "city": "SAINT LOUIS",
-    "domain": null,
-    "name": "ST LOUIS CHILDRENS HOSPITAL",
-    "npi": null,
-    "phone": "(314) 454-6000",
-    "state": "MO",
-    "zip": "63110"
-  },
-  "st louis forensic treatment center|mo": {
-    "ccn": "264010",
-    "city": "SAINT LOUIS",
-    "domain": null,
-    "name": "ST LOUIS FORENSIC TREATMENT CENTER",
-    "npi": null,
-    "phone": "(314) 644-8000",
-    "state": "MO",
-    "zip": "63139"
-  },
-  "st louis john cochran va medical center|mo": {
-    "ccn": "26009F",
-    "city": "ST. LOUIS",
-    "domain": null,
-    "name": "ST LOUIS-JOHN COCHRAN VA MEDICAL CENTER",
-    "npi": null,
-    "phone": "(314) 652-4100",
-    "state": "MO",
-    "zip": "63106"
-  },
-  "st lucie medical center|fl": {
-    "ccn": "100260",
-    "city": "PORT SAINT LUCIE",
-    "domain": null,
-    "name": "ST LUCIE MEDICAL CENTER",
-    "npi": null,
-    "phone": "(772) 335-4000",
-    "state": "FL",
-    "zip": "34952"
-  },
-  "st luke community hospital|mt": {
-    "ccn": "271325",
-    "city": "RONAN",
-    "domain": null,
-    "name": "ST LUKE COMMUNITY HOSPITAL",
-    "npi": null,
-    "phone": "(406) 676-4441",
-    "state": "MT",
-    "zip": "59864"
-  },
-  "st luke hospital living center|ks": {
-    "ccn": "171356",
-    "city": "MARION",
-    "domain": null,
-    "name": "ST LUKE HOSPITAL & LIVING CENTER",
-    "npi": null,
-    "phone": "(620) 382-2177",
-    "state": "KS",
-    "zip": "66861"
-  },
-  "st luke s des peres hospital|mo": {
-    "ccn": "260176",
-    "city": "ST LOUIS",
-    "domain": null,
-    "name": "ST LUKE'S DES PERES HOSPITAL",
-    "npi": null,
-    "phone": "(314) 966-9100",
-    "state": "MO",
-    "zip": "63122"
-  },
-  "st luke s elmore medical center|id": {
-    "ccn": "131311",
-    "city": "MOUNTAIN HOME",
-    "domain": null,
-    "name": "ST LUKE'S ELMORE MEDICAL CENTER",
-    "npi": null,
-    "phone": "(208) 587-8401",
-    "state": "ID",
-    "zip": "83647"
-  },
-  "st luke s hospital anderson campus|pa": {
-    "ccn": "390326",
-    "city": "EASTON",
-    "domain": null,
-    "name": "ST LUKE'S HOSPITAL - ANDERSON CAMPUS",
-    "npi": null,
-    "phone": "(484) 503-3000",
-    "state": "PA",
-    "zip": "18045"
-  },
-  "st luke s hospital at the vintage|tx": {
-    "ccn": "670075",
-    "city": "HOUSTON",
-    "domain": null,
-    "name": "ST LUKE'S HOSPITAL AT THE VINTAGE",
-    "npi": null,
-    "phone": "(832) 534-5000",
-    "state": "TX",
-    "zip": "77070"
-  },
-  "st luke s hospital carbon campus|pa": {
-    "ccn": "390335",
-    "city": "LEHIGHTON",
-    "domain": null,
-    "name": "ST LUKE'S HOSPITAL - CARBON CAMPUS",
-    "npi": null,
-    "phone": "(610) 377-7001",
-    "state": "PA",
-    "zip": "18235"
-  },
-  "st luke s hospital easton campus|pa": {
-    "ccn": "390162",
-    "city": "EASTON",
-    "domain": null,
-    "name": "ST LUKE'S HOSPITAL - EASTON CAMPUS",
-    "npi": null,
-    "phone": "(610) 250-4076",
-    "state": "PA",
-    "zip": "18042"
-  },
-  "st luke s hospital grand view campus|pa": {
-    "ccn": "390057",
-    "city": "SELLERSVILLE",
-    "domain": null,
-    "name": "ST LUKE'S HOSPITAL - GRAND VIEW CAMPUS",
-    "npi": null,
-    "phone": "(215) 453-4000",
-    "state": "PA",
-    "zip": "18960"
-  },
-  "st luke s hospital monroe campus|pa": {
-    "ccn": "390330",
-    "city": "STROUDSBURG",
-    "domain": null,
-    "name": "ST LUKE'S HOSPITAL - MONROE CAMPUS",
-    "npi": null,
-    "phone": "(272) 212-1000",
-    "state": "PA",
-    "zip": "18360"
-  },
-  "st luke s hospital upper bucks campus|pa": {
-    "ccn": "390035",
-    "city": "QUAKERTOWN",
-    "domain": null,
-    "name": "ST LUKE'S HOSPITAL - UPPER BUCKS CAMPUS",
-    "npi": null,
-    "phone": "(267) 985-1000",
-    "state": "PA",
-    "zip": "18951"
-  },
-  "st luke s hospital|nd": {
-    "ccn": "351325",
-    "city": "CROSBY",
-    "domain": null,
-    "name": "ST LUKE'S HOSPITAL",
-    "npi": null,
-    "phone": "(701) 965-6384",
-    "state": "ND",
-    "zip": "58730"
-  },
-  "st luke s jerome|id": {
-    "ccn": "131310",
-    "city": "JEROME",
-    "domain": null,
-    "name": "ST LUKE'S JEROME",
-    "npi": null,
-    "phone": "(208) 324-4301",
-    "state": "ID",
-    "zip": "83338"
-  },
-  "st luke s mccall|id": {
-    "ccn": "131312",
-    "city": "MCCALL",
-    "domain": null,
-    "name": "ST LUKE'S MCCALL",
-    "npi": null,
-    "phone": "(208) 630-2395",
-    "state": "ID",
-    "zip": "83638"
-  },
-  "st luke s miners memorial hospital|pa": {
-    "ccn": "390183",
-    "city": "COALDALE",
-    "domain": null,
-    "name": "ST LUKE'S MINERS MEMORIAL HOSPITAL",
-    "npi": null,
-    "phone": "(570) 645-2131",
-    "state": "PA",
-    "zip": "18218"
-  },
-  "st luke s nampa medical center|id": {
-    "ccn": "130071",
-    "city": "NAMPA",
-    "domain": null,
-    "name": "ST LUKE'S NAMPA MEDICAL CENTER",
-    "npi": null,
-    "phone": "(208) 505-2000",
-    "state": "ID",
-    "zip": "83687"
-  },
-  "st luke s patients medical center|tx": {
-    "ccn": "670031",
-    "city": "PASADENA",
-    "domain": null,
-    "name": "ST LUKE'S PATIENTS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(281) 487-0700",
-    "state": "TX",
-    "zip": "77505"
-  },
-  "st luke s regional medical center|id": {
-    "ccn": "130006",
-    "city": "BOISE",
-    "domain": null,
-    "name": "ST LUKE'S REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(208) 381-2222",
-    "state": "ID",
-    "zip": "83712"
-  },
-  "st luke s sugar land hospital|tx": {
-    "ccn": "670053",
-    "city": "SUGAR LAND",
-    "domain": null,
-    "name": "ST LUKE'S SUGAR LAND HOSPITAL",
-    "npi": null,
-    "phone": "(281) 637-7000",
-    "state": "TX",
-    "zip": "77478"
-  },
-  "st luke s the woodlands hospital|tx": {
-    "ccn": "450862",
-    "city": "THE WOODLANDS",
-    "domain": null,
-    "name": "ST LUKE'S THE WOODLANDS HOSPITAL",
-    "npi": null,
-    "phone": "(936) 266-4050",
-    "state": "TX",
-    "zip": "77384"
-  },
-  "st luke s warren hospital|nj": {
-    "ccn": "310060",
-    "city": "PHILLIPSBURG",
-    "domain": null,
-    "name": "ST LUKE'S WARREN HOSPITAL",
-    "npi": null,
-    "phone": "(908) 847-6700",
-    "state": "NJ",
-    "zip": "08865"
-  },
-  "st luke s wood river medical center|id": {
-    "ccn": "131323",
-    "city": "KETCHUM",
-    "domain": null,
-    "name": "ST LUKE'S WOOD RIVER MEDICAL CENTER",
-    "npi": null,
-    "phone": "(208) 727-8800",
-    "state": "ID",
-    "zip": "83340"
-  },
-  "st lukes hospital bethlehem|pa": {
-    "ccn": "390049",
-    "city": "BETHLEHEM",
-    "domain": null,
-    "name": "ST LUKES HOSPITAL BETHLEHEM",
-    "npi": null,
-    "phone": "(484) 526-4000",
-    "state": "PA",
-    "zip": "18015"
-  },
-  "st lukes hospital of kansas city|mo": {
-    "ccn": "260138",
-    "city": "KANSAS CITY",
-    "domain": null,
-    "name": "ST LUKES HOSPITAL OF KANSAS CITY",
-    "npi": null,
-    "phone": "(816) 932-2000",
-    "state": "MO",
-    "zip": "64111"
-  },
-  "st lukes hospital|ia": {
-    "ccn": "160045",
-    "city": "CEDAR RAPIDS",
-    "domain": null,
-    "name": "ST LUKES HOSPITAL",
-    "npi": null,
-    "phone": "(319) 369-7211",
-    "state": "IA",
-    "zip": "52402"
-  },
-  "st lukes hospital|mn": {
-    "ccn": "240047",
-    "city": "DULUTH",
-    "domain": null,
-    "name": "ST LUKES HOSPITAL",
-    "npi": null,
-    "phone": "(218) 249-5555",
-    "state": "MN",
-    "zip": "55805"
-  },
-  "st lukes hospital|mo": {
-    "ccn": "260179",
-    "city": "CHESTERFIELD",
-    "domain": null,
-    "name": "ST LUKES HOSPITAL",
-    "npi": null,
-    "phone": "(314) 434-1500",
-    "state": "MO",
-    "zip": "63017"
-  },
-  "st lukes hospital|nc": {
-    "ccn": "341322",
-    "city": "COLUMBUS",
-    "domain": null,
-    "name": "ST LUKES HOSPITAL",
-    "npi": null,
-    "phone": "(828) 894-3311",
-    "state": "NC",
-    "zip": "28722"
-  },
-  "st lukes magic valley medical center|id": {
-    "ccn": "130002",
-    "city": "TWIN FALLS",
-    "domain": null,
-    "name": "ST LUKES MAGIC VALLEY MEDICAL CENTER",
-    "npi": null,
-    "phone": "(208) 814-1000",
-    "state": "ID",
-    "zip": "83301"
-  },
-  "st lukes regional medical center|ia": {
-    "ccn": "160146",
-    "city": "SIOUX CITY",
-    "domain": null,
-    "name": "ST LUKES REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(712) 279-3500",
-    "state": "IA",
-    "zip": "51104"
-  },
-  "st mark s hospital|ut": {
-    "ccn": "460047",
-    "city": "SALT LAKE CITY",
-    "domain": null,
-    "name": "ST MARK'S HOSPITAL",
-    "npi": null,
-    "phone": "(801) 268-7111",
-    "state": "UT",
-    "zip": "84124"
-  },
-  "st mary corwin hospital|co": {
-    "ccn": "060012",
-    "city": "PUEBLO",
-    "domain": null,
-    "name": "ST MARY-CORWIN HOSPITAL",
-    "npi": null,
-    "phone": "(719) 557-4000",
-    "state": "CO",
-    "zip": "81004"
-  },
-  "st mary medical center inc|in": {
-    "ccn": "150034",
-    "city": "HOBART",
-    "domain": null,
-    "name": "ST MARY MEDICAL CENTER INC",
-    "npi": null,
-    "phone": "(219) 947-6196",
-    "state": "IN",
-    "zip": "46342"
-  },
-  "st mary medical center|ca": {
-    "ccn": "050191",
-    "city": "LONG BEACH",
-    "domain": null,
-    "name": "ST MARY MEDICAL CENTER",
-    "npi": null,
-    "phone": "(562) 491-9000",
-    "state": "CA",
-    "zip": "90813"
-  },
-  "st mary medical center|il": {
-    "ccn": "140064",
-    "city": "GALESBURG",
-    "domain": null,
-    "name": "ST MARY MEDICAL CENTER",
-    "npi": null,
-    "phone": "(309) 344-3161",
-    "state": "IL",
-    "zip": "61401"
-  },
-  "st mary medical center|pa": {
-    "ccn": "390258",
-    "city": "LANGHORNE",
-    "domain": null,
-    "name": "ST MARY MEDICAL CENTER",
-    "npi": null,
-    "phone": "(215) 750-2003",
-    "state": "PA",
-    "zip": "19047"
-  },
-  "st mary s general hospital|nj": {
-    "ccn": "310006",
-    "city": "PASSAIC",
-    "domain": null,
-    "name": "ST MARY'S GENERAL HOSPITAL",
-    "npi": null,
-    "phone": "(973) 365-4300",
-    "state": "NJ",
-    "zip": "07055"
-  },
-  "st mary s healthcare|ny": {
-    "ccn": "330047",
-    "city": "AMSTERDAM",
-    "domain": null,
-    "name": "ST MARY'S HEALTHCARE",
-    "npi": null,
-    "phone": "(518) 842-1900",
-    "state": "NY",
-    "zip": "12010"
-  },
-  "st mary s hospital|az": {
-    "ccn": "030010",
-    "city": "TUCSON",
-    "domain": null,
-    "name": "ST. MARY'S HOSPITAL",
-    "npi": null,
-    "phone": "(520) 872-3000",
-    "state": "AZ",
-    "zip": "85745"
-  },
-  "st mary s hospital|ga": {
-    "ccn": "110006",
-    "city": "ATHENS",
-    "domain": null,
-    "name": "ST MARY'S HOSPITAL",
-    "npi": null,
-    "phone": "(706) 389-3000",
-    "state": "GA",
-    "zip": "30606"
-  },
-  "st mary s hospital|id": {
-    "ccn": "131321",
-    "city": "COTTONWOOD",
-    "domain": null,
-    "name": "ST MARY'S HOSPITAL",
-    "npi": null,
-    "phone": "(208) 962-3251",
-    "state": "ID",
-    "zip": "83522"
-  },
-  "st mary s medical center|fl": {
-    "ccn": "100288",
-    "city": "WEST PALM BEACH",
-    "domain": null,
-    "name": "ST MARY'S MEDICAL CENTER",
-    "npi": null,
-    "phone": "(561) 840-6202",
-    "state": "FL",
-    "zip": "33407"
-  },
-  "st mary s medical center|mo": {
-    "ccn": "260193",
-    "city": "BLUE SPRINGS",
-    "domain": null,
-    "name": "ST MARY'S MEDICAL CENTER",
-    "npi": null,
-    "phone": "(816) 228-5900",
-    "state": "MO",
-    "zip": "64014"
-  },
-  "st mary s regional medical center|me": {
-    "ccn": "200034",
-    "city": "LEWISTON",
-    "domain": null,
-    "name": "ST MARY'S REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(207) 777-8100",
-    "state": "ME",
-    "zip": "04243"
-  },
-  "st mary s regional medical center|ok": {
-    "ccn": "370026",
-    "city": "ENID",
-    "domain": null,
-    "name": "ST MARY'S REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(580) 233-6100",
-    "state": "OK",
-    "zip": "73701"
-  },
-  "st marys good samaritan hospital|ga": {
-    "ccn": "111329",
-    "city": "GREENSBORO",
-    "domain": null,
-    "name": "ST MARYS GOOD SAMARITAN HOSPITAL",
-    "npi": null,
-    "phone": "(706) 453-7331",
-    "state": "GA",
-    "zip": "30642"
-  },
-  "st marys hospital medical ctr|wi": {
-    "ccn": "520097",
-    "city": "GREEN BAY",
-    "domain": null,
-    "name": "ST MARYS HOSPITAL MEDICAL CTR",
-    "npi": null,
-    "phone": "(920) 498-4200",
-    "state": "WI",
-    "zip": "54303"
-  },
-  "st marys hospital superior|wi": {
-    "ccn": "521329",
-    "city": "SUPERIOR",
-    "domain": null,
-    "name": "ST MARYS HOSPITAL SUPERIOR",
-    "npi": null,
-    "phone": "(715) 817-7000",
-    "state": "WI",
-    "zip": "54880"
-  },
-  "st marys hospital|il": {
-    "ccn": "140166",
-    "city": "DECATUR",
-    "domain": null,
-    "name": "ST MARYS HOSPITAL",
-    "npi": null,
-    "phone": "(217) 464-2966",
-    "state": "IL",
-    "zip": "62521"
-  },
-  "st marys medical center|wv": {
-    "ccn": "510007",
-    "city": "HUNTINGTON",
-    "domain": null,
-    "name": "ST MARYS MEDICAL CENTER",
-    "npi": null,
-    "phone": "(304) 526-1234",
-    "state": "WV",
-    "zip": "25702"
-  },
-  "st marys regional medical center|ar": {
-    "ccn": "040041",
-    "city": "RUSSELLVILLE",
-    "domain": null,
-    "name": "ST MARYS REGIONAL MEDICAL CENTER",
-    "npi": null,
-    "phone": "(479) 968-2841",
-    "state": "AR",
-    "zip": "72801"
-  },
-  "st michael s hospital cah|sd": {
-    "ccn": "431327",
-    "city": "TYNDALL",
-    "domain": null,
-    "name": "ST MICHAEL'S HOSPITAL - CAH",
-    "npi": null,
-    "phone": "(605) 589-2100",
-    "state": "SD",
-    "zip": "57066"
-  },
-  "st michaels medical hospital llc|tx": {
-    "ccn": "670314",
-    "city": "SUGAR LAND",
-    "domain": null,
-    "name": "ST MICHAELS MEDICAL HOSPITAL LLC",
-    "npi": null,
-    "phone": "(281) 980-4357",
-    "state": "TX",
-    "zip": "77479"
-  },
-  "st nicholas hospital|wi": {
-    "ccn": "520044",
-    "city": "SHEBOYGAN",
-    "domain": null,
-    "name": "ST NICHOLAS HOSPITAL",
-    "npi": null,
-    "phone": "(920) 459-8300",
-    "state": "WI",
-    "zip": "53081"
-  },
-  "st patrick hospital|mt": {
-    "ccn": "270014",
-    "city": "MISSOULA",
-    "domain": null,
-    "name": "ST. PATRICK HOSPITAL",
-    "npi": null,
-    "phone": "(406) 543-7271",
-    "state": "MT",
-    "zip": "59802"
-  },
-  "st peter s hospital|ny": {
-    "ccn": "330057",
-    "city": "ALBANY",
-    "domain": null,
-    "name": "ST PETER'S HOSPITAL",
-    "npi": null,
-    "phone": "(518) 525-1550",
-    "state": "NY",
-    "zip": "12208"
-  },
-  "st peters health|mt": {
-    "ccn": "270003",
-    "city": "HELENA",
-    "domain": null,
-    "name": "ST PETERS HEALTH",
-    "npi": null,
-    "phone": "(406) 442-2480",
-    "state": "MT",
-    "zip": "59601"
-  },
-  "st rose hospital|ca": {
-    "ccn": "050002",
-    "city": "HAYWARD",
-    "domain": null,
-    "name": "ST ROSE HOSPITAL",
-    "npi": null,
-    "phone": "(510) 782-6200",
-    "state": "CA",
-    "zip": "94545"
-  },
-  "st simons by the sea|ga": {
-    "ccn": "114016",
-    "city": "SAINT SIMONS ISLAND",
-    "domain": null,
-    "name": "ST SIMONS-BY-THE-SEA",
-    "npi": null,
-    "phone": "(912) 638-1999",
-    "state": "GA",
-    "zip": "31522"
-  },
-  "st tammany parish hospital|la": {
-    "ccn": "190045",
-    "city": "COVINGTON",
-    "domain": null,
-    "name": "ST TAMMANY PARISH HOSPITAL",
-    "npi": null,
-    "phone": "(985) 898-4000",
-    "state": "LA",
-    "zip": "70433"
-  },
-  "st thomas more hospital|co": {
-    "ccn": "061344",
-    "city": "CANON CITY",
-    "domain": null,
-    "name": "ST THOMAS MORE HOSPITAL",
-    "npi": null,
-    "phone": "(719) 285-2000",
-    "state": "CO",
-    "zip": "81212"
-  },
-  "st veronica|ks": {
-    "ccn": "174027",
-    "city": "BEL AIRE",
-    "domain": null,
-    "name": "ST VERONICA",
-    "npi": null,
-    "phone": "(316) 744-2020",
-    "state": "KS",
-    "zip": "67226"
-  },
-  "st vincent general hospital district|co": {
-    "ccn": "061319",
-    "city": "LEADVILLE",
-    "domain": null,
-    "name": "ST VINCENT GENERAL HOSPITAL DISTRICT",
-    "npi": null,
-    "phone": "(719) 486-0230",
-    "state": "CO",
-    "zip": "80461"
-  },
-  "st vincent heart center|in": {
-    "ccn": "150153",
-    "city": "CARMEL",
-    "domain": null,
-    "name": "ST VINCENT HEART CENTER",
-    "npi": null,
-    "phone": "(317) 583-5000",
-    "state": "IN",
-    "zip": "46290"
-  },
-  "st vincent hospital|ma": {
-    "ccn": "220176",
-    "city": "WORCESTER",
-    "domain": null,
-    "name": "ST VINCENT HOSPITAL",
-    "npi": null,
-    "phone": "(508) 363-5000",
-    "state": "MA",
-    "zip": "01608"
-  },
-  "st vincent hospital|wi": {
-    "ccn": "520075",
-    "city": "GREEN BAY",
-    "domain": null,
-    "name": "ST VINCENT HOSPITAL",
-    "npi": null,
-    "phone": "(920) 433-0111",
-    "state": "WI",
-    "zip": "54301"
-  },
-  "st vincent medical center north|ar": {
-    "ccn": "040137",
-    "city": "SHERWOOD",
-    "domain": null,
-    "name": "ST VINCENT MEDICAL CENTER/NORTH",
-    "npi": null,
-    "phone": "(501) 552-7100",
-    "state": "AR",
-    "zip": "72120"
-  },
-  "st vincent s birmingham|al": {
-    "ccn": "010056",
-    "city": "BIRMINGHAM",
-    "domain": null,
-    "name": "ST VINCENT'S BIRMINGHAM",
-    "npi": null,
-    "phone": "(205) 939-7000",
-    "state": "AL",
-    "zip": "35205"
-  },
-  "st vincent s chilton|al": {
-    "ccn": "010173",
-    "city": "CLANTON",
-    "domain": null,
-    "name": "ST VINCENT'S CHILTON",
-    "npi": null,
-    "phone": "(205) 258-4400",
-    "state": "AL",
-    "zip": "35045"
-  },
-  "st vincent s east|al": {
-    "ccn": "010011",
-    "city": "BIRMINGHAM",
-    "domain": null,
-    "name": "ST. VINCENT'S EAST",
-    "npi": null,
-    "phone": "(205) 838-3122",
-    "state": "AL",
-    "zip": "35235"
-  },
-  "st vincent s medical center|ct": {
-    "ccn": "070028",
-    "city": "BRIDGEPORT",
-    "domain": null,
-    "name": "ST VINCENT'S MEDICAL CENTER",
-    "npi": null,
-    "phone": "(203) 576-5551",
-    "state": "CT",
-    "zip": "06606"
-  },
-  "st vincent s st clair|al": {
-    "ccn": "010130",
-    "city": "PELL CITY",
-    "domain": null,
-    "name": "ST VINCENT'S ST CLAIR",
-    "npi": null,
-    "phone": "(205) 338-3301",
-    "state": "AL",
-    "zip": "35125"
-  },
-  "st vincents blount|al": {
-    "ccn": "011305",
-    "city": "ONEONTA",
-    "domain": null,
-    "name": "ST VINCENTS BLOUNT",
-    "npi": null,
-    "phone": "(205) 274-3000",
-    "state": "AL",
-    "zip": "35121"
   },
   "stafford county hospital|ks": {
     "ccn": "171323",
@@ -46959,7 +46939,7 @@
     "state": "MA",
     "zip": "02780"
   },
-  "tawas st joseph hospital|mi": {
+  "tawas saint joseph hospital|mi": {
     "ccn": "230100",
     "city": "TAWAS CITY",
     "domain": null,
@@ -47459,7 +47439,7 @@
     "state": "MI",
     "zip": "48176"
   },
-  "the children s center inc|ok": {
+  "the childrens center inc|ok": {
     "ccn": "373303",
     "city": "BETHANY",
     "domain": null,
@@ -47469,7 +47449,7 @@
     "state": "OK",
     "zip": "73008"
   },
-  "the children s hospital of alabama|al": {
+  "the childrens hospital of alabama|al": {
     "ccn": "013300",
     "city": "BIRMINGHAM",
     "domain": null,
@@ -47479,7 +47459,7 @@
     "state": "AL",
     "zip": "35233"
   },
-  "the children s mercy hospital|mo": {
+  "the childrens mercy hospital|mo": {
     "ccn": "263302",
     "city": "KANSAS CITY",
     "domain": null,
@@ -47499,7 +47479,7 @@
     "state": "CT",
     "zip": "06405"
   },
-  "the core institute specialty hosp|az": {
+  "the core institute specialty hospital|az": {
     "ccn": "030108",
     "city": "PHOENIX",
     "domain": null,
@@ -47919,7 +47899,7 @@
     "state": "FL",
     "zip": "34471"
   },
-  "the women s hospital|in": {
+  "the womens hospital|in": {
     "ccn": "150149",
     "city": "NEWBURGH",
     "domain": null,
@@ -47989,16 +47969,6 @@
     "state": "WI",
     "zip": "54984"
   },
-  "thedacare regional med ctr neenah|wi": {
-    "ccn": "520045",
-    "city": "NEENAH",
-    "domain": null,
-    "name": "THEDACARE REGIONAL MED CTR - NEENAH",
-    "npi": null,
-    "phone": "(920) 729-3100",
-    "state": "WI",
-    "zip": "54956"
-  },
   "thedacare regional medical center appleton inc|wi": {
     "ccn": "520160",
     "city": "APPLETON",
@@ -48008,6 +47978,16 @@
     "phone": "(920) 731-4101",
     "state": "WI",
     "zip": "54911"
+  },
+  "thedacare regional medical center neenah|wi": {
+    "ccn": "520045",
+    "city": "NEENAH",
+    "domain": null,
+    "name": "THEDACARE REGIONAL MED CTR - NEENAH",
+    "npi": null,
+    "phone": "(920) 729-3100",
+    "state": "WI",
+    "zip": "54956"
   },
   "thibodaux regional medical center|la": {
     "ccn": "190004",
@@ -48419,7 +48399,7 @@
     "state": "KS",
     "zip": "67672"
   },
-  "trenton psychiatric hosp|nj": {
+  "trenton psychiatric hospital|nj": {
     "ccn": "314013",
     "city": "TRENTON",
     "domain": null,
@@ -48949,7 +48929,7 @@
     "state": "MS",
     "zip": "38967"
   },
-  "uc san diego health hillcrest hillcrest med ctr|ca": {
+  "uc san diego health hillcrest hillcrest medical center|ca": {
     "ccn": "050025",
     "city": "SAN DIEGO",
     "domain": null,
@@ -49149,7 +49129,7 @@
     "state": "CA",
     "zip": "91307"
   },
-  "ucsf benioff children s hospital oakland|ca": {
+  "ucsf benioff childrens hospital oakland|ca": {
     "ccn": "053301",
     "city": "OAKLAND",
     "domain": null,
@@ -49169,7 +49149,7 @@
     "state": "CA",
     "zip": "94109"
   },
-  "ucsf health st mary s hospital|ca": {
+  "ucsf health saint marys hospital|ca": {
     "ccn": "050457",
     "city": "SAN FRANCISCO",
     "domain": null,
@@ -49239,7 +49219,7 @@
     "state": "OH",
     "zip": "44024"
   },
-  "uh st john medical center|oh": {
+  "uh saint john medical center|oh": {
     "ccn": "360123",
     "city": "WESTLAKE",
     "domain": null,
@@ -49699,16 +49679,6 @@
     "state": "WI",
     "zip": "53715"
   },
-  "univ of vermont fletcher allen health care|vt": {
-    "ccn": "470003",
-    "city": "BURLINGTON",
-    "domain": null,
-    "name": "UNIV. OF VERMONT - FLETCHER ALLEN HEALTH CARE",
-    "npi": null,
-    "phone": "(802) 847-0000",
-    "state": "VT",
-    "zip": "05401"
-  },
   "universal behavioral health hospital|la": {
     "ccn": "194117",
     "city": "HAMMOND",
@@ -49999,7 +49969,7 @@
     "state": "KS",
     "zip": "66061"
   },
-  "university of kansas health system st francis campus|ks": {
+  "university of kansas health system saint francis campus|ks": {
     "ccn": "170016",
     "city": "TOPEKA",
     "domain": null,
@@ -50099,6 +50069,16 @@
     "state": "MD",
     "zip": "21201"
   },
+  "university of md saint joseph medical center|md": {
+    "ccn": "210063",
+    "city": "TOWSON",
+    "domain": null,
+    "name": "UNIVERSITY OF MD ST JOSEPH MEDICAL CENTER",
+    "npi": null,
+    "phone": "(410) 337-1000",
+    "state": "MD",
+    "zip": "21204"
+  },
   "university of md shore medical center at easton|md": {
     "ccn": "210037",
     "city": "EASTON",
@@ -50118,16 +50098,6 @@
     "phone": "(410) 778-7668",
     "state": "MD",
     "zip": "21620"
-  },
-  "university of md st joseph medical center|md": {
-    "ccn": "210063",
-    "city": "TOWSON",
-    "domain": null,
-    "name": "UNIVERSITY OF MD ST JOSEPH MEDICAL CENTER",
-    "npi": null,
-    "phone": "(410) 337-1000",
-    "state": "MD",
-    "zip": "21204"
   },
   "university of michigan health sparrow carson|mi": {
     "ccn": "230208",
@@ -50228,6 +50198,16 @@
     "phone": "(801) 581-2121",
     "state": "UT",
     "zip": "84132"
+  },
+  "university of vermont fletcher allen health care|vt": {
+    "ccn": "470003",
+    "city": "BURLINGTON",
+    "domain": null,
+    "name": "UNIV. OF VERMONT - FLETCHER ALLEN HEALTH CARE",
+    "npi": null,
+    "phone": "(802) 847-0000",
+    "state": "VT",
+    "zip": "05401"
   },
   "university of virginia medical center|va": {
     "ccn": "490009",
@@ -50369,7 +50349,7 @@
     "state": "NY",
     "zip": "14701"
   },
-  "upmc children s hospital of pittsburgh|pa": {
+  "upmc childrens hospital of pittsburgh|pa": {
     "ccn": "393302",
     "city": "PITTSBURGH",
     "domain": null,
@@ -50549,6 +50529,16 @@
     "state": "PA",
     "zip": "15213"
   },
+  "upmc saint margaret|pa": {
+    "ccn": "390102",
+    "city": "PITTSBURGH",
+    "domain": null,
+    "name": "UPMC ST MARGARET",
+    "npi": null,
+    "phone": "(412) 784-4000",
+    "state": "PA",
+    "zip": "15215"
+  },
   "upmc somerset|pa": {
     "ccn": "390039",
     "city": "SOMERSET",
@@ -50558,16 +50548,6 @@
     "phone": "(814) 443-5000",
     "state": "PA",
     "zip": "15501"
-  },
-  "upmc st margaret|pa": {
-    "ccn": "390102",
-    "city": "PITTSBURGH",
-    "domain": null,
-    "name": "UPMC ST MARGARET",
-    "npi": null,
-    "phone": "(412) 784-4000",
-    "state": "PA",
-    "zip": "15215"
   },
   "upmc wellsboro|pa": {
     "ccn": "391316",
@@ -50629,7 +50609,7 @@
     "state": "NY",
     "zip": "14215"
   },
-  "usa health children s women s hospital|al": {
+  "usa health childrens womens hospital|al": {
     "ccn": "013301",
     "city": "MOBILE",
     "domain": null,
@@ -51109,7 +51089,7 @@
     "state": "AZ",
     "zip": "86313"
   },
-  "va pittsburgh healthcare system univ dr|pa": {
+  "va pittsburgh healthcare system university dr|pa": {
     "ccn": "39012F",
     "city": "PITTSBURGH",
     "domain": null,
@@ -51229,7 +51209,7 @@
     "state": "AR",
     "zip": "72923"
   },
-  "valley children s hospital|ca": {
+  "valley childrens hospital|ca": {
     "ccn": "053300",
     "city": "MADERA",
     "domain": null,
@@ -51579,7 +51559,7 @@
     "state": "TX",
     "zip": "78550"
   },
-  "via christi hospital wichita st teresa inc|ks": {
+  "via christi hospital wichita saint teresa inc|ks": {
     "ccn": "170200",
     "city": "WICHITA",
     "domain": null,
@@ -52039,16 +52019,6 @@
     "state": "WY",
     "zip": "82401"
   },
-  "washington county hosp inc|nc": {
-    "ccn": "341314",
-    "city": "PLYMOUTH",
-    "domain": null,
-    "name": "WASHINGTON COUNTY HOSP INC",
-    "npi": null,
-    "phone": "(252) 793-4135",
-    "state": "NC",
-    "zip": "27962"
-  },
   "washington county hospital and clinics|ia": {
     "ccn": "161344",
     "city": "WASHINGTON",
@@ -52058,6 +52028,16 @@
     "phone": "(319) 653-5481",
     "state": "IA",
     "zip": "52353"
+  },
+  "washington county hospital inc|nc": {
+    "ccn": "341314",
+    "city": "PLYMOUTH",
+    "domain": null,
+    "name": "WASHINGTON COUNTY HOSP INC",
+    "npi": null,
+    "phone": "(252) 793-4135",
+    "state": "NC",
+    "zip": "27962"
   },
   "washington county hospital|al": {
     "ccn": "011300",
@@ -54049,7 +54029,7 @@
     "state": "AZ",
     "zip": "85364"
   },
-  "zuckerberg san francisco general hosp trauma ctr|ca": {
+  "zuckerberg san francisco general hospital trauma ctr|ca": {
     "ccn": "050228",
     "city": "SAN FRANCISCO",
     "domain": null,

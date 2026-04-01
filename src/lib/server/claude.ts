@@ -5,40 +5,74 @@ import type { BillInput, AuditResult, ConfidenceLevel } from '$lib/types'
 import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/types'
 import { lookupHospitalPrices } from './hospital-prices'
 import type { HospitalPriceResult } from './hospital-prices'
+import { createServerLogger, serializeError } from './logger.js'
+import { AUDIT_TOOL_DECLARATIONS } from './audit-tools.mjs'
 import {
   buildDataContext as _buildDataContext,
   buildDeterministicFindings as _buildDeterministicFindings,
+  buildArithmeticFindings,
+  buildDateFindings,
+  buildGfeFindings,
   getMpfsRate,
   CPT_DESCRIPTIONS,
   getNcciEntry,
 } from './audit-rules'
-import type { NcciEntry, NcciData, MpfsData, AspData, ClfsData } from './audit-rules'
+import type {
+  NcciEntry,
+  NcciData,
+  MpfsData,
+  AspData,
+  ClfsData,
+  MueData,
+  EmMdmTierData,
+  LcdCoverageData,
+} from './audit-rules'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
 
-type WorkerResult = { text: string } | { error: string }
+type WorkerResult =
+  | { text: string; functionCalls?: Array<{ name: string; args?: Record<string, unknown> }>; parts?: unknown[] }
+  | { error: string }
+type WorkerRequest = {
+  prompt?: string
+  contents?: Array<{ role: string; parts: unknown[] }>
+  tools?: unknown[]
+  traceId?: string
+}
+
+function createAuditLogger(traceId?: string) {
+  return createServerLogger('audit-core', traceId)
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function runClaudeWorker(prompt: string, timeoutMs: number): Promise<WorkerResult & { rawOutput?: string }> {
+function runClaudeWorker(input: WorkerRequest, timeoutMs: number): Promise<WorkerResult & { rawOutput?: string }> {
+  const log = createAuditLogger(input.traceId)
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLAUDE_WORKER], {
       timeout: timeoutMs,
+      stdio: ['pipe', 'pipe', 'inherit'],
       env: { ...process.env, GEMINI_API_KEY },
     })
     let output = ''
-    child.stdout.on('data', (chunk: Buffer) => { output += chunk.toString() })
+    child.stdout?.on('data', (chunk: Buffer) => { output += chunk.toString() })
     child.on('close', () => {
       try {
         resolve(JSON.parse(output))
       } catch {
+        log.error('worker-invalid-output', {
+          outputPreview: output.slice(0, 500),
+        })
         resolve({ error: 'Worker process returned invalid output', rawOutput: output.slice(0, 500) })
       }
     })
-    child.on('error', (err) => resolve({ error: err.message }))
-    child.stdin.write(JSON.stringify({ prompt }))
+    child.on('error', (err) => {
+      log.error('worker-process-error', { error: serializeError(err) })
+      resolve({ error: err.message })
+    })
+    child.stdin.write(JSON.stringify(input))
     child.stdin.end()
   })
 }
@@ -48,12 +82,12 @@ function isTransientWorkerError(error: string): boolean {
   return lower.includes('503') || lower.includes('high demand') || lower.includes('temporarily') || lower.includes('invalid output')
 }
 
-async function callClaude(prompt: string, timeoutMs: number): Promise<WorkerResult> {
-  const first = await runClaudeWorker(prompt, timeoutMs)
+async function callClaude(prompt: string, timeoutMs: number, traceId?: string): Promise<WorkerResult> {
+  const first = await runClaudeWorker({ prompt, traceId }, timeoutMs)
   if (!('error' in first) || !isTransientWorkerError(first.error)) return first
 
   await sleep(1500)
-  const second = await runClaudeWorker(prompt, timeoutMs)
+  const second = await runClaudeWorker({ prompt, traceId }, timeoutMs)
   if (!('error' in second) || !isTransientWorkerError(second.error)) return second
 
   return second.error.includes('invalid output')
@@ -61,11 +95,133 @@ async function callClaude(prompt: string, timeoutMs: number): Promise<WorkerResu
     : second
 }
 
+type ToolExecutionData = {
+  mpfs: MpfsData
+  ncci: NcciData
+  mue: MueData
+  lcdCoverage: LcdCoverageData
+  asp: AspData
+  clfs: ClfsData
+}
+
+export function executeTool(
+  name: string,
+  args: Record<string, unknown>,
+  data: ToolExecutionData
+): unknown {
+  switch (name) {
+    case 'lookup_mpfs_rate': {
+      const code = String(args.cptCode ?? '').trim().toUpperCase()
+      const rate = getMpfsRate(data.mpfs[code]) ?? data.clfs[code]?.rate ?? null
+      return { code, rate, source: rate != null ? (data.mpfs[code] ? 'mpfs' : 'clfs') : 'not_found' }
+    }
+    case 'check_ncci_bundling': {
+      const code = String(args.cptCode ?? '').trim().toUpperCase()
+      const allCodes = new Set(((args.allCodesOnBill as string[] | undefined) ?? []).map((value) => value.toUpperCase()))
+      const entry = getNcciEntry(code, data.ncci)
+      if (!entry) return { ncciViolation: false }
+      const bundledWith = entry.bundledInto.filter((candidate) => allCodes.has(candidate))
+      const modifiers = ((args.modifiers as string[] | undefined) ?? []).map((value) => value.trim())
+      const hasModifier59 = modifiers.some((modifier) => ['59', '-59', 'XE', 'XP', 'XS', 'XU'].includes(modifier))
+      return {
+        ncciViolation: bundledWith.length > 0,
+        bundledWith,
+        modifierCanOverride: entry.modifierCanOverride,
+        hasModifier59,
+      }
+    }
+    case 'check_mue_units': {
+      const code = String(args.cptCode ?? '').trim().toUpperCase()
+      const unitsBilled = Number(args.unitsBilled ?? 0)
+      const entry = data.mue[code]
+      if (!entry) return { hasMue: false }
+      return {
+        hasMue: true,
+        maxUnits: entry.maxUnits,
+        adjudicationType: entry.adjudicationType,
+        exceedsLimit: entry.adjudicationType === 'date_of_service' && unitsBilled > entry.maxUnits,
+      }
+    }
+    case 'check_lcd_coverage': {
+      const code = String(args.cptCode ?? '').trim().toUpperCase()
+      const icd10Codes = ((args.icd10Codes as string[] | undefined) ?? []).map((value) => value.toUpperCase())
+      const entry = data.lcdCoverage[code]
+      if (!entry) return { hasLcd: false }
+      const hasCoveredDx = icd10Codes.some((icd) =>
+        entry.covered.some((covered) => icd.startsWith(covered.toUpperCase()))
+      )
+      const hasExcludedDx = icd10Codes.some((icd) =>
+        entry.notCovered.some((excluded) => icd.startsWith(excluded.toUpperCase()))
+      )
+      return {
+        hasLcd: true,
+        lcdIds: entry.lcdIds,
+        hasCoveredDx,
+        hasExcludedDx,
+        coveredCount: entry.covered.length,
+      }
+    }
+    default:
+      return { error: `Unknown tool: ${name}` }
+  }
+}
+
+async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: string): Promise<WorkerResult> {
+  const contents: Array<{ role: string; parts: unknown[] }> = [{ role: 'user', parts: [{ text: prompt }] }]
+  const maxTurns = 4
+  const log = createAuditLogger(traceId)
+
+  for (let attempt = 0; attempt < maxTurns; attempt++) {
+    log.info('tool-turn-start', {
+      attempt: attempt + 1,
+      contentsCount: contents.length,
+    })
+    const result = await runClaudeWorker({ contents, tools: AUDIT_TOOL_DECLARATIONS, traceId }, timeoutMs)
+    if ('error' in result) return result
+
+    const functionCalls = result.functionCalls ?? []
+    log.info('tool-turn-result', {
+      attempt: attempt + 1,
+      functionCallCount: functionCalls.length,
+      textLength: result.text.length,
+    })
+    if (functionCalls.length === 0) return result
+
+    const modelParts = Array.isArray(result.parts) && result.parts.length > 0
+      ? result.parts
+      : functionCalls.map((functionCall) => ({ functionCall }))
+
+    contents.push({ role: 'model', parts: modelParts })
+    contents.push({
+      role: 'function',
+      parts: functionCalls.map((functionCall) => ({
+        functionResponse: {
+          name: functionCall.name,
+          response: executeTool(functionCall.name, functionCall.args ?? {}, {
+            mpfs,
+            ncci,
+            mue,
+            lcdCoverage,
+            asp,
+            clfs,
+          }),
+        },
+      })),
+    })
+  }
+
+  log.error('tool-loop-exhausted', { maxTurns })
+  return { error: 'Tool-calling loop exceeded maximum turns' }
+}
+
 // Static data — loaded once at module init, never per-request
 let mpfs: MpfsData = {}
 let ncci: NcciData = {}
 let asp: AspData = {}
 let clfs: ClfsData = {}
+let mue: MueData = {}
+let emMdmTiers: EmMdmTierData = {}
+let lcdCoverage: LcdCoverageData = {}
 
 // CPT_DESCRIPTIONS, getMpfsRate, getNcciEntry are re-exported from audit-rules.ts
 
@@ -74,6 +230,14 @@ try { mpfs = (await import('$lib/data/mpfs.json', { assert: { type: 'json' } }))
 try { ncci = (await import('$lib/data/ncci.json', { assert: { type: 'json' } })).default } catch {}
 try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
 try { clfs = (await import('$lib/data/clfs.json', { assert: { type: 'json' } })).default } catch {}
+try { mue = (await import('$lib/data/mue.json', { assert: { type: 'json' } })).default as MueData } catch {}
+try {
+  const rawEmMdmTiers = (await import('$lib/data/em_mdm_tiers.json', { assert: { type: 'json' } })).default as unknown as Record<string, string>
+  emMdmTiers = Object.fromEntries(
+    Object.entries(rawEmMdmTiers).filter(([key]) => !key.startsWith('_'))
+  ) as EmMdmTierData
+} catch {}
+try { lcdCoverage = (await import('$lib/data/lcd_coverage.json', { assert: { type: 'json' } })).default as LcdCoverageData } catch {}
 
 function isRefusal(text: string): boolean {
   const refusalPhrases = ["i can't", "i cannot", "i'm unable", "i won't", "i am unable", "not able to", "cannot process", "cannot assist"]
@@ -211,13 +375,33 @@ function buildDeterministicFindings(lineItems: BillInput['lineItems']): {
   findings: AuditResult['findings']
   promptNote: string
 } {
-  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs)
+  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs, mue, emMdmTiers, lcdCoverage)
 }
 
-export async function auditBill(input: BillInput): Promise<AuditResult> {
+export async function auditBill(input: BillInput, traceId?: string): Promise<AuditResult> {
+  const log = createAuditLogger(traceId)
+  log.info('audit-start', {
+    lineItems: input.lineItems.length,
+    hospitalName: input.hospitalName ?? null,
+  })
   const dataContext = buildDataContext(input.lineItems)
-  const { findings: deterministicFindings, promptNote } = buildDeterministicFindings(input.lineItems)
-  const deterministicCodes = new Set(deterministicFindings.map(f => f.cptCode))
+  const { findings: deterministicCoreFindings, promptNote } = buildDeterministicFindings(input.lineItems)
+  const arithmeticFindings = buildArithmeticFindings(input.lineItems, input.billTotal)
+  const dateFindings = buildDateFindings(input.lineItems, input.admissionDate, input.dischargeDate)
+  const gfeFindings = buildGfeFindings(input.lineItems, input.goodFaithEstimate)
+  const deterministicFindings = [...deterministicCoreFindings, ...arithmeticFindings, ...dateFindings, ...gfeFindings]
+  log.info('deterministic-findings-built', {
+    deterministicCore: deterministicCoreFindings.length,
+    arithmetic: arithmeticFindings.length,
+    date: dateFindings.length,
+    gfe: gfeFindings.length,
+    total: deterministicFindings.length,
+  })
+  const deterministicCodes = new Set(
+    deterministicFindings
+      .filter((finding) => finding.lineItemIndex >= 0)
+      .map((finding) => `${finding.cptCode}:${finding.lineItemIndex}`)
+  )
 
   // Call 1: findings + summary + extractedMeta
   const prompt1 = `You are a medical billing auditor helping a patient review their hospital bill for errors.
@@ -228,6 +412,9 @@ Bill details:
 Hospital: ${input.hospitalName ?? 'Unknown'}
 Date of service: ${input.dateOfService ?? 'Unknown'}
 Account: ${input.accountNumber ?? 'Unknown'}
+Bill total: ${input.billTotal ?? 'Unknown'}
+Admission date: ${input.admissionDate ?? 'Unknown'}
+Discharge date: ${input.dischargeDate ?? 'Unknown'}
 
 Line items:
 ${JSON.stringify(input.lineItems, null, 2)}
@@ -245,6 +432,7 @@ For each finding, add a \`confidence\` field:
 - low: speculative; use sparingly
 
 For each finding, include \`standardDescription\` — the official clinical name of the CPT/HCPCS code. Do NOT copy from the bill description field.
+Use the available tools before making any claim that depends on MPFS, NCCI, MUE, or LCD data. If you mention one of those data sources in a finding, you must have called the corresponding tool first.
 
 For the summary:
 - totalBilled: sum of ALL line item billedAmounts
@@ -290,9 +478,10 @@ Respond ONLY with valid JSON:
   }
 }`
 
-  const result1 = await callClaude(prompt1, 90_000)
+  const result1 = await callClaudeWithTools(prompt1, 90_000, traceId)
 
   if ('error' in result1) {
+    log.error('audit-call-1-error', { error: result1.error })
     if (result1.error.includes('timed out') || result1.error.includes('timeout')) {
       throw new AuditTimeoutError()
     }
@@ -311,13 +500,20 @@ Respond ONLY with valid JSON:
   try {
     call1Result = JSON.parse(extractJSON(result1.text))
     call1Result.findings = normalizeFindings(call1Result.findings ?? [])
+    log.info('audit-call-1-parsed', {
+      findings: call1Result.findings.length,
+      hasExtractedMeta: Boolean(call1Result.extractedMeta),
+    })
   } catch {
+    log.error('audit-call-1-parse-failed', { responsePreview: result1.text.slice(0, 1200) })
     throw new AuditParseError(`Raw response: ${result1.text.slice(0, 200)}`)
   }
 
   // Merge deterministic pre-findings with AI findings.
   // De-duplicate: if AI already flagged a code the deterministic layer caught, prefer deterministic.
-  const aiFindings = call1Result.findings.filter(f => !deterministicCodes.has(f.cptCode))
+  const aiFindings = call1Result.findings.filter(
+    (finding) => !deterministicCodes.has(`${finding.cptCode}:${finding.lineItemIndex}`)
+  )
   call1Result.findings = [...deterministicFindings, ...aiFindings]
 
   // Recompute summary counts to include deterministic findings
@@ -334,6 +530,9 @@ Respond ONLY with valid JSON:
     }
     if (f.errorType === 'duplicate') return s + (billedAmt || mpfsRate)
     if (f.errorType === 'icd10_mismatch') return s + (billedAmt || mpfsRate)
+    if (f.errorType === 'arithmetic_error') return s + Math.abs(totalBilled - (input.billTotal ?? totalBilled))
+    if (f.errorType === 'date_error') return s + (billedAmt || mpfsRate)
+    if (f.errorType === 'no_surprises_act') return s + Math.max(0, totalBilled - (input.goodFaithEstimate ?? 0))
     if (f.errorType === 'above_hospital_list_price') {
       const hosp = (f as typeof f & { hospitalGrossCharge?: number }).hospitalGrossCharge ?? 0
       return s + Math.max(0, billedAmt - hosp)
@@ -346,18 +545,31 @@ Respond ONLY with valid JSON:
     potentialOvercharge: Math.round(potentialOvercharge * 100) / 100,
     errorCount: call1Result.findings.filter(f => f.severity === 'error').length,
     warningCount: call1Result.findings.filter(f => f.severity === 'warning').length,
-    cleanCount: input.lineItems.length - new Set(call1Result.findings.map(f => f.lineItemIndex)).size,
+    cleanCount: input.lineItems.length - new Set(
+      call1Result.findings
+        .filter((finding) => finding.lineItemIndex >= 0)
+        .map((finding) => finding.lineItemIndex)
+    ).size,
   }
 
   const hospitalName = input.hospitalName ?? call1Result.extractedMeta?.hospitalName ?? ''
-  const state = extractStateFromHospitalName(hospitalName)
+  const stateFromAddress = input.hospitalAddress
+    ? extractStateFromHospitalName(input.hospitalAddress)
+    : ''
+  const state = stateFromAddress || extractStateFromHospitalName(hospitalName)
+  const hospitalPhone = input.hospitalPhone ?? null
   const allCodes = input.lineItems.map((lineItem) => lineItem.cpt)
 
   let hospitalPrices: HospitalPriceResult | null = null
   try {
-    hospitalPrices = await lookupHospitalPrices(hospitalName, state, allCodes)
+    hospitalPrices = await lookupHospitalPrices(hospitalName, state, allCodes, hospitalPhone ?? undefined)
   } catch (error) {
-    console.warn('[claude.ts] Hospital price lookup failed:', error)
+    log.error('hospital-price-lookup-failed', {
+      error: serializeError(error),
+      hospitalName,
+      state,
+      hasPhone: Boolean(hospitalPhone),
+    })
   }
 
   const enrichedFindings = call1Result.findings.map((finding) => {
@@ -411,9 +623,10 @@ Respond ONLY with valid JSON matching this exact schema:
   }
 }`
 
-  const result2 = await callClaude(prompt2, 60_000)
+  const result2 = await callClaude(prompt2, 60_000, traceId)
 
   if ('error' in result2) {
+    log.error('audit-call-2-error', { error: result2.error })
     if (result2.error.includes('timed out') || result2.error.includes('timeout')) {
       throw new AuditTimeoutError()
     }
@@ -431,7 +644,12 @@ Respond ONLY with valid JSON matching this exact schema:
   let call2Result: { disputeLetter: AuditResult['disputeLetter'] }
   try {
     call2Result = JSON.parse(extractJSON(result2.text))
+    log.info('audit-call-2-parsed', {
+      disputeLetterLength: call2Result.disputeLetter?.text?.length ?? 0,
+      placeholders: call2Result.disputeLetter?.placeholders?.length ?? 0,
+    })
   } catch {
+    log.error('audit-call-2-parse-failed', { responsePreview: result2.text.slice(0, 1200) })
     throw new AuditParseError(`Raw response: ${result2.text.slice(0, 200)}`)
   }
 

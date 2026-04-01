@@ -8,7 +8,7 @@
   import type { AuditResult, LineItem } from '$lib/types'
   import { trackAuditStarted, trackAuditCompleted, trackBillParseError, trackFileSelected, trackFileTooLarge, trackNewBill } from '$lib/analytics'
   import { downloadResultReport } from '$lib/result-report'
-  import { buildResultSections } from '$lib/results'
+  import { buildResultSections, buildSummaryFindings } from '$lib/results'
 
   type ExtendedAuditResult = AuditResult & {
     summary: AuditResult['summary'] & {
@@ -31,10 +31,24 @@
   let errorMessage = $state('')
   let auditResult: unknown = $state(null)
   let auditLineItems: LineItem[] = $state([])
+  let goodFaithEstimate = $state('')
   const resultSections = $derived.by(() => {
     if (!auditResult) return []
     const result = auditResult as ExtendedAuditResult
     return buildResultSections(auditLineItems, result.findings)
+  })
+  const billLevelEntries = $derived.by(() => {
+    if (!auditResult) return []
+    const result = auditResult as ExtendedAuditResult
+    return buildSummaryFindings(result.findings).map((finding) => ({
+      finding,
+      item: {
+        cpt: finding.cptCode,
+        description: finding.standardDescription ?? finding.description,
+        units: 1,
+        billedAmount: 0,
+      } satisfies LineItem,
+    }))
   })
 
   // Processing steps
@@ -111,13 +125,21 @@
         description: li.description ?? '',
         units: li.units ?? 1,
         billedAmount: li.amount ?? li.billedAmount ?? 0,
+        serviceDate: li.serviceDate ?? undefined,
+        modifiers: li.modifiers ?? [],
         icd10Codes: li.icd10Codes ?? [],
       }))
       const auditBody = {
         lineItems,
         hospitalName: parsed.extractedMeta?.hospitalName ?? undefined,
+        hospitalAddress: parsed.extractedMeta?.hospitalAddress ?? undefined,
+        hospitalPhone: parsed.extractedMeta?.hospitalPhone ?? undefined,
         accountNumber: parsed.extractedMeta?.accountNumber ?? undefined,
         dateOfService: parsed.extractedMeta?.dateOfService ?? undefined,
+        billTotal: parsed.extractedMeta?.billTotal ?? undefined,
+        admissionDate: parsed.extractedMeta?.admissionDate ?? undefined,
+        dischargeDate: parsed.extractedMeta?.dischargeDate ?? undefined,
+        goodFaithEstimate: goodFaithEstimate.trim() ? Number(goodFaithEstimate) : undefined,
       }
 
       const auditRes = await fetch('/api/audit', {
@@ -253,6 +275,21 @@
       Analyze Bill
     </button>
 
+    <label class="gfe-field">
+      <span class="gfe-label">Good Faith Estimate total (optional)</span>
+      <input
+        class="gfe-input"
+        type="text"
+        inputmode="decimal"
+        min="0"
+        step="0.01"
+        placeholder="Enter estimate total"
+        bind:value={goodFaithEstimate}
+        aria-label="Good Faith Estimate total"
+      />
+      <span class="gfe-help">If you received a Good Faith Estimate, we compare the final bill against it.</span>
+    </label>
+
     <div class="trust-row">
       <span class="trust-item">No login</span>
       <span class="trust-sep" aria-hidden="true">·</span>
@@ -326,6 +363,18 @@
           Hospital price comparison not available for {result.extractedMeta.hospitalName} — we couldn't locate their required CMS price transparency file.
           <a href="/how-it-works#price-transparency" target="_blank" rel="noopener noreferrer">Learn more ↗</a>
         </p>
+      {/if}
+
+      {#if billLevelEntries.length}
+        <div class="section-heading-row">
+          <h3 class="section-heading">Bill-Level Findings</h3>
+        </div>
+
+        <div class="bill-level-list">
+          {#each billLevelEntries as entry}
+            <LineItemCard item={entry.item} finding={entry.finding} index={-1} />
+          {/each}
+        </div>
       {/if}
 
       <div class="section-heading-row">
@@ -554,6 +603,43 @@
     font-weight: 600;
     margin-bottom: 14px;
     letter-spacing: 0.01em;
+  }
+
+  .gfe-field {
+    display: grid;
+    gap: 6px;
+    text-align: left;
+    margin-bottom: 18px;
+  }
+
+  .gfe-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+  }
+
+  .gfe-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    padding: 12px 14px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  .gfe-input:focus {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+
+  .gfe-help {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
   }
 
   .trust-row {
@@ -792,6 +878,13 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
+  }
+
+  .bill-level-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
   }
 
   .result-section {
