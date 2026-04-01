@@ -5,6 +5,7 @@ import type { BillInput, AuditResult, ConfidenceLevel } from '$lib/types'
 import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/types'
 import { lookupHospitalPrices } from './hospital-prices'
 import type { HospitalPriceResult } from './hospital-prices'
+import { AUDIT_TOOL_DECLARATIONS } from './audit-tools.mjs'
 import {
   buildDataContext as _buildDataContext,
   buildDeterministicFindings as _buildDeterministicFindings,
@@ -15,17 +16,33 @@ import {
   CPT_DESCRIPTIONS,
   getNcciEntry,
 } from './audit-rules'
-import type { NcciEntry, NcciData, MpfsData, AspData, ClfsData, MueData, EmMdmTierData } from './audit-rules'
+import type {
+  NcciEntry,
+  NcciData,
+  MpfsData,
+  AspData,
+  ClfsData,
+  MueData,
+  EmMdmTierData,
+  LcdCoverageData,
+} from './audit-rules'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
 
-type WorkerResult = { text: string } | { error: string }
+type WorkerResult =
+  | { text: string; functionCalls?: Array<{ name: string; args?: Record<string, unknown> }>; parts?: unknown[] }
+  | { error: string }
+type WorkerRequest = {
+  prompt?: string
+  contents?: Array<{ role: string; parts: unknown[] }>
+  tools?: unknown[]
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function runClaudeWorker(prompt: string, timeoutMs: number): Promise<WorkerResult & { rawOutput?: string }> {
+function runClaudeWorker(input: WorkerRequest, timeoutMs: number): Promise<WorkerResult & { rawOutput?: string }> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLAUDE_WORKER], {
       timeout: timeoutMs,
@@ -41,7 +58,7 @@ function runClaudeWorker(prompt: string, timeoutMs: number): Promise<WorkerResul
       }
     })
     child.on('error', (err) => resolve({ error: err.message }))
-    child.stdin.write(JSON.stringify({ prompt }))
+    child.stdin.write(JSON.stringify(input))
     child.stdin.end()
   })
 }
@@ -52,16 +69,123 @@ function isTransientWorkerError(error: string): boolean {
 }
 
 async function callClaude(prompt: string, timeoutMs: number): Promise<WorkerResult> {
-  const first = await runClaudeWorker(prompt, timeoutMs)
+  const first = await runClaudeWorker({ prompt }, timeoutMs)
   if (!('error' in first) || !isTransientWorkerError(first.error)) return first
 
   await sleep(1500)
-  const second = await runClaudeWorker(prompt, timeoutMs)
+  const second = await runClaudeWorker({ prompt }, timeoutMs)
   if (!('error' in second) || !isTransientWorkerError(second.error)) return second
 
   return second.error.includes('invalid output')
     ? { error: 'Worker process returned invalid output after retry' }
     : second
+}
+
+type ToolExecutionData = {
+  mpfs: MpfsData
+  ncci: NcciData
+  mue: MueData
+  lcdCoverage: LcdCoverageData
+  asp: AspData
+  clfs: ClfsData
+}
+
+export function executeTool(
+  name: string,
+  args: Record<string, unknown>,
+  data: ToolExecutionData
+): unknown {
+  switch (name) {
+    case 'lookup_mpfs_rate': {
+      const code = String(args.cptCode ?? '').trim().toUpperCase()
+      const rate = getMpfsRate(data.mpfs[code]) ?? data.clfs[code]?.rate ?? null
+      return { code, rate, source: rate != null ? (data.mpfs[code] ? 'mpfs' : 'clfs') : 'not_found' }
+    }
+    case 'check_ncci_bundling': {
+      const code = String(args.cptCode ?? '').trim().toUpperCase()
+      const allCodes = new Set(((args.allCodesOnBill as string[] | undefined) ?? []).map((value) => value.toUpperCase()))
+      const entry = getNcciEntry(code, data.ncci)
+      if (!entry) return { ncciViolation: false }
+      const bundledWith = entry.bundledInto.filter((candidate) => allCodes.has(candidate))
+      const modifiers = ((args.modifiers as string[] | undefined) ?? []).map((value) => value.trim())
+      const hasModifier59 = modifiers.some((modifier) => ['59', '-59', 'XE', 'XP', 'XS', 'XU'].includes(modifier))
+      return {
+        ncciViolation: bundledWith.length > 0,
+        bundledWith,
+        modifierCanOverride: entry.modifierCanOverride,
+        hasModifier59,
+      }
+    }
+    case 'check_mue_units': {
+      const code = String(args.cptCode ?? '').trim().toUpperCase()
+      const unitsBilled = Number(args.unitsBilled ?? 0)
+      const entry = data.mue[code]
+      if (!entry) return { hasMue: false }
+      return {
+        hasMue: true,
+        maxUnits: entry.maxUnits,
+        adjudicationType: entry.adjudicationType,
+        exceedsLimit: entry.adjudicationType === 'date_of_service' && unitsBilled > entry.maxUnits,
+      }
+    }
+    case 'check_lcd_coverage': {
+      const code = String(args.cptCode ?? '').trim().toUpperCase()
+      const icd10Codes = ((args.icd10Codes as string[] | undefined) ?? []).map((value) => value.toUpperCase())
+      const entry = data.lcdCoverage[code]
+      if (!entry) return { hasLcd: false }
+      const hasCoveredDx = icd10Codes.some((icd) =>
+        entry.covered.some((covered) => icd.startsWith(covered.toUpperCase()))
+      )
+      const hasExcludedDx = icd10Codes.some((icd) =>
+        entry.notCovered.some((excluded) => icd.startsWith(excluded.toUpperCase()))
+      )
+      return {
+        hasLcd: true,
+        lcdIds: entry.lcdIds,
+        hasCoveredDx,
+        hasExcludedDx,
+        coveredCount: entry.covered.length,
+      }
+    }
+    default:
+      return { error: `Unknown tool: ${name}` }
+  }
+}
+
+async function callClaudeWithTools(prompt: string, timeoutMs: number): Promise<WorkerResult> {
+  const contents: Array<{ role: string; parts: unknown[] }> = [{ role: 'user', parts: [{ text: prompt }] }]
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const result = await runClaudeWorker({ contents, tools: AUDIT_TOOL_DECLARATIONS }, timeoutMs)
+    if ('error' in result) return result
+
+    const functionCalls = result.functionCalls ?? []
+    if (functionCalls.length === 0) return result
+
+    const modelParts = Array.isArray(result.parts) && result.parts.length > 0
+      ? result.parts
+      : functionCalls.map((functionCall) => ({ functionCall }))
+
+    contents.push({ role: 'model', parts: modelParts })
+    contents.push({
+      role: 'user',
+      parts: functionCalls.map((functionCall) => ({
+        functionResponse: {
+          name: functionCall.name,
+          response: executeTool(functionCall.name, functionCall.args ?? {}, {
+            mpfs,
+            ncci,
+            mue,
+            lcdCoverage,
+            asp,
+            clfs,
+          }),
+        },
+      })),
+    })
+  }
+
+  return { error: 'Tool-calling loop exceeded maximum turns' }
 }
 
 // Static data — loaded once at module init, never per-request
@@ -71,6 +195,7 @@ let asp: AspData = {}
 let clfs: ClfsData = {}
 let mue: MueData = {}
 let emMdmTiers: EmMdmTierData = {}
+let lcdCoverage: LcdCoverageData = {}
 
 // CPT_DESCRIPTIONS, getMpfsRate, getNcciEntry are re-exported from audit-rules.ts
 
@@ -86,6 +211,7 @@ try {
     Object.entries(rawEmMdmTiers).filter(([key]) => !key.startsWith('_'))
   ) as EmMdmTierData
 } catch {}
+try { lcdCoverage = (await import('$lib/data/lcd_coverage.json', { assert: { type: 'json' } })).default as LcdCoverageData } catch {}
 
 function isRefusal(text: string): boolean {
   const refusalPhrases = ["i can't", "i cannot", "i'm unable", "i won't", "i am unable", "not able to", "cannot process", "cannot assist"]
@@ -223,7 +349,7 @@ function buildDeterministicFindings(lineItems: BillInput['lineItems']): {
   findings: AuditResult['findings']
   promptNote: string
 } {
-  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs, mue, emMdmTiers)
+  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs, mue, emMdmTiers, lcdCoverage)
 }
 
 export async function auditBill(input: BillInput): Promise<AuditResult> {
@@ -268,6 +394,7 @@ For each finding, add a \`confidence\` field:
 - low: speculative; use sparingly
 
 For each finding, include \`standardDescription\` — the official clinical name of the CPT/HCPCS code. Do NOT copy from the bill description field.
+Use the available tools before making any claim that depends on MPFS, NCCI, MUE, or LCD data. If you mention one of those data sources in a finding, you must have called the corresponding tool first.
 
 For the summary:
 - totalBilled: sum of ALL line item billedAmounts
@@ -313,7 +440,7 @@ Respond ONLY with valid JSON:
   }
 }`
 
-  const result1 = await callClaude(prompt1, 90_000)
+  const result1 = await callClaudeWithTools(prompt1, 90_000)
 
   if ('error' in result1) {
     if (result1.error.includes('timed out') || result1.error.includes('timeout')) {
