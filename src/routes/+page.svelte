@@ -125,6 +125,8 @@
         description: li.description ?? '',
         units: li.units ?? 1,
         billedAmount: li.amount ?? li.billedAmount ?? 0,
+        serviceDate: li.serviceDate ?? undefined,
+        modifiers: li.modifiers ?? [],
         icd10Codes: li.icd10Codes ?? [],
       }))
       const auditBody = {
@@ -134,6 +136,9 @@
         hospitalPhone: parsed.extractedMeta?.hospitalPhone ?? undefined,
         accountNumber: parsed.extractedMeta?.accountNumber ?? undefined,
         dateOfService: parsed.extractedMeta?.dateOfService ?? undefined,
+        billTotal: parsed.extractedMeta?.billTotal ?? undefined,
+        admissionDate: parsed.extractedMeta?.admissionDate ?? undefined,
+        dischargeDate: parsed.extractedMeta?.dischargeDate ?? undefined,
         goodFaithEstimate: goodFaithEstimate.trim() ? Number(goodFaithEstimate) : undefined,
       }
 

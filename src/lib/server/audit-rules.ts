@@ -15,6 +15,8 @@ export type MpfsEntry = number | { rate: number; description?: string }
 export type MpfsData = Record<string, MpfsEntry>
 export type AspData = Record<string, number>
 export type ClfsData = Record<string, { rate: number; description?: string }>
+export type MueEntry = { maxUnits: number; adjudicationType: 'date_of_service' | 'claim_line' }
+export type MueData = Record<string, MueEntry>
 
 // ── Known CPT descriptions ────────────────────────────────────────────────────
 
@@ -52,6 +54,8 @@ export const CPT_DESCRIPTIONS: Record<string, string> = {
   '99214': 'Office/outpatient visit, established patient, moderate complexity',
   '99215': 'Office/outpatient visit, established patient, high complexity',
 }
+
+const MODIFIER_59_FAMILY = ['59', '-59', 'XE', 'XP', 'XS', 'XU']
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -149,7 +153,8 @@ export function buildDeterministicFindings(
   ncci: NcciData,
   mpfs: MpfsData,
   asp: AspData,
-  clfs: ClfsData = {}
+  clfs: ClfsData = {},
+  mue: MueData = {}
 ): { findings: AuditFinding[]; promptNote: string } {
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
   const codeSet = new Set(codes)
@@ -170,9 +175,7 @@ export function buildDeterministicFindings(
     if (presentCol1.length === 0) continue
 
     const lineItem = lineItems[i]
-    const hasModifier59 = lineItem.modifiers?.some(m =>
-      ['59', '-59', 'XE', 'XP', 'XS', 'XU'].includes(m.trim())
-    )
+    const hasModifier59 = lineItem.modifiers?.some(m => MODIFIER_59_FAMILY.includes(m.trim()))
     const isError = !hasModifier59 || !ncciEntry.modifierCanOverride
 
     findings.push({
@@ -245,6 +248,35 @@ export function buildDeterministicFindings(
     })
   }
 
+  // 4. MUE units check — deterministic
+  const codeTotalUnits = new Map<string, number>()
+  for (let i = 0; i < lineItems.length; i++) {
+    const code = codes[i]
+    codeTotalUnits.set(code, (codeTotalUnits.get(code) ?? 0) + (lineItems[i].units || 1))
+  }
+  for (const [code, totalUnits] of codeTotalUnits) {
+    const mueEntry = mue[code]
+    if (!mueEntry) continue
+    if (mueEntry.adjudicationType !== 'date_of_service') continue
+    if (totalUnits <= mueEntry.maxUnits) continue
+    const indexes = codeIndexes.get(code) ?? []
+    for (const idx of indexes) {
+      findings.push({
+        lineItemIndex: idx,
+        cptCode: code,
+        severity: 'error',
+        errorType: 'unbundling',
+        confidence: 'high' as ConfidenceLevel,
+        description: `CPT ${code} billed ${totalUnits} unit(s), but CMS Medically Unlikely Edits cap this at ${mueEntry.maxUnits} unit(s) per day. Billing ${totalUnits} units on a single date of service is not medically plausible.`,
+        standardDescription: CPT_DESCRIPTIONS[code] ?? clfs[code]?.description,
+        recommendation: `Request itemized documentation justifying ${totalUnits} units. CMS MUE limit is ${mueEntry.maxUnits} unit(s) per date of service.`,
+        medicareRate: getEffectiveRate(code),
+        markupRatio: undefined,
+        ncciBundledWith: undefined,
+      })
+    }
+  }
+
   const alreadyFlaggedCodes = new Set(findings.map(f => f.cptCode))
   const promptNote =
     findings.length > 0
@@ -257,4 +289,92 @@ export function buildDeterministicFindings(
       : ''
 
   return { findings, promptNote }
+}
+
+export function buildArithmeticFindings(
+  lineItems: LineItem[],
+  billTotal?: number
+): AuditFinding[] {
+  const findings: AuditFinding[] = []
+  const lineSum = lineItems.reduce((sum, lineItem) => sum + (lineItem.billedAmount || 0), 0)
+
+  if (billTotal != null && billTotal > 0) {
+    const diff = Math.abs(lineSum - billTotal)
+    if (diff > 0.5) {
+      findings.push({
+        lineItemIndex: -1,
+        cptCode: 'TOTAL',
+        severity: 'error',
+        errorType: 'arithmetic_error',
+        confidence: 'high',
+        description: `The sum of all line items ($${lineSum.toFixed(2)}) does not match the bill total ($${billTotal.toFixed(2)}). The difference is $${diff.toFixed(2)}.`,
+        standardDescription: 'Bill arithmetic error',
+        recommendation: 'Request a corrected itemized statement explaining the discrepancy between individual charges and the stated total.',
+        medicareRate: undefined,
+        markupRatio: undefined,
+        ncciBundledWith: undefined,
+      })
+    }
+  }
+
+  return findings
+}
+
+export function buildDateFindings(
+  lineItems: LineItem[],
+  admissionDate?: string,
+  dischargeDate?: string
+): AuditFinding[] {
+  const findings: AuditFinding[] = []
+
+  if (admissionDate && dischargeDate) {
+    const admit = new Date(admissionDate)
+    const discharge = new Date(dischargeDate)
+    for (let i = 0; i < lineItems.length; i++) {
+      const lineItem = lineItems[i]
+      if (!lineItem.serviceDate) continue
+      const serviceDate = new Date(lineItem.serviceDate)
+      if (serviceDate < admit || serviceDate > discharge) {
+        findings.push({
+          lineItemIndex: i,
+          cptCode: lineItem.cpt,
+          severity: 'warning',
+          errorType: 'date_error',
+          confidence: 'high',
+          description: `CPT ${lineItem.cpt} has a service date of ${lineItem.serviceDate}, which is outside your admission window (${admissionDate} - ${dischargeDate}).`,
+          standardDescription: CPT_DESCRIPTIONS[lineItem.cpt],
+          recommendation: 'Request an explanation for why this service was billed outside your stay dates. This may be a data entry error.',
+          medicareRate: undefined,
+          markupRatio: undefined,
+          ncciBundledWith: undefined,
+        })
+      }
+    }
+  }
+
+  return findings
+}
+
+export function buildGfeFindings(
+  lineItems: LineItem[],
+  gfe?: number
+): AuditFinding[] {
+  if (!gfe || gfe <= 0) return []
+  const totalBilled = lineItems.reduce((sum, lineItem) => sum + (lineItem.billedAmount || 0), 0)
+  const excess = totalBilled - gfe
+  if (excess < 400) return []
+
+  return [{
+    lineItemIndex: -1,
+    cptCode: 'GFE',
+    severity: 'error',
+    errorType: 'no_surprises_act',
+    confidence: 'high',
+    description: `Your total bill ($${totalBilled.toFixed(2)}) exceeds your Good Faith Estimate ($${gfe.toFixed(2)}) by $${excess.toFixed(2)}, which is above the $400 threshold under the No Surprises Act.`,
+    standardDescription: 'No Surprises Act - Good Faith Estimate violation',
+    recommendation: 'You have the right to dispute this through CMS Patient-Provider Dispute Resolution. Submit a dispute at cms.gov/medical-bill-rights within 120 days of receiving the bill. Cite 26 U.S.C. § 9816 and 29 U.S.C. § 1185e.',
+    medicareRate: undefined,
+    markupRatio: undefined,
+    ncciBundledWith: undefined,
+  }]
 }
