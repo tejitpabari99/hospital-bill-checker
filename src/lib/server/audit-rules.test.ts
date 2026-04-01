@@ -25,7 +25,7 @@ import {
   getNcciEntry,
   getMpfsRate,
 } from './audit-rules'
-import type { NcciData, MpfsData, AspData, ClfsData, MueData } from './audit-rules'
+import type { NcciData, MpfsData, AspData, ClfsData, MueData, EmMdmTierData } from './audit-rules'
 import type { LineItem } from '$lib/types'
 
 // ── Test data fixtures ────────────────────────────────────────────────────────
@@ -66,6 +66,13 @@ const TEST_CLFS: ClfsData = {
 const TEST_MUE: MueData = {
   '99215': { maxUnits: 1, adjudicationType: 'date_of_service' },
   '36415': { maxUnits: 3, adjudicationType: 'claim_line' },
+}
+
+const TEST_EM_MDM: EmMdmTierData = {
+  'J00': 'S',
+  'R55': 'L',
+  'R07': 'M',
+  'I21': 'H',
 }
 
 function li(cpt: string, billed: number, units = 1, modifiers?: string[]): LineItem {
@@ -414,6 +421,36 @@ describe('buildDeterministicFindings — MUE units', () => {
     )
 
     expect(findings.find((finding) => finding.cptCode === '36415')).toBeUndefined()
+  })
+})
+
+describe('buildDeterministicFindings — E&M upcoding pre-filter', () => {
+  it('flags E&M codes that exceed supported ICD-10 MDM by two tiers or more', () => {
+    const { findings } = buildDeterministicFindings(
+      [{ ...li('99215', 300.00), icd10Codes: ['J00.9'] }],
+      TEST_NCCI,
+      TEST_MPFS,
+      TEST_ASP,
+      TEST_CLFS,
+      TEST_MUE,
+      TEST_EM_MDM
+    )
+
+    expect(findings.find((finding) => finding.errorType === 'upcoding')).toBeDefined()
+  })
+
+  it('does not flag E&M codes when the diagnoses support the billed tier', () => {
+    const { findings } = buildDeterministicFindings(
+      [{ ...li('99284', 220.00), icd10Codes: ['R07.9'] }],
+      TEST_NCCI,
+      TEST_MPFS,
+      TEST_ASP,
+      TEST_CLFS,
+      TEST_MUE,
+      TEST_EM_MDM
+    )
+
+    expect(findings.find((finding) => finding.errorType === 'upcoding')).toBeUndefined()
   })
 })
 
