@@ -5,6 +5,7 @@ import type { BillInput, AuditResult, ConfidenceLevel } from '$lib/types'
 import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/types'
 import { lookupHospitalPrices } from './hospital-prices'
 import type { HospitalPriceResult } from './hospital-prices'
+import { createServerLogger, serializeError } from './logger.js'
 import { AUDIT_TOOL_DECLARATIONS } from './audit-tools.mjs'
 import {
   buildDataContext as _buildDataContext,
@@ -36,6 +37,11 @@ type WorkerRequest = {
   prompt?: string
   contents?: Array<{ role: string; parts: unknown[] }>
   tools?: unknown[]
+  traceId?: string
+}
+
+function createAuditLogger(traceId?: string) {
+  return createServerLogger('audit-core', traceId)
 }
 
 function sleep(ms: number): Promise<void> {
@@ -43,21 +49,29 @@ function sleep(ms: number): Promise<void> {
 }
 
 function runClaudeWorker(input: WorkerRequest, timeoutMs: number): Promise<WorkerResult & { rawOutput?: string }> {
+  const log = createAuditLogger(input.traceId)
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLAUDE_WORKER], {
       timeout: timeoutMs,
+      stdio: ['pipe', 'pipe', 'inherit'],
       env: { ...process.env, GEMINI_API_KEY },
     })
     let output = ''
-    child.stdout.on('data', (chunk: Buffer) => { output += chunk.toString() })
+    child.stdout?.on('data', (chunk: Buffer) => { output += chunk.toString() })
     child.on('close', () => {
       try {
         resolve(JSON.parse(output))
       } catch {
+        log.error('worker-invalid-output', {
+          outputPreview: output.slice(0, 500),
+        })
         resolve({ error: 'Worker process returned invalid output', rawOutput: output.slice(0, 500) })
       }
     })
-    child.on('error', (err) => resolve({ error: err.message }))
+    child.on('error', (err) => {
+      log.error('worker-process-error', { error: serializeError(err) })
+      resolve({ error: err.message })
+    })
     child.stdin.write(JSON.stringify(input))
     child.stdin.end()
   })
@@ -68,12 +82,12 @@ function isTransientWorkerError(error: string): boolean {
   return lower.includes('503') || lower.includes('high demand') || lower.includes('temporarily') || lower.includes('invalid output')
 }
 
-async function callClaude(prompt: string, timeoutMs: number): Promise<WorkerResult> {
-  const first = await runClaudeWorker({ prompt }, timeoutMs)
+async function callClaude(prompt: string, timeoutMs: number, traceId?: string): Promise<WorkerResult> {
+  const first = await runClaudeWorker({ prompt, traceId }, timeoutMs)
   if (!('error' in first) || !isTransientWorkerError(first.error)) return first
 
   await sleep(1500)
-  const second = await runClaudeWorker({ prompt }, timeoutMs)
+  const second = await runClaudeWorker({ prompt, traceId }, timeoutMs)
   if (!('error' in second) || !isTransientWorkerError(second.error)) return second
 
   return second.error.includes('invalid output')
@@ -152,15 +166,25 @@ export function executeTool(
   }
 }
 
-async function callClaudeWithTools(prompt: string, timeoutMs: number): Promise<WorkerResult> {
+async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: string): Promise<WorkerResult> {
   const contents: Array<{ role: string; parts: unknown[] }> = [{ role: 'user', parts: [{ text: prompt }] }]
   const maxTurns = 4
+  const log = createAuditLogger(traceId)
 
   for (let attempt = 0; attempt < maxTurns; attempt++) {
-    const result = await runClaudeWorker({ contents, tools: AUDIT_TOOL_DECLARATIONS }, timeoutMs)
+    log.info('tool-turn-start', {
+      attempt: attempt + 1,
+      contentsCount: contents.length,
+    })
+    const result = await runClaudeWorker({ contents, tools: AUDIT_TOOL_DECLARATIONS, traceId }, timeoutMs)
     if ('error' in result) return result
 
     const functionCalls = result.functionCalls ?? []
+    log.info('tool-turn-result', {
+      attempt: attempt + 1,
+      functionCallCount: functionCalls.length,
+      textLength: result.text.length,
+    })
     if (functionCalls.length === 0) return result
 
     const modelParts = Array.isArray(result.parts) && result.parts.length > 0
@@ -186,6 +210,7 @@ async function callClaudeWithTools(prompt: string, timeoutMs: number): Promise<W
     })
   }
 
+  log.error('tool-loop-exhausted', { maxTurns })
   return { error: 'Tool-calling loop exceeded maximum turns' }
 }
 
@@ -353,13 +378,25 @@ function buildDeterministicFindings(lineItems: BillInput['lineItems']): {
   return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs, mue, emMdmTiers, lcdCoverage)
 }
 
-export async function auditBill(input: BillInput): Promise<AuditResult> {
+export async function auditBill(input: BillInput, traceId?: string): Promise<AuditResult> {
+  const log = createAuditLogger(traceId)
+  log.info('audit-start', {
+    lineItems: input.lineItems.length,
+    hospitalName: input.hospitalName ?? null,
+  })
   const dataContext = buildDataContext(input.lineItems)
   const { findings: deterministicCoreFindings, promptNote } = buildDeterministicFindings(input.lineItems)
   const arithmeticFindings = buildArithmeticFindings(input.lineItems, input.billTotal)
   const dateFindings = buildDateFindings(input.lineItems, input.admissionDate, input.dischargeDate)
   const gfeFindings = buildGfeFindings(input.lineItems, input.goodFaithEstimate)
   const deterministicFindings = [...deterministicCoreFindings, ...arithmeticFindings, ...dateFindings, ...gfeFindings]
+  log.info('deterministic-findings-built', {
+    deterministicCore: deterministicCoreFindings.length,
+    arithmetic: arithmeticFindings.length,
+    date: dateFindings.length,
+    gfe: gfeFindings.length,
+    total: deterministicFindings.length,
+  })
   const deterministicCodes = new Set(
     deterministicFindings
       .filter((finding) => finding.lineItemIndex >= 0)
@@ -441,9 +478,10 @@ Respond ONLY with valid JSON:
   }
 }`
 
-  const result1 = await callClaudeWithTools(prompt1, 90_000)
+  const result1 = await callClaudeWithTools(prompt1, 90_000, traceId)
 
   if ('error' in result1) {
+    log.error('audit-call-1-error', { error: result1.error })
     if (result1.error.includes('timed out') || result1.error.includes('timeout')) {
       throw new AuditTimeoutError()
     }
@@ -462,7 +500,12 @@ Respond ONLY with valid JSON:
   try {
     call1Result = JSON.parse(extractJSON(result1.text))
     call1Result.findings = normalizeFindings(call1Result.findings ?? [])
+    log.info('audit-call-1-parsed', {
+      findings: call1Result.findings.length,
+      hasExtractedMeta: Boolean(call1Result.extractedMeta),
+    })
   } catch {
+    log.error('audit-call-1-parse-failed', { responsePreview: result1.text.slice(0, 1200) })
     throw new AuditParseError(`Raw response: ${result1.text.slice(0, 200)}`)
   }
 
@@ -521,7 +564,12 @@ Respond ONLY with valid JSON:
   try {
     hospitalPrices = await lookupHospitalPrices(hospitalName, state, allCodes, hospitalPhone ?? undefined)
   } catch (error) {
-    console.warn('[claude.ts] Hospital price lookup failed:', error)
+    log.error('hospital-price-lookup-failed', {
+      error: serializeError(error),
+      hospitalName,
+      state,
+      hasPhone: Boolean(hospitalPhone),
+    })
   }
 
   const enrichedFindings = call1Result.findings.map((finding) => {
@@ -575,9 +623,10 @@ Respond ONLY with valid JSON matching this exact schema:
   }
 }`
 
-  const result2 = await callClaude(prompt2, 60_000)
+  const result2 = await callClaude(prompt2, 60_000, traceId)
 
   if ('error' in result2) {
+    log.error('audit-call-2-error', { error: result2.error })
     if (result2.error.includes('timed out') || result2.error.includes('timeout')) {
       throw new AuditTimeoutError()
     }
@@ -595,7 +644,12 @@ Respond ONLY with valid JSON matching this exact schema:
   let call2Result: { disputeLetter: AuditResult['disputeLetter'] }
   try {
     call2Result = JSON.parse(extractJSON(result2.text))
+    log.info('audit-call-2-parsed', {
+      disputeLetterLength: call2Result.disputeLetter?.text?.length ?? 0,
+      placeholders: call2Result.disputeLetter?.placeholders?.length ?? 0,
+    })
   } catch {
+    log.error('audit-call-2-parse-failed', { responsePreview: result2.text.slice(0, 1200) })
     throw new AuditParseError(`Raw response: ${result2.text.slice(0, 200)}`)
   }
 
