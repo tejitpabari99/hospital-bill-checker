@@ -502,10 +502,35 @@ def _slugify(name: str) -> str:
     return slug[:60]
 
 
-def lookup_index_entry(hospital_name: str, state: str = "") -> dict | None:
+def normalize_phone(phone: str) -> str:
+    digits = re.sub(r"\D", "", phone)
+    return digits[-10:] if len(digits) >= 10 else digits
+
+
+def lookup_by_phone(phone: str, index: dict[str, dict]) -> dict | None:
+    if not phone:
+        return None
+    normalized_phone = normalize_phone(phone)
+    if len(normalized_phone) < 10:
+        return None
+    for entry in index.values():
+        if not isinstance(entry, dict):
+            continue
+        entry_phone = normalize_phone(str(entry.get("phone", "") or ""))
+        if entry_phone and entry_phone == normalized_phone:
+            return entry
+    return None
+
+
+def lookup_index_entry(hospital_name: str, state: str = "", phone: str = "") -> dict | None:
     index = load_hospital_index()
     normalized = normalize_name(hospital_name)
     state = state.strip().lower()
+
+    if phone:
+        entry = lookup_by_phone(phone, index)
+        if entry:
+            return entry
 
     if state:
         entry = index.get(f"{normalized}|{state}")
@@ -555,6 +580,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Fetch and cache a hospital MRF")
     parser.add_argument("hospital_name", nargs="?", help="Hospital name (e.g. 'Memorial Hospital')")
     parser.add_argument("--state", default="", help="Two-letter state code (e.g. TX)")
+    parser.add_argument("--phone", default="", help="Hospital phone number as printed on the bill")
     parser.add_argument("--ccn", default="", help="CMS Certification Number if known")
     parser.add_argument("--mrf-url", default="", help="Direct MRF URL (skip discovery)")
     parser.add_argument("--dry-run", action="store_true", help="Print the matched hospital index entry and exit")
@@ -570,7 +596,7 @@ def main() -> None:
     db_path = CACHE_DIR / db_filename
 
     if args.dry_run:
-        entry = lookup_index_entry(hospital_name, args.state)
+        entry = lookup_index_entry(hospital_name, args.state, args.phone)
         print(json.dumps(entry, indent=2, sort_keys=True, ensure_ascii=False))
         sys.exit(0 if entry else 2)
 
@@ -582,7 +608,7 @@ def main() -> None:
 
     mrf_url = args.mrf_url
     if not mrf_url:
-        entry = lookup_index_entry(hospital_name, args.state)
+        entry = lookup_index_entry(hospital_name, args.state, args.phone)
         if entry and entry.get("domain"):
             _, mrf_url = resolve_hospital_domain(hospital_name, args.state)
         else:

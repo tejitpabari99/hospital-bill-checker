@@ -62,6 +62,8 @@ export interface ParsedBill {
   lineItems?: ParsedLineItem[]     // structured items from Vision (has amounts)
   extractedMeta?: {
     hospitalName?: string | null
+    hospitalAddress?: string | null
+    hospitalPhone?: string | null
     accountNumber?: string | null
     dateOfService?: string | null
   }
@@ -143,6 +145,8 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
       lineItems: filterStandardLineItems(parsed.lineItems),
       extractedMeta: {
         hospitalName: parsed.hospitalName ?? null,
+        hospitalAddress: parsed.hospitalAddress ?? null,
+        hospitalPhone: parsed.hospitalPhone ?? null,
         accountNumber: parsed.accountNumber ?? null,
         dateOfService: parsed.dateOfService ?? null,
       },

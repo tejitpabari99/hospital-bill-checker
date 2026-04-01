@@ -116,6 +116,8 @@
       const auditBody = {
         lineItems,
         hospitalName: parsed.extractedMeta?.hospitalName ?? undefined,
+        hospitalAddress: parsed.extractedMeta?.hospitalAddress ?? undefined,
+        hospitalPhone: parsed.extractedMeta?.hospitalPhone ?? undefined,
         accountNumber: parsed.extractedMeta?.accountNumber ?? undefined,
         dateOfService: parsed.extractedMeta?.dateOfService ?? undefined,
       }
