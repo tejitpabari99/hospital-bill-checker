@@ -17,6 +17,8 @@ export type AspData = Record<string, number>
 export type ClfsData = Record<string, { rate: number; description?: string }>
 export type MueEntry = { maxUnits: number; adjudicationType: 'date_of_service' | 'claim_line' }
 export type MueData = Record<string, MueEntry>
+export type EmMdmTier = 'S' | 'L' | 'M' | 'H'
+export type EmMdmTierData = Record<string, EmMdmTier>
 
 // ── Known CPT descriptions ────────────────────────────────────────────────────
 
@@ -56,6 +58,22 @@ export const CPT_DESCRIPTIONS: Record<string, string> = {
 }
 
 const MODIFIER_59_FAMILY = ['59', '-59', 'XE', 'XP', 'XS', 'XU']
+const TIER_RANK: Record<EmMdmTier, number> = { S: 0, L: 1, M: 2, H: 3 }
+const TIER_NAMES: Record<EmMdmTier, string> = {
+  S: 'straightforward',
+  L: 'low complexity',
+  M: 'moderate complexity',
+  H: 'high complexity',
+}
+
+export const EM_MDM_LEVELS: Record<string, EmMdmTier> = {
+  '99202': 'S', '99203': 'L', '99204': 'M', '99205': 'H',
+  '99211': 'S', '99212': 'S', '99213': 'L', '99214': 'M', '99215': 'H',
+  '99281': 'S', '99282': 'S', '99283': 'L', '99284': 'M', '99285': 'H',
+  '99221': 'L', '99222': 'M', '99223': 'H',
+  '99231': 'L', '99232': 'M', '99233': 'H',
+  '99304': 'L', '99305': 'M', '99306': 'H',
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -154,7 +172,8 @@ export function buildDeterministicFindings(
   mpfs: MpfsData,
   asp: AspData,
   clfs: ClfsData = {},
-  mue: MueData = {}
+  mue: MueData = {},
+  emMdmTiers: EmMdmTierData = {}
 ): { findings: AuditFinding[]; promptNote: string } {
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
   const codeSet = new Set(codes)
@@ -275,6 +294,41 @@ export function buildDeterministicFindings(
         ncciBundledWith: undefined,
       })
     }
+  }
+
+  // 5. E&M upcoding — deterministic pre-filter
+  for (let i = 0; i < lineItems.length; i++) {
+    const code = codes[i]
+    const emTier = EM_MDM_LEVELS[code]
+    if (!emTier) continue
+
+    const icd10s = lineItems[i].icd10Codes ?? []
+    if (icd10s.length === 0) continue
+
+    let maxIcdTier: EmMdmTier = 'S'
+    for (const icd of icd10s) {
+      const prefix = icd.substring(0, 3).toUpperCase()
+      const icdTier = emMdmTiers[prefix] ?? null
+      if (icdTier && TIER_RANK[icdTier] > TIER_RANK[maxIcdTier]) {
+        maxIcdTier = icdTier
+      }
+    }
+
+    if (TIER_RANK[emTier] - TIER_RANK[maxIcdTier] < 2) continue
+
+    findings.push({
+      lineItemIndex: i,
+      cptCode: code,
+      severity: 'warning',
+      errorType: 'upcoding',
+      confidence: 'medium' as ConfidenceLevel,
+      description: `CPT ${code} requires ${TIER_NAMES[emTier]} medical decision-making, but the diagnosis codes on this bill (${icd10s.join(', ')}) suggest at most ${TIER_NAMES[maxIcdTier]} MDM. This may be worth questioning.`,
+      standardDescription: CPT_DESCRIPTIONS[code],
+      recommendation: 'Request the clinical notes supporting this E&M level. Ask billing to explain why the documentation justifies this complexity tier per AMA 2021 E&M guidelines.',
+      medicareRate: getEffectiveRate(code),
+      markupRatio: undefined,
+      ncciBundledWith: undefined,
+    })
   }
 
   const alreadyFlaggedCodes = new Set(findings.map(f => f.cptCode))

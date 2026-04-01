@@ -15,7 +15,7 @@ import {
   CPT_DESCRIPTIONS,
   getNcciEntry,
 } from './audit-rules'
-import type { NcciEntry, NcciData, MpfsData, AspData, ClfsData, MueData } from './audit-rules'
+import type { NcciEntry, NcciData, MpfsData, AspData, ClfsData, MueData, EmMdmTierData } from './audit-rules'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
 
@@ -70,6 +70,7 @@ let ncci: NcciData = {}
 let asp: AspData = {}
 let clfs: ClfsData = {}
 let mue: MueData = {}
+let emMdmTiers: EmMdmTierData = {}
 
 // CPT_DESCRIPTIONS, getMpfsRate, getNcciEntry are re-exported from audit-rules.ts
 
@@ -79,6 +80,12 @@ try { ncci = (await import('$lib/data/ncci.json', { assert: { type: 'json' } }))
 try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
 try { clfs = (await import('$lib/data/clfs.json', { assert: { type: 'json' } })).default } catch {}
 try { mue = (await import('$lib/data/mue.json', { assert: { type: 'json' } })).default as MueData } catch {}
+try {
+  const rawEmMdmTiers = (await import('$lib/data/em_mdm_tiers.json', { assert: { type: 'json' } })).default as unknown as Record<string, string>
+  emMdmTiers = Object.fromEntries(
+    Object.entries(rawEmMdmTiers).filter(([key]) => !key.startsWith('_'))
+  ) as EmMdmTierData
+} catch {}
 
 function isRefusal(text: string): boolean {
   const refusalPhrases = ["i can't", "i cannot", "i'm unable", "i won't", "i am unable", "not able to", "cannot process", "cannot assist"]
@@ -216,7 +223,7 @@ function buildDeterministicFindings(lineItems: BillInput['lineItems']): {
   findings: AuditResult['findings']
   promptNote: string
 } {
-  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs, mue)
+  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs, mue, emMdmTiers)
 }
 
 export async function auditBill(input: BillInput): Promise<AuditResult> {
