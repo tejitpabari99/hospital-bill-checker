@@ -37,6 +37,15 @@ SOURCE_GROUPS = [
         ],
     },
     {
+        "name": "CMS Medicare NCCI PTP 2026 Q2 Hospital Outpatient",
+        "urls": [
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q2-hospital-ptp-edits-ccioph-v321r0-f1.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q2-hospital-ptp-edits-ccioph-v321r0-f2.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q2-hospital-ptp-edits-ccioph-v321r0-f3.zip",
+            "https://www.cms.gov/files/zip/medicare-ncci-2026q2-hospital-ptp-edits-ccioph-v321r0-f4.zip",
+        ],
+    },
+    {
         "name": "CMS Medicare NCCI PTP 2026 Q1",
         "urls": [
             "https://www.cms.gov/files/zip/medicare-ncci-2026q1-practitioner-ptp-edits-ccipra-v320r0-f1.zip",
