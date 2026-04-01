@@ -66,6 +66,9 @@ export interface ParsedBill {
     hospitalPhone?: string | null
     accountNumber?: string | null
     dateOfService?: string | null
+    billTotal?: number | null
+    admissionDate?: string | null
+    dischargeDate?: string | null
   }
 }
 
@@ -149,6 +152,9 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
         hospitalPhone: parsed.hospitalPhone ?? null,
         accountNumber: parsed.accountNumber ?? null,
         dateOfService: parsed.dateOfService ?? null,
+        billTotal: typeof parsed.billTotal === 'number' ? parsed.billTotal : null,
+        admissionDate: parsed.admissionDate ?? null,
+        dischargeDate: parsed.dischargeDate ?? null,
       },
     }
   } catch {

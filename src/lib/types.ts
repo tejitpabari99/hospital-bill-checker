@@ -17,6 +17,10 @@ export interface BillInput {
   hospitalNpi?: string
   accountNumber?: string
   dateOfService?: string
+  billTotal?: number
+  admissionDate?: string
+  dischargeDate?: string
+  goodFaithEstimate?: number
   patientName?: string  // NOT sent to Claude — for letter placeholders only
 }
 
@@ -26,7 +30,17 @@ export interface AuditFinding {
   lineItemIndex: number
   cptCode: string
   severity: 'error' | 'warning' | 'info'
-  errorType: 'upcoding' | 'unbundling' | 'pharmacy_markup' | 'icd10_mismatch' | 'duplicate' | 'above_hospital_list_price' | 'other'
+  errorType:
+    | 'upcoding'
+    | 'unbundling'
+    | 'pharmacy_markup'
+    | 'icd10_mismatch'
+    | 'duplicate'
+    | 'above_hospital_list_price'
+    | 'arithmetic_error'
+    | 'date_error'
+    | 'no_surprises_act'
+    | 'other'
   confidence?: ConfidenceLevel
   description: string        // plain English for patient
   standardDescription?: string  // official CPT/HCPCS code name from standard references
@@ -64,6 +78,9 @@ export interface AuditResult {
     hospitalPhone?: string
     accountNumber?: string
     dateOfService?: string
+    billTotal?: number
+    admissionDate?: string
+    dischargeDate?: string
   }
 }
 

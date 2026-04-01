@@ -8,11 +8,14 @@ import type { HospitalPriceResult } from './hospital-prices'
 import {
   buildDataContext as _buildDataContext,
   buildDeterministicFindings as _buildDeterministicFindings,
+  buildArithmeticFindings,
+  buildDateFindings,
+  buildGfeFindings,
   getMpfsRate,
   CPT_DESCRIPTIONS,
   getNcciEntry,
 } from './audit-rules'
-import type { NcciEntry, NcciData, MpfsData, AspData, ClfsData } from './audit-rules'
+import type { NcciEntry, NcciData, MpfsData, AspData, ClfsData, MueData } from './audit-rules'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
 
@@ -66,6 +69,7 @@ let mpfs: MpfsData = {}
 let ncci: NcciData = {}
 let asp: AspData = {}
 let clfs: ClfsData = {}
+let mue: MueData = {}
 
 // CPT_DESCRIPTIONS, getMpfsRate, getNcciEntry are re-exported from audit-rules.ts
 
@@ -74,6 +78,7 @@ try { mpfs = (await import('$lib/data/mpfs.json', { assert: { type: 'json' } }))
 try { ncci = (await import('$lib/data/ncci.json', { assert: { type: 'json' } })).default } catch {}
 try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
 try { clfs = (await import('$lib/data/clfs.json', { assert: { type: 'json' } })).default } catch {}
+try { mue = (await import('$lib/data/mue.json', { assert: { type: 'json' } })).default as MueData } catch {}
 
 function isRefusal(text: string): boolean {
   const refusalPhrases = ["i can't", "i cannot", "i'm unable", "i won't", "i am unable", "not able to", "cannot process", "cannot assist"]
@@ -211,13 +216,21 @@ function buildDeterministicFindings(lineItems: BillInput['lineItems']): {
   findings: AuditResult['findings']
   promptNote: string
 } {
-  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs)
+  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs, mue)
 }
 
 export async function auditBill(input: BillInput): Promise<AuditResult> {
   const dataContext = buildDataContext(input.lineItems)
-  const { findings: deterministicFindings, promptNote } = buildDeterministicFindings(input.lineItems)
-  const deterministicCodes = new Set(deterministicFindings.map(f => f.cptCode))
+  const { findings: deterministicCoreFindings, promptNote } = buildDeterministicFindings(input.lineItems)
+  const arithmeticFindings = buildArithmeticFindings(input.lineItems, input.billTotal)
+  const dateFindings = buildDateFindings(input.lineItems, input.admissionDate, input.dischargeDate)
+  const gfeFindings = buildGfeFindings(input.lineItems, input.goodFaithEstimate)
+  const deterministicFindings = [...deterministicCoreFindings, ...arithmeticFindings, ...dateFindings, ...gfeFindings]
+  const deterministicCodes = new Set(
+    deterministicFindings
+      .filter((finding) => finding.lineItemIndex >= 0)
+      .map((finding) => `${finding.cptCode}:${finding.lineItemIndex}`)
+  )
 
   // Call 1: findings + summary + extractedMeta
   const prompt1 = `You are a medical billing auditor helping a patient review their hospital bill for errors.
@@ -228,6 +241,9 @@ Bill details:
 Hospital: ${input.hospitalName ?? 'Unknown'}
 Date of service: ${input.dateOfService ?? 'Unknown'}
 Account: ${input.accountNumber ?? 'Unknown'}
+Bill total: ${input.billTotal ?? 'Unknown'}
+Admission date: ${input.admissionDate ?? 'Unknown'}
+Discharge date: ${input.dischargeDate ?? 'Unknown'}
 
 Line items:
 ${JSON.stringify(input.lineItems, null, 2)}
@@ -317,7 +333,9 @@ Respond ONLY with valid JSON:
 
   // Merge deterministic pre-findings with AI findings.
   // De-duplicate: if AI already flagged a code the deterministic layer caught, prefer deterministic.
-  const aiFindings = call1Result.findings.filter(f => !deterministicCodes.has(f.cptCode))
+  const aiFindings = call1Result.findings.filter(
+    (finding) => !deterministicCodes.has(`${finding.cptCode}:${finding.lineItemIndex}`)
+  )
   call1Result.findings = [...deterministicFindings, ...aiFindings]
 
   // Recompute summary counts to include deterministic findings
@@ -334,6 +352,9 @@ Respond ONLY with valid JSON:
     }
     if (f.errorType === 'duplicate') return s + (billedAmt || mpfsRate)
     if (f.errorType === 'icd10_mismatch') return s + (billedAmt || mpfsRate)
+    if (f.errorType === 'arithmetic_error') return s + Math.abs(totalBilled - (input.billTotal ?? totalBilled))
+    if (f.errorType === 'date_error') return s + (billedAmt || mpfsRate)
+    if (f.errorType === 'no_surprises_act') return s + Math.max(0, totalBilled - (input.goodFaithEstimate ?? 0))
     if (f.errorType === 'above_hospital_list_price') {
       const hosp = (f as typeof f & { hospitalGrossCharge?: number }).hospitalGrossCharge ?? 0
       return s + Math.max(0, billedAmt - hosp)
@@ -346,7 +367,11 @@ Respond ONLY with valid JSON:
     potentialOvercharge: Math.round(potentialOvercharge * 100) / 100,
     errorCount: call1Result.findings.filter(f => f.severity === 'error').length,
     warningCount: call1Result.findings.filter(f => f.severity === 'warning').length,
-    cleanCount: input.lineItems.length - new Set(call1Result.findings.map(f => f.lineItemIndex)).size,
+    cleanCount: input.lineItems.length - new Set(
+      call1Result.findings
+        .filter((finding) => finding.lineItemIndex >= 0)
+        .map((finding) => finding.lineItemIndex)
+    ).size,
   }
 
   const hospitalName = input.hospitalName ?? call1Result.extractedMeta?.hospitalName ?? ''
