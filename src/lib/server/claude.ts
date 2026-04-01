@@ -350,12 +350,16 @@ Respond ONLY with valid JSON:
   }
 
   const hospitalName = input.hospitalName ?? call1Result.extractedMeta?.hospitalName ?? ''
-  const state = extractStateFromHospitalName(hospitalName)
+  const stateFromAddress = input.hospitalAddress
+    ? extractStateFromHospitalName(input.hospitalAddress)
+    : ''
+  const state = stateFromAddress || extractStateFromHospitalName(hospitalName)
+  const hospitalPhone = input.hospitalPhone ?? null
   const allCodes = input.lineItems.map((lineItem) => lineItem.cpt)
 
   let hospitalPrices: HospitalPriceResult | null = null
   try {
-    hospitalPrices = await lookupHospitalPrices(hospitalName, state, allCodes)
+    hospitalPrices = await lookupHospitalPrices(hospitalName, state, allCodes, hospitalPhone ?? undefined)
   } catch (error) {
     console.warn('[claude.ts] Hospital price lookup failed:', error)
   }

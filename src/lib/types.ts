@@ -12,6 +12,8 @@ export interface BillInput {
   lineItems: LineItem[]
   rawText?: string      // raw bill text; used when lineItems have $0 amounts (text PDF path)
   hospitalName?: string
+  hospitalAddress?: string
+  hospitalPhone?: string
   hospitalNpi?: string
   accountNumber?: string
   dateOfService?: string
@@ -58,6 +60,8 @@ export interface AuditResult {
   }
   extractedMeta: {
     hospitalName?: string
+    hospitalAddress?: string
+    hospitalPhone?: string
     accountNumber?: string
     dateOfService?: string
   }
