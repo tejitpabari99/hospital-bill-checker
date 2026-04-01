@@ -25,7 +25,7 @@ import {
   getNcciEntry,
   getMpfsRate,
 } from './audit-rules'
-import type { NcciData, MpfsData, AspData, ClfsData, MueData, EmMdmTierData } from './audit-rules'
+import type { NcciData, MpfsData, AspData, ClfsData, MueData, EmMdmTierData, LcdCoverageData } from './audit-rules'
 import type { LineItem } from '$lib/types'
 
 // ── Test data fixtures ────────────────────────────────────────────────────────
@@ -73,6 +73,14 @@ const TEST_EM_MDM: EmMdmTierData = {
   'R55': 'L',
   'R07': 'M',
   'I21': 'H',
+}
+
+const TEST_LCD_COVERAGE: LcdCoverageData = {
+  '99285': {
+    covered: ['I21'],
+    notCovered: ['J00'],
+    lcdIds: ['L99999'],
+  },
 }
 
 function li(cpt: string, billed: number, units = 1, modifiers?: string[]): LineItem {
@@ -451,6 +459,27 @@ describe('buildDeterministicFindings — E&M upcoding pre-filter', () => {
     )
 
     expect(findings.find((finding) => finding.errorType === 'upcoding')).toBeUndefined()
+  })
+})
+
+describe('buildDeterministicFindings — LCD coverage', () => {
+  it('flags ICD-10 mismatches when no covered diagnosis is present', () => {
+    const { findings } = buildDeterministicFindings(
+      [{ ...li('99285', 300.00), icd10Codes: ['J00.9'] }],
+      TEST_NCCI,
+      TEST_MPFS,
+      TEST_ASP,
+      TEST_CLFS,
+      TEST_MUE,
+      TEST_EM_MDM,
+      TEST_LCD_COVERAGE
+    )
+
+    const lcdFinding = findings.find((finding) =>
+      finding.errorType === 'icd10_mismatch' && finding.description.includes('CMS LCD')
+    )
+    expect(lcdFinding).toBeDefined()
+    expect(lcdFinding?.severity).toBe('error')
   })
 })
 

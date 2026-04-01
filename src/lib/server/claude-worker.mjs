@@ -10,7 +10,7 @@ process.stdin.setEncoding('utf8')
 process.stdin.on('data', chunk => { inputData += chunk })
 process.stdin.on('end', async () => {
   try {
-    const { prompt } = JSON.parse(inputData.trim())
+    const { prompt, contents, tools } = JSON.parse(inputData.trim())
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
     // pro first for audit quality; flash as 503 fallback only
     const models = ['gemini-2.5-pro', 'gemini-2.5-flash']
@@ -18,13 +18,23 @@ process.stdin.on('end', async () => {
 
     for (const modelName of models) {
       try {
-        const model = genAI.getGenerativeModel({
+        const modelConfig = {
           model: modelName,
           generationConfig: { temperature: 0 },  // deterministic output
-        })
-        const result = await model.generateContent(prompt)
-        const text = result.response.text()
-        process.stdout.write(JSON.stringify({ text, model: modelName }))
+        }
+        if (tools?.length) {
+          modelConfig.tools = [{ functionDeclarations: tools }]
+        }
+
+        const model = genAI.getGenerativeModel(modelConfig)
+        const result = await model.generateContent(contents ?? prompt)
+        const response = result.response
+        const candidateParts = response?.candidates?.[0]?.content?.parts ?? []
+        const functionCalls = typeof response.functionCalls === 'function'
+          ? response.functionCalls()
+          : candidateParts.filter((part) => part?.functionCall).map((part) => part.functionCall)
+        const text = functionCalls?.length ? '' : response.text()
+        process.stdout.write(JSON.stringify({ text, functionCalls, parts: candidateParts, model: modelName }))
         process.exit(0)
       } catch (err) {
         lastError = err

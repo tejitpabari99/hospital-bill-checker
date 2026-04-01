@@ -19,6 +19,12 @@ export type MueEntry = { maxUnits: number; adjudicationType: 'date_of_service' |
 export type MueData = Record<string, MueEntry>
 export type EmMdmTier = 'S' | 'L' | 'M' | 'H'
 export type EmMdmTierData = Record<string, EmMdmTier>
+export type LcdCoverageEntry = {
+  covered: string[]
+  notCovered: string[]
+  lcdIds: string[]
+}
+export type LcdCoverageData = Record<string, LcdCoverageEntry>
 
 // ── Known CPT descriptions ────────────────────────────────────────────────────
 
@@ -173,7 +179,8 @@ export function buildDeterministicFindings(
   asp: AspData,
   clfs: ClfsData = {},
   mue: MueData = {},
-  emMdmTiers: EmMdmTierData = {}
+  emMdmTiers: EmMdmTierData = {},
+  lcdCoverage: LcdCoverageData = {}
 ): { findings: AuditFinding[]; promptNote: string } {
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
   const codeSet = new Set(codes)
@@ -267,7 +274,41 @@ export function buildDeterministicFindings(
     })
   }
 
-  // 4. MUE units check — deterministic
+  // 4. LCD/NCD coverage check
+  for (let i = 0; i < lineItems.length; i++) {
+    const code = codes[i]
+    const lcdEntry = lcdCoverage[code]
+    if (!lcdEntry || lcdEntry.covered.length === 0) continue
+
+    const icd10s = lineItems[i].icd10Codes ?? []
+    if (icd10s.length === 0) continue
+
+    const hasCoveredDx = icd10s.some((icd) =>
+      lcdEntry.covered.some((covered) => icd.toUpperCase().startsWith(covered.toUpperCase()))
+    )
+    const hasExcludedDx = icd10s.some((icd) =>
+      lcdEntry.notCovered.some((excluded) => icd.toUpperCase().startsWith(excluded.toUpperCase()))
+    )
+
+    if (hasCoveredDx) continue
+
+    const lcdRef = lcdEntry.lcdIds.slice(0, 2).join(', ')
+    findings.push({
+      lineItemIndex: i,
+      cptCode: code,
+      severity: hasExcludedDx ? 'error' : 'warning',
+      errorType: 'icd10_mismatch',
+      confidence: hasExcludedDx ? 'high' : 'medium',
+      description: `CPT ${code} may not be covered for the diagnosis codes on this bill (${icd10s.join(', ')}). Per CMS LCD ${lcdRef}, this procedure requires specific qualifying diagnoses that are not present on the bill.`,
+      standardDescription: CPT_DESCRIPTIONS[code],
+      recommendation: `Request documentation showing medical necessity for CPT ${code}. The CMS LCD (${lcdRef}) specifies which diagnoses qualify this procedure for coverage. If your diagnosis is not listed, ask billing to explain or correct the diagnosis codes.`,
+      medicareRate: getEffectiveRate(code),
+      markupRatio: undefined,
+      ncciBundledWith: undefined,
+    })
+  }
+
+  // 5. MUE units check — deterministic
   const codeTotalUnits = new Map<string, number>()
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
@@ -296,7 +337,7 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 5. E&M upcoding — deterministic pre-filter
+  // 6. E&M upcoding — deterministic pre-filter
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const emTier = EM_MDM_LEVELS[code]
