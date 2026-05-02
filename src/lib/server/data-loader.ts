@@ -73,7 +73,21 @@ export function loadMueEdit(
   hcpcsCode: string,
   billType: BillType
 ): MueRow | null {
-  return null  // implemented in step-02
+  const db = getMueDb()
+  if (!db) return null
+
+  const dbBillType = billType === 'unknown' ? 'practitioner' : billType
+
+  const row = db.prepare(`
+    SELECT hcpcs_code, mue_value, mue_adjudication_indicator, mue_rationale
+    FROM mue_edits
+    WHERE hcpcs_code = ? AND bill_type = ?
+  `).get(
+    hcpcsCode.toUpperCase().trim(),
+    dbBillType
+  ) as MueRow | undefined
+
+  return row ?? null
 }
 
 // ─── MPFS ────────────────────────────────────────────────────────────────────

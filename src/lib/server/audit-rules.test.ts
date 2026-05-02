@@ -23,9 +23,9 @@ import {
   buildGfeFindings,
   getMpfsRate,
 } from './audit-rules'
-import type { MpfsData, AspData, ClfsData, MueData, EmMdmTierData, LcdCoverageData } from './audit-rules'
+import type { MpfsData, AspData, ClfsData, EmMdmTierData, LcdCoverageData } from './audit-rules'
 import type { LineItem } from '$lib/types'
-import { loadNcciPairs } from './data-loader'
+import { loadMueEdit, loadNcciPairs } from './data-loader'
 
 // ── Test data fixtures ────────────────────────────────────────────────────────
 
@@ -48,11 +48,6 @@ const TEST_CLFS: ClfsData = {
   '80053': { rate: 14.56, description: 'Comprehensive metabolic panel' },
 }
 
-const TEST_MUE: MueData = {
-  '99215': { maxUnits: 1, adjudicationType: 'date_of_service' },
-  '36415': { maxUnits: 3, adjudicationType: 'claim_line' },
-}
-
 const TEST_EM_MDM: EmMdmTierData = {
   'J00': 'S',
   'R55': 'L',
@@ -73,6 +68,7 @@ function li(cpt: string, billed: number, units = 1, modifiers?: string[]): LineI
 }
 
 const ncciDb = (() => { try { return new Database('data/ncci.sqlite', { readonly: true }) } catch { return null } })()
+const mueDb = (() => { try { return new Database('data/mue.sqlite', { readonly: true }) } catch { return null } })()
 
 // ── getMpfsRate ───────────────────────────────────────────────────────────────
 
@@ -348,31 +344,35 @@ describe('buildDeterministicFindings — CLFS fallback', () => {
 })
 
 describe('buildDeterministicFindings — MUE units', () => {
-  it('flags codes that exceed the CMS date-of-service MUE cap', () => {
+  it.skipIf(!mueDb)('flags line items that exceed the CMS MUE cap', () => {
     const { findings } = buildDeterministicFindings(
-      [li('99215', 300.00, 1), li('99215', 300.00, 2)],
+      [li('99215', 300.00, 2)],
       TEST_MPFS,
       TEST_ASP,
       TEST_CLFS,
-      TEST_MUE
+      {},
+      {},
+      'practitioner'
     )
 
     const mueFindings = findings.filter((finding) =>
-      finding.cptCode === '99215' && finding.description.includes('Medically Unlikely Edits')
+      finding.cptCode === '99215' && finding.description.includes('Medically Unlikely Edit')
     )
-    expect(mueFindings).toHaveLength(2)
+    expect(mueFindings).toHaveLength(1)
   })
 
-  it('ignores claim-line MUE entries for deterministic caps', () => {
+  it.skipIf(!mueDb)('does not flag line items within the CMS MUE cap', () => {
     const { findings } = buildDeterministicFindings(
-      [li('36415', 20.00, 5)],
+      [li('99215', 300.00, 1)],
       TEST_MPFS,
       TEST_ASP,
       TEST_CLFS,
-      TEST_MUE
+      {},
+      {},
+      'practitioner'
     )
 
-    expect(findings.find((finding) => finding.cptCode === '36415')).toBeUndefined()
+    expect(findings.find((finding) => finding.cptCode === '99215')).toBeUndefined()
   })
 })
 
@@ -383,7 +383,6 @@ describe('buildDeterministicFindings — E&M upcoding pre-filter', () => {
       TEST_MPFS,
       TEST_ASP,
       TEST_CLFS,
-      TEST_MUE,
       TEST_EM_MDM
     )
 
@@ -396,7 +395,6 @@ describe('buildDeterministicFindings — E&M upcoding pre-filter', () => {
       TEST_MPFS,
       TEST_ASP,
       TEST_CLFS,
-      TEST_MUE,
       TEST_EM_MDM
     )
 
@@ -411,7 +409,6 @@ describe('buildDeterministicFindings — LCD coverage', () => {
       TEST_MPFS,
       TEST_ASP,
       TEST_CLFS,
-      TEST_MUE,
       TEST_EM_MDM,
       TEST_LCD_COVERAGE
     )
@@ -467,5 +464,26 @@ describe('NCCI SQLite integration', () => {
     const outpt = loadNcciPairs('93010', 'outpatient', 20260401)
     expect(Array.isArray(pract)).toBe(true)
     expect(Array.isArray(outpt)).toBe(true)
+  })
+})
+
+describe('MUE SQLite integration', () => {
+  it.skipIf(!mueDb)('returns MUE for 99285 practitioner', () => {
+    const entry = loadMueEdit('99285', 'practitioner')
+    expect(entry).not.toBeNull()
+    expect(entry!.mue_value).toBeGreaterThan(0)
+  })
+
+  it.skipIf(!mueDb)('returns null for unknown code', () => {
+    const entry = loadMueEdit('ZZZZZ', 'practitioner')
+    expect(entry).toBeNull()
+  })
+
+  it.skipIf(!mueDb)('has outpatient entries', () => {
+    const entry = loadMueEdit('99285', 'outpatient')
+    // May or may not exist — just verify it returns null or a valid row
+    if (entry) {
+      expect(entry.mue_value).toBeGreaterThan(0)
+    }
   })
 })

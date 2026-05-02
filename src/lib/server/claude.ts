@@ -16,12 +16,11 @@ import {
   getMpfsRate,
   CPT_DESCRIPTIONS,
 } from './audit-rules'
-import { loadNcciPairs, toServiceDateInt } from './data-loader'
+import { loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
 import type {
   MpfsData,
   AspData,
   ClfsData,
-  MueData,
   EmMdmTierData,
   LcdCoverageData,
 } from './audit-rules'
@@ -95,7 +94,6 @@ async function callClaude(prompt: string, timeoutMs: number, traceId?: string): 
 
 type ToolExecutionData = {
   mpfs: MpfsData
-  mue: MueData
   lcdCoverage: LcdCoverageData
   asp: AspData
   clfs: ClfsData
@@ -131,13 +129,15 @@ export function executeTool(
     case 'check_mue_units': {
       const code = String(args.cptCode ?? '').trim().toUpperCase()
       const unitsBilled = Number(args.unitsBilled ?? 0)
-      const entry = data.mue[code]
+      const billType = String(args.billType ?? 'unknown') as BillInput['billType']
+      const entry = loadMueEdit(code, billType ?? 'unknown')
       if (!entry) return { hasMue: false }
+      const adjudicationType = entry.mue_adjudication_indicator === '1' ? 'claim_line' : 'date_of_service'
       return {
         hasMue: true,
-        maxUnits: entry.maxUnits,
-        adjudicationType: entry.adjudicationType,
-        exceedsLimit: entry.adjudicationType === 'date_of_service' && unitsBilled > entry.maxUnits,
+        maxUnits: entry.mue_value,
+        adjudicationType,
+        exceedsLimit: unitsBilled > entry.mue_value,
       }
     }
     case 'check_lcd_coverage': {
@@ -197,7 +197,6 @@ async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: 
           name: functionCall.name,
           response: executeTool(functionCall.name, functionCall.args ?? {}, {
             mpfs,
-            mue,
             lcdCoverage,
             asp,
             clfs,
@@ -215,7 +214,6 @@ async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: 
 let mpfs: MpfsData = {}
 let asp: AspData = {}
 let clfs: ClfsData = {}
-let mue: MueData = {}
 let emMdmTiers: EmMdmTierData = {}
 let lcdCoverage: LcdCoverageData = {}
 
@@ -225,7 +223,6 @@ let lcdCoverage: LcdCoverageData = {}
 try { mpfs = (await import('$lib/data/mpfs.json', { assert: { type: 'json' } })).default } catch {}
 try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
 try { clfs = (await import('$lib/data/clfs.json', { assert: { type: 'json' } })).default } catch {}
-try { mue = (await import('$lib/data/mue.json', { assert: { type: 'json' } })).default as MueData } catch {}
 try {
   const rawEmMdmTiers = (await import('$lib/data/em_mdm_tiers.json', { assert: { type: 'json' } })).default as unknown as Record<string, string>
   emMdmTiers = Object.fromEntries(
@@ -375,7 +372,6 @@ function buildDeterministicFindings(input: BillInput): {
     mpfs,
     asp,
     clfs,
-    mue,
     emMdmTiers,
     lcdCoverage,
     input.billType ?? 'unknown',

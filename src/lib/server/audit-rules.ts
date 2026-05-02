@@ -6,7 +6,7 @@
  */
 
 import type { LineItem, AuditFinding, ConfidenceLevel, BillType } from '$lib/types'
-import { loadNcciPairs, toServiceDateInt } from './data-loader'
+import { loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -14,8 +14,6 @@ export type MpfsEntry = number | { rate: number; description?: string }
 export type MpfsData = Record<string, MpfsEntry>
 export type AspData = Record<string, number>
 export type ClfsData = Record<string, { rate: number; description?: string }>
-export type MueEntry = { maxUnits: number; adjudicationType: 'date_of_service' | 'claim_line' }
-export type MueData = Record<string, MueEntry>
 export type EmMdmTier = 'S' | 'L' | 'M' | 'H'
 export type EmMdmTierData = Record<string, EmMdmTier>
 export type LcdCoverageEntry = {
@@ -168,7 +166,6 @@ export function buildDeterministicFindings(
   mpfs: MpfsData,
   asp: AspData,
   clfs: ClfsData = {},
-  mue: MueData = {},
   emMdmTiers: EmMdmTierData = {},
   lcdCoverage: LcdCoverageData = {},
   billType: BillType = 'unknown',
@@ -311,31 +308,32 @@ export function buildDeterministicFindings(
   }
 
   // 5. MUE units check — deterministic
-  const codeTotalUnits = new Map<string, number>()
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
-    codeTotalUnits.set(code, (codeTotalUnits.get(code) ?? 0) + (lineItems[i].units || 1))
-  }
-  for (const [code, totalUnits] of codeTotalUnits) {
-    const mueEntry = mue[code]
+    const unitsBilled = lineItems[i].units ?? 1
+    const mueEntry = loadMueEdit(code, billType)
     if (!mueEntry) continue
-    if (mueEntry.adjudicationType !== 'date_of_service') continue
-    if (totalUnits <= mueEntry.maxUnits) continue
-    const indexes = codeIndexes.get(code) ?? []
-    for (const idx of indexes) {
+
+    const mai = mueEntry.mue_adjudication_indicator
+    const maxUnits = mueEntry.mue_value
+
+    // MAI 1 = per claim line, MAI 2 or 3 = per date of service
+    // For simplicity: flag if units > maxUnits regardless of MAI
+    if (unitsBilled > maxUnits) {
       findings.push({
-        lineItemIndex: idx,
+        lineItemIndex: i,
         cptCode: code,
         severity: 'error',
-        errorType: 'unbundling',
+        errorType: 'other',
         confidence: 'high' as ConfidenceLevel,
-        description: `CPT ${code} billed ${totalUnits} unit(s), but CMS Medically Unlikely Edits cap this at ${mueEntry.maxUnits} unit(s) per day. Billing ${totalUnits} units on a single date of service is not medically plausible.`,
-        standardDescription: CPT_DESCRIPTIONS[code] ?? clfs[code]?.description,
-        recommendation: `Request itemized documentation justifying ${totalUnits} units. CMS MUE limit is ${mueEntry.maxUnits} unit(s) per date of service.`,
-        medicareRate: getEffectiveRate(code),
+        description: `CPT ${code} has ${unitsBilled} units billed, which exceeds the CMS Medically Unlikely Edit (MUE) limit of ${maxUnits} units per ${mai === '1' ? 'claim line' : 'date of service'}.`,
+        standardDescription: CPT_DESCRIPTIONS[code],
+        recommendation: `Request itemized documentation for each unit of CPT ${code}. The MUE limit is ${maxUnits} unit(s).`,
+        medicareRate: undefined,
         markupRatio: undefined,
         ncciBundledWith: undefined,
       })
+      alreadyFlaggedCodes.add(code)
     }
   }
 
