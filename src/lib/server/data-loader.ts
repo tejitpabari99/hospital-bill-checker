@@ -5,6 +5,17 @@
  */
 
 import type { BillType } from '$lib/types'
+import {
+  getNcciDb,
+  getMueDb,
+  getMpfsDb,
+  getClfsDb,
+  getAspDb,
+  getOppsDb,
+  getIppsDb,
+  getDmeposDb,
+  getAmbulanceDb,
+} from './db'
 
 // ─── NCCI ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +35,29 @@ export function loadNcciPairs(
   billType: BillType,
   serviceDateInt: number
 ): NcciPairRow[] {
-  return []  // implemented in step-01
+  const db = getNcciDb()
+  if (!db) return []
+
+  // Map unknown/inpatient to practitioner as a conservative default until
+  // later classification/routing steps handle bill type more explicitly.
+  const dbBillType = billType === 'unknown' || billType === 'inpatient' ? 'practitioner' : billType
+
+  const rows = db.prepare(`
+    SELECT col1_code, modifier_indicator, rationale
+    FROM ncci_ptp
+    WHERE col2_code = ?
+      AND bill_type = ?
+      AND effective_date <= ?
+      AND deletion_date >= ?
+    ORDER BY effective_date DESC
+  `).all(
+    col2Code.toUpperCase().trim(),
+    dbBillType,
+    serviceDateInt,
+    serviceDateInt
+  ) as NcciPairRow[]
+
+  return rows
 }
 
 // ─── MUE ─────────────────────────────────────────────────────────────────────

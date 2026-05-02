@@ -5,12 +5,11 @@
  * This keeps the logic testable without needing SvelteKit aliases.
  */
 
-import type { LineItem, AuditFinding, ConfidenceLevel } from '$lib/types'
+import type { LineItem, AuditFinding, ConfidenceLevel, BillType } from '$lib/types'
+import { loadNcciPairs, toServiceDateInt } from './data-loader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type NcciEntry = { bundledInto: string[]; modifierCanOverride: boolean } | string
-export type NcciData = Record<string, NcciEntry>
 export type MpfsEntry = number | { rate: number; description?: string }
 export type MpfsData = Record<string, MpfsEntry>
 export type AspData = Record<string, number>
@@ -89,16 +88,6 @@ export function getMpfsRate(entry: MpfsEntry | undefined): number | undefined {
   return entry.rate
 }
 
-export function getNcciEntry(
-  code: string,
-  ncci: NcciData
-): { bundledInto: string[]; modifierCanOverride: boolean } | null {
-  const entry = ncci[code]
-  if (!entry) return null
-  if (typeof entry === 'string') return { bundledInto: [entry], modifierCanOverride: true }
-  return entry
-}
-
 // ── Core functions ────────────────────────────────────────────────────────────
 
 /**
@@ -107,11 +96,13 @@ export function getNcciEntry(
  */
 export function buildDataContext(
   lineItems: LineItem[],
-  ncci: NcciData,
   mpfs: MpfsData,
   asp: AspData,
-  clfs: ClfsData = {}
+  clfs: ClfsData = {},
+  billType: BillType = 'unknown',
+  serviceDateStr?: string
 ): string {
+  const serviceDateInt = toServiceDateInt(serviceDateStr)
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
   const codeSet = new Set(codes)
   const ncciHits: string[] = []
@@ -130,14 +121,14 @@ export function buildDataContext(
     const code = rawCode.trim().toUpperCase()
 
     // NCCI: only inject a hit if the Col1 (comprehensive) code is ALSO on this bill
-    const ncciEntry = getNcciEntry(code, ncci)
-    if (ncciEntry) {
-      const presentCol1 = ncciEntry.bundledInto.filter(c => codeSet.has(c))
+    const pairs = loadNcciPairs(code, billType, serviceDateInt)
+    if (pairs.length > 0) {
+      const presentCol1 = pairs.filter(pair => codeSet.has(pair.col1_code))
       if (presentCol1.length > 0) {
-        const modNote = ncciEntry.modifierCanOverride
-          ? '(modifier -59 may override with documented distinct clinical indication)'
-          : '(no modifier override allowed — always an unbundling error)'
-        ncciHits.push(`${code} is bundled into ${presentCol1.join(' / ')} per CMS NCCI ${modNote}`)
+        const modNote = presentCol1.some(pair => pair.modifier_indicator === '0')
+          ? '(no modifier override allowed — always an unbundling error)'
+          : '(modifier -59 may override with documented distinct clinical indication)'
+        ncciHits.push(`${code} is bundled into ${presentCol1.map(pair => pair.col1_code).join(' / ')} per CMS NCCI ${modNote}`)
       }
     }
 
@@ -174,53 +165,64 @@ export function buildDataContext(
  */
 export function buildDeterministicFindings(
   lineItems: LineItem[],
-  ncci: NcciData,
   mpfs: MpfsData,
   asp: AspData,
   clfs: ClfsData = {},
   mue: MueData = {},
   emMdmTiers: EmMdmTierData = {},
-  lcdCoverage: LcdCoverageData = {}
+  lcdCoverage: LcdCoverageData = {},
+  billType: BillType = 'unknown',
+  serviceDateStr?: string
 ): { findings: AuditFinding[]; promptNote: string } {
+  const serviceDateInt = toServiceDateInt(serviceDateStr)
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
   const codeSet = new Set(codes)
   const findings: AuditFinding[] = []
+  const alreadyFlaggedCodes = new Set<string>()
 
   // Lab codes are in CLFS, not MPFS — use CLFS as fallback for any rate lookup.
   function getEffectiveRate(code: string): number | undefined {
     return getMpfsRate(mpfs[code]) ?? clfs[code]?.rate
   }
 
-  // 1. NCCI unbundling — deterministic
+  // 1. NCCI unbundling — deterministic, per-pair modifier check
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
-    const ncciEntry = getNcciEntry(code, ncci)
-    if (!ncciEntry) continue
+    const pairs = loadNcciPairs(code, billType, serviceDateInt)
+    if (pairs.length === 0) continue
 
-    const presentCol1 = ncciEntry.bundledInto.filter(c => codeSet.has(c))
+    const presentCol1 = pairs.filter(p => codeSet.has(p.col1_code))
     if (presentCol1.length === 0) continue
 
-    const lineItem = lineItems[i]
-    const hasModifier59 = lineItem.modifiers?.some(m => MODIFIER_59_FAMILY.includes(m.trim()))
-    const isError = !hasModifier59 || !ncciEntry.modifierCanOverride
+    const lineModifiers = (lineItems[i].modifiers ?? []).map(m => m.trim().toUpperCase())
+    const hasModifier59 = lineModifiers.some(m => MODIFIER_59_FAMILY.includes(m))
 
-    findings.push({
-      lineItemIndex: i,
-      cptCode: code,
-      severity: isError ? 'error' : 'warning',
-      errorType: 'unbundling',
-      confidence: 'high' as ConfidenceLevel,
-      description: hasModifier59 && ncciEntry.modifierCanOverride
-        ? `CPT ${code} is billed with modifier -59 alongside CPT ${presentCol1.join('/')}. This may be legitimate if there is documented distinct clinical indication, but requires review.`
-        : `CPT ${code} should not be billed separately when CPT ${presentCol1.join(' or ')} is also billed. CMS NCCI rules require ${code} to be bundled into ${presentCol1.join('/')}.${ncciEntry.modifierCanOverride ? '' : ' No modifier can override this rule.'}`,
-      standardDescription: CPT_DESCRIPTIONS[code],
-      recommendation: hasModifier59 && ncciEntry.modifierCanOverride
-        ? 'Request the clinical documentation supporting separate billing with modifier -59. It requires distinct procedures at different anatomical sites or separate patient encounters.'
-        : 'Request a corrected bill removing the bundled charge, or written justification under 42 CFR 405.374.',
-      medicareRate: getEffectiveRate(code),
-      markupRatio: undefined,
-      ncciBundledWith: presentCol1[0],
-    })
+    for (const pair of presentCol1) {
+      const modifierCanOverride = pair.modifier_indicator !== '0'
+      const modifierOverrides = modifierCanOverride && hasModifier59
+
+      if (modifierOverrides) continue
+
+      const modNote = modifierCanOverride
+        ? '(modifier -59 may override with documented distinct clinical indication)'
+        : '(no modifier override allowed — always an unbundling error)'
+
+      findings.push({
+        lineItemIndex: i,
+        cptCode: code,
+        severity: 'error',
+        errorType: 'unbundling',
+        confidence: 'high' as ConfidenceLevel,
+        description: `CPT ${code} is bundled into CPT ${pair.col1_code} per CMS NCCI PTP edits. Both codes should not be billed separately on the same claim ${modNote}.`,
+        standardDescription: CPT_DESCRIPTIONS[code],
+        recommendation: `Request that the hospital remove CPT ${code} from the claim or provide documentation justifying separate billing with modifier -59.`,
+        ncciBundledWith: pair.col1_code,
+        medicareRate: getEffectiveRate(code),
+        markupRatio: undefined,
+      })
+      alreadyFlaggedCodes.add(code)
+      break
+    }
   }
 
   // 2. Duplicate detection — deterministic
@@ -372,7 +374,7 @@ export function buildDeterministicFindings(
     })
   }
 
-  const alreadyFlaggedCodes = new Set(findings.map(f => f.cptCode))
+  findings.forEach(f => alreadyFlaggedCodes.add(f.cptCode))
   const promptNote =
     findings.length > 0
       ? `\n\nIMPORTANT: The following findings are CONFIRMED by deterministic CMS rule lookup — do NOT contradict or omit them. Include them in your output exactly as described:\n${findings

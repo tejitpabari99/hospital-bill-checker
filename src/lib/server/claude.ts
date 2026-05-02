@@ -15,11 +15,9 @@ import {
   buildGfeFindings,
   getMpfsRate,
   CPT_DESCRIPTIONS,
-  getNcciEntry,
 } from './audit-rules'
+import { loadNcciPairs, toServiceDateInt } from './data-loader'
 import type {
-  NcciEntry,
-  NcciData,
   MpfsData,
   AspData,
   ClfsData,
@@ -97,7 +95,6 @@ async function callClaude(prompt: string, timeoutMs: number, traceId?: string): 
 
 type ToolExecutionData = {
   mpfs: MpfsData
-  ncci: NcciData
   mue: MueData
   lcdCoverage: LcdCoverageData
   asp: AspData
@@ -118,15 +115,16 @@ export function executeTool(
     case 'check_ncci_bundling': {
       const code = String(args.cptCode ?? '').trim().toUpperCase()
       const allCodes = new Set(((args.allCodesOnBill as string[] | undefined) ?? []).map((value) => value.toUpperCase()))
-      const entry = getNcciEntry(code, data.ncci)
-      if (!entry) return { ncciViolation: false }
-      const bundledWith = entry.bundledInto.filter((candidate) => allCodes.has(candidate))
-      const modifiers = ((args.modifiers as string[] | undefined) ?? []).map((value) => value.trim())
+      const billType = String(args.billType ?? 'unknown') as BillInput['billType']
+      const serviceDateInt = toServiceDateInt(String(args.serviceDate ?? ''))
+      const pairs = loadNcciPairs(code, billType ?? 'unknown', serviceDateInt)
+      const bundledPairs = pairs.filter((pair) => allCodes.has(pair.col1_code))
+      const modifiers = ((args.modifiers as string[] | undefined) ?? []).map((value) => value.trim().toUpperCase())
       const hasModifier59 = modifiers.some((modifier) => ['59', '-59', 'XE', 'XP', 'XS', 'XU'].includes(modifier))
       return {
-        ncciViolation: bundledWith.length > 0,
-        bundledWith,
-        modifierCanOverride: entry.modifierCanOverride,
+        ncciViolation: bundledPairs.length > 0,
+        bundledWith: bundledPairs.map((pair) => pair.col1_code),
+        modifierCanOverride: bundledPairs.some((pair) => pair.modifier_indicator !== '0'),
         hasModifier59,
       }
     }
@@ -199,7 +197,6 @@ async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: 
           name: functionCall.name,
           response: executeTool(functionCall.name, functionCall.args ?? {}, {
             mpfs,
-            ncci,
             mue,
             lcdCoverage,
             asp,
@@ -216,18 +213,16 @@ async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: 
 
 // Static data — loaded once at module init, never per-request
 let mpfs: MpfsData = {}
-let ncci: NcciData = {}
 let asp: AspData = {}
 let clfs: ClfsData = {}
 let mue: MueData = {}
 let emMdmTiers: EmMdmTierData = {}
 let lcdCoverage: LcdCoverageData = {}
 
-// CPT_DESCRIPTIONS, getMpfsRate, getNcciEntry are re-exported from audit-rules.ts
+// CPT_DESCRIPTIONS and getMpfsRate are re-exported from audit-rules.ts
 
 // Try to load static data — fail silently if not built yet
 try { mpfs = (await import('$lib/data/mpfs.json', { assert: { type: 'json' } })).default } catch {}
-try { ncci = (await import('$lib/data/ncci.json', { assert: { type: 'json' } })).default } catch {}
 try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
 try { clfs = (await import('$lib/data/clfs.json', { assert: { type: 'json' } })).default } catch {}
 try { mue = (await import('$lib/data/mue.json', { assert: { type: 'json' } })).default as MueData } catch {}
@@ -367,15 +362,25 @@ function buildAboveListPriceFindings(
 }
 
 // Thin wrappers that bind module-level data to the pure functions in audit-rules.ts
-function buildDataContext(lineItems: BillInput['lineItems']): string {
-  return _buildDataContext(lineItems, ncci, mpfs, asp, clfs)
+function buildDataContext(input: BillInput): string {
+  return _buildDataContext(input.lineItems, mpfs, asp, clfs, input.billType ?? 'unknown', input.dateOfService)
 }
 
-function buildDeterministicFindings(lineItems: BillInput['lineItems']): {
+function buildDeterministicFindings(input: BillInput): {
   findings: AuditResult['findings']
   promptNote: string
 } {
-  return _buildDeterministicFindings(lineItems, ncci, mpfs, asp, clfs, mue, emMdmTiers, lcdCoverage)
+  return _buildDeterministicFindings(
+    input.lineItems,
+    mpfs,
+    asp,
+    clfs,
+    mue,
+    emMdmTiers,
+    lcdCoverage,
+    input.billType ?? 'unknown',
+    input.dateOfService
+  )
 }
 
 export async function auditBill(input: BillInput, traceId?: string): Promise<AuditResult> {
@@ -384,8 +389,8 @@ export async function auditBill(input: BillInput, traceId?: string): Promise<Aud
     lineItems: input.lineItems.length,
     hospitalName: input.hospitalName ?? null,
   })
-  const dataContext = buildDataContext(input.lineItems)
-  const { findings: deterministicCoreFindings, promptNote } = buildDeterministicFindings(input.lineItems)
+  const dataContext = buildDataContext(input)
+  const { findings: deterministicCoreFindings, promptNote } = buildDeterministicFindings(input)
   const arithmeticFindings = buildArithmeticFindings(input.lineItems, input.billTotal)
   const dateFindings = buildDateFindings(input.lineItems, input.admissionDate, input.dischargeDate)
   const gfeFindings = buildGfeFindings(input.lineItems, input.goodFaithEstimate)

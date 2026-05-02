@@ -11,6 +11,9 @@ src/lib/data/mpfs.json
 src/lib/data/ncci.json
 src/lib/data/asp.json
 .gstack/
+data/*.sqlite
+data/*.sqlite-*
+data/hospital_cache/
 data/savings.json
 data/stats.json
 data/mrf_cache/
