@@ -207,7 +207,20 @@ export type IppsRow = {
 }
 
 export function loadDrgRate(drgCode: string, fiscalYear?: string): IppsRow | null {
-  return null  // implemented in step-07
+  const db = getIppsDb()
+  if (!db) return null
+
+  // Zero-pad to 3 digits
+  const ms_drg = drgCode.trim().replace(/[^0-9]/g, '').padStart(3, '0')
+  const year = fiscalYear ?? '2026'
+
+  const row = db.prepare(`
+    SELECT ms_drg, title, relative_weight, geometric_mean_los, arithmetic_mean_los
+    FROM ipps_drg_rates
+    WHERE ms_drg = ? AND fiscal_year = ?
+  `).get(ms_drg, year) as IppsRow | undefined
+
+  return row ?? null
 }
 
 // ─── DMEPOS ──────────────────────────────────────────────────────────────────

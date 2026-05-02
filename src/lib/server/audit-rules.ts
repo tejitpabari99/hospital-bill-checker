@@ -6,7 +6,7 @@
  */
 
 import type { LineItem, AuditFinding, ConfidenceLevel, BillType } from '$lib/types'
-import { loadAspLimit, loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, loadOppsRate, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, loadDrgRate, loadMpfsRate, loadMueEdit, loadNcciPairs, loadOppsRate, toServiceDateInt } from './data-loader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -165,7 +165,8 @@ export function buildDeterministicFindings(
   emMdmTiers: EmMdmTierData = {},
   lcdCoverage: LcdCoverageData = {},
   billType: BillType = 'unknown',
-  serviceDateStr?: string
+  serviceDateStr?: string,
+  drgCode?: string
 ): { findings: AuditFinding[]; promptNote: string } {
   const serviceDateInt = toServiceDateInt(serviceDateStr)
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
@@ -313,7 +314,27 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 5. LCD/NCD coverage check
+  // 5. IPPS/DRG inpatient reference - informational
+  if (billType === 'inpatient' && drgCode) {
+    const drg = loadDrgRate(drgCode)
+    if (drg) {
+      findings.push({
+        lineItemIndex: -1,
+        cptCode: `DRG-${drg.ms_drg}`,
+        severity: 'info',
+        errorType: 'other',
+        confidence: 'high',
+        description: `This inpatient bill shows MS-DRG ${drg.ms_drg}: "${drg.title}". CMS relative weight: ${drg.relative_weight ?? 'N/A'}. Expected length of stay: ${drg.geometric_mean_los ?? 'N/A'} days (geometric mean).`,
+        standardDescription: drg.title ?? undefined,
+        recommendation: `Compare your actual length of stay to the CMS expected LOS of ${drg.geometric_mean_los ?? 'N/A'} days for DRG ${drg.ms_drg}. Contact your hospital billing department if the DRG assignment appears incorrect.`,
+        medicareRate: undefined,
+        markupRatio: undefined,
+        ncciBundledWith: undefined,
+      })
+    }
+  }
+
+  // 6. LCD/NCD coverage check
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const lcdEntry = lcdCoverage[code]
@@ -347,7 +368,7 @@ export function buildDeterministicFindings(
     })
   }
 
-  // 6. MUE units check — deterministic
+  // 7. MUE units check — deterministic
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const unitsBilled = lineItems[i].units ?? 1
@@ -377,7 +398,7 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 7. E&M upcoding — deterministic pre-filter
+  // 8. E&M upcoding — deterministic pre-filter
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const emTier = EM_MDM_LEVELS[code]

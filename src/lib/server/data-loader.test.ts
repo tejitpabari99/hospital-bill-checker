@@ -1,6 +1,6 @@
 import { existsSync } from 'fs'
 import { describe, it, expect } from 'vitest'
-import { loadAspLimit, loadClfsRate, loadOppsRate, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, loadDrgRate, loadOppsRate, toServiceDateInt } from './data-loader'
 
 describe('toServiceDateInt', () => {
   it('parses YYYY-MM-DD', () => {
@@ -79,5 +79,25 @@ describe('OPPS SQLite integration', () => {
     const row = loadOppsRate('70450')
     // Just verify no crash
     expect(row === null || row.hcpcs_code === '70450').toBe(true)
+  })
+})
+
+describe('IPPS SQLite integration', () => {
+  it.skipIf(!existsSync('data/ipps.sqlite'))('loads DRG 470 (major joint replacement)', () => {
+    const row = loadDrgRate('470')
+    expect(row).not.toBeNull()
+    expect(row!.ms_drg).toBe('470')
+    expect(row!.relative_weight).toBeGreaterThan(0)
+    expect(row!.geometric_mean_los).toBeGreaterThan(0)
+  })
+
+  it.skipIf(!existsSync('data/ipps.sqlite'))('pads DRG code to 3 digits', () => {
+    const row = loadDrgRate('1')
+    // May or may not exist, just verify no crash
+    if (row) expect(row.ms_drg).toBe('001')
+  })
+
+  it.skipIf(!existsSync('data/ipps.sqlite'))('returns null for invalid DRG', () => {
+    expect(loadDrgRate('999')).toBeNull()
   })
 })
