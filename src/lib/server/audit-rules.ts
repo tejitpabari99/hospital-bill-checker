@@ -6,7 +6,7 @@
  */
 
 import type { LineItem, AuditFinding, ConfidenceLevel, BillType } from '$lib/types'
-import { loadAspLimit, loadClfsRate, loadDrgRate, loadMpfsRate, loadMueEdit, loadNcciPairs, loadOppsRate, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, loadDmeposRate, loadDrgRate, loadMpfsRate, loadMueEdit, loadNcciPairs, loadOppsRate, toServiceDateInt } from './data-loader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -166,7 +166,8 @@ export function buildDeterministicFindings(
   lcdCoverage: LcdCoverageData = {},
   billType: BillType = 'unknown',
   serviceDateStr?: string,
-  drgCode?: string
+  drgCode?: string,
+  patientState?: string
 ): { findings: AuditFinding[]; promptNote: string } {
   const serviceDateInt = toServiceDateInt(serviceDateStr)
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
@@ -334,7 +335,37 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 6. LCD/NCD coverage check
+  // 6. DMEPOS benchmark (DME supplier bills) — deterministic
+  if (billType === 'dme' && patientState) {
+    for (let i = 0; i < lineItems.length; i++) {
+      const code = codes[i]
+      if (alreadyFlaggedCodes.has(code)) continue
+
+      const dmeRow = loadDmeposRate(code, patientState)
+      if (!dmeRow || dmeRow.fee_amount == null) continue
+
+      const billed = lineItems[i].billedAmount
+      const benchmark = dmeRow.fee_amount
+
+      if (billed > benchmark * 2.0) {
+        findings.push({
+          lineItemIndex: i,
+          cptCode: code,
+          severity: 'warning',
+          errorType: 'upcoding',
+          confidence: 'medium',
+          description: `${code} (${dmeRow.description ?? 'DME item'}) is billed at $${billed.toFixed(2)}, which is ${(billed / benchmark).toFixed(1)}× the CMS DMEPOS fee schedule rate of $${benchmark.toFixed(2)} for ${dmeRow.state_code}.`,
+          standardDescription: dmeRow.description ?? undefined,
+          recommendation: `Request itemized documentation. CMS DMEPOS fee schedule rate for this code is $${benchmark.toFixed(2)} in ${dmeRow.state_code}.`,
+          medicareRate: benchmark,
+          markupRatio: billed / benchmark,
+          ncciBundledWith: undefined,
+        })
+      }
+    }
+  }
+
+  // 7. LCD/NCD coverage check
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const lcdEntry = lcdCoverage[code]
@@ -368,7 +399,7 @@ export function buildDeterministicFindings(
     })
   }
 
-  // 7. MUE units check — deterministic
+  // 8. MUE units check — deterministic
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const unitsBilled = lineItems[i].units ?? 1
@@ -398,7 +429,7 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 8. E&M upcoding — deterministic pre-filter
+  // 9. E&M upcoding — deterministic pre-filter
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const emTier = EM_MDM_LEVELS[code]

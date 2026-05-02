@@ -367,7 +367,8 @@ function buildDeterministicFindings(input: BillInput): {
     lcdCoverage,
     input.billType ?? 'unknown',
     input.dateOfService,
-    input.drgCode
+    input.drgCode,
+    input.patientState
   )
 }
 

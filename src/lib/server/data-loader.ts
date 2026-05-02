@@ -238,7 +238,34 @@ export type DmeposRow = {
 }
 
 export function loadDmeposRate(hcpcsCode: string, stateCode: string): DmeposRow | null {
-  return null  // implemented in step-08
+  const db = getDmeposDb()
+  if (!db) return null
+
+  const state = stateCode.toUpperCase().trim()
+
+  // Prefer rows with blank mod/mod2 (base rates)
+  const row = db.prepare(`
+    SELECT
+      b.hcpcs_code,
+      b.description,
+      b.mod,
+      b.mod2,
+      b.category,
+      b.ceiling,
+      b.floor,
+      r.state_code,
+      r.fee_amount
+    FROM dmepos_base b
+    JOIN dmepos_state_rates r ON r.dmepos_id = b.dmepos_id
+    WHERE b.hcpcs_code = ?
+      AND r.state_code = ?
+    ORDER BY
+      CASE WHEN COALESCE(b.mod, '') = '' THEN 0 ELSE 1 END,
+      CASE WHEN COALESCE(b.mod2, '') = '' THEN 0 ELSE 1 END
+    LIMIT 1
+  `).get(hcpcsCode.toUpperCase().trim(), state) as DmeposRow | undefined
+
+  return row ?? null
 }
 
 // ─── Ambulance ───────────────────────────────────────────────────────────────

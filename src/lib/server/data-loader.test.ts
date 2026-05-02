@@ -1,6 +1,6 @@
 import { existsSync } from 'fs'
 import { describe, it, expect } from 'vitest'
-import { loadAspLimit, loadClfsRate, loadDrgRate, loadOppsRate, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, loadDmeposRate, loadDrgRate, loadOppsRate, toServiceDateInt } from './data-loader'
 
 describe('toServiceDateInt', () => {
   it('parses YYYY-MM-DD', () => {
@@ -99,5 +99,18 @@ describe('IPPS SQLite integration', () => {
 
   it.skipIf(!existsSync('data/ipps.sqlite'))('returns null for invalid DRG', () => {
     expect(loadDrgRate('999')).toBeNull()
+  })
+})
+
+describe('DMEPOS SQLite integration', () => {
+  it.skipIf(!existsSync('data/dmepos.sqlite'))('returns rate for E0601 in TX', () => {
+    const row = loadDmeposRate('E0601', 'TX')
+    if (row) {
+      expect(row.fee_amount).toBeGreaterThan(0)
+    }
+  })
+
+  it.skipIf(!existsSync('data/dmepos.sqlite'))('returns null for unknown code', () => {
+    expect(loadDmeposRate('ZZZZZ', 'CA')).toBeNull()
   })
 })
