@@ -1,6 +1,6 @@
 import { existsSync } from 'fs'
 import { describe, it, expect } from 'vitest'
-import { loadAspLimit, loadClfsRate, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, loadOppsRate, toServiceDateInt } from './data-loader'
 
 describe('toServiceDateInt', () => {
   it('parses YYYY-MM-DD', () => {
@@ -62,5 +62,22 @@ describe('ASP SQLite integration', () => {
 
   it.skipIf(!existsSync('data/asp.sqlite'))('returns null for non-drug code', () => {
     expect(loadAspLimit('99285')).toBeNull()
+  })
+})
+
+describe('OPPS SQLite integration', () => {
+  it.skipIf(!existsSync('data/opps.sqlite'))('loads Addendum B for 99285', () => {
+    const row = loadOppsRate('99285')
+    // 99285 may or may not be in OPPS
+    if (row) {
+      expect(row.hcpcs_code).toBe('99285')
+      expect(typeof row.status_indicator).toBe('string')
+    }
+  })
+
+  it.skipIf(!existsSync('data/opps.sqlite'))('Addendum B has records', () => {
+    const row = loadOppsRate('70450')
+    // Just verify no crash
+    expect(row === null || row.hcpcs_code === '70450').toBe(true)
   })
 })

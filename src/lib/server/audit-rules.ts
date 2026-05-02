@@ -6,7 +6,7 @@
  */
 
 import type { LineItem, AuditFinding, ConfidenceLevel, BillType } from '$lib/types'
-import { loadAspLimit, loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, loadOppsRate, toServiceDateInt } from './data-loader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -283,7 +283,37 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 4. LCD/NCD coverage check
+  // 4. OPPS benchmark check (outpatient only) — deterministic
+  if (billType === 'outpatient') {
+    for (let i = 0; i < lineItems.length; i++) {
+      const code = codes[i]
+      if (alreadyFlaggedCodes.has(code)) continue
+
+      const oppsRow = loadOppsRate(code)
+      if (!oppsRow || oppsRow.payment_rate == null) continue
+
+      const billed = lineItems[i].billedAmount
+      const benchmark = oppsRow.payment_rate
+
+      if (billed > benchmark * 2.5) {
+        findings.push({
+          lineItemIndex: i,
+          cptCode: code,
+          severity: 'warning',
+          errorType: 'upcoding',
+          confidence: 'medium',
+          description: `CPT ${code} (${oppsRow.short_descriptor ?? ''}) is billed at $${billed.toFixed(2)}, which is ${(billed / benchmark).toFixed(1)}× the CMS OPPS outpatient facility benchmark of $${benchmark.toFixed(2)} (APC ${oppsRow.apc}: ${oppsRow.apc_title ?? ''}).`,
+          standardDescription: oppsRow.short_descriptor ?? undefined,
+          recommendation: `Request itemized justification for why facility fees exceed the CMS Outpatient Prospective Payment System rate.`,
+          medicareRate: benchmark,
+          markupRatio: billed / benchmark,
+          ncciBundledWith: undefined,
+        })
+      }
+    }
+  }
+
+  // 5. LCD/NCD coverage check
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const lcdEntry = lcdCoverage[code]
@@ -317,7 +347,7 @@ export function buildDeterministicFindings(
     })
   }
 
-  // 5. MUE units check — deterministic
+  // 6. MUE units check — deterministic
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const unitsBilled = lineItems[i].units ?? 1
@@ -347,7 +377,7 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 6. E&M upcoding — deterministic pre-filter
+  // 7. E&M upcoding — deterministic pre-filter
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const emTier = EM_MDM_LEVELS[code]

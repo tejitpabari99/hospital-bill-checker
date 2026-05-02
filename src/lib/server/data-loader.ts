@@ -173,7 +173,27 @@ export type OppsRow = {
 }
 
 export function loadOppsRate(hcpcsCode: string, quarter?: string): OppsRow | null {
-  return null  // implemented in step-06
+  const db = getOppsDb()
+  if (!db) return null
+
+  const q = quarter ?? '2026Q2'
+
+  // Join Addendum B with Addendum A for APC title
+  const row = db.prepare(`
+    SELECT
+      b.hcpcs_code,
+      b.short_descriptor,
+      b.status_indicator,
+      b.apc,
+      b.payment_rate,
+      a.group_title AS apc_title
+    FROM opps_addendum_b b
+    LEFT JOIN opps_addendum_a a
+      ON a.apc = b.apc AND a.quarter = b.quarter
+    WHERE b.hcpcs_code = ? AND b.quarter = ?
+  `).get(hcpcsCode.toUpperCase().trim(), q) as OppsRow | undefined
+
+  return row ?? null
 }
 
 // ─── IPPS ────────────────────────────────────────────────────────────────────
