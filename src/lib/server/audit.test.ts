@@ -95,10 +95,6 @@ vi.mock('$lib/data/asp.json', () => ({
   default: {},
 }))
 
-vi.mock('$lib/data/clfs.json', () => ({
-  default: {},
-}))
-
 describe('auditBill', () => {
   beforeEach(() => {
     workerOutputs.length = 0

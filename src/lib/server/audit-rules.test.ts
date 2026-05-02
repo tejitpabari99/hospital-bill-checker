@@ -26,7 +26,7 @@ import {
 } from './audit-rules'
 import type { MpfsData, AspData, ClfsData, EmMdmTierData, LcdCoverageData } from './audit-rules'
 import type { LineItem } from '$lib/types'
-import { loadMpfsRate, loadMueEdit, loadNcciPairs } from './data-loader'
+import { loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs } from './data-loader'
 
 // ── Test data fixtures ────────────────────────────────────────────────────────
 
@@ -319,17 +319,20 @@ describe('buildDataContext', () => {
   })
 
   it.skipIf(!hasClfsDb)('falls back to CLFS for lab codes missing from MPFS', () => {
+    const clfsRow = loadClfsRate('85025')
     const ctx = buildDataContext(
       [li('85025', 35.00)],
       TEST_ASP
     )
 
-    expect(ctx).toContain('85025: Medicare rate $12.34 (CLFS (lab rate))')
+    expect(clfsRow).not.toBeNull()
+    expect(ctx).toContain(`85025: Medicare rate $${clfsRow!.rate.toFixed(2)} (CLFS (lab rate))`)
   })
 })
 
 describe('buildDeterministicFindings — CLFS fallback', () => {
   it.skipIf(!hasClfsDb)('uses the CLFS rate for duplicate lab codes missing from MPFS', () => {
+    const clfsRow = loadClfsRate('85025')
     const { findings } = buildDeterministicFindings(
       [li('85025', 35.00), li('85025', 35.00)],
       TEST_MPFS,
@@ -338,7 +341,8 @@ describe('buildDeterministicFindings — CLFS fallback', () => {
     )
 
     const duplicate = findings.find((finding) => finding.errorType === 'duplicate')
-    expect(duplicate?.medicareRate).toBe(12.34)
+    expect(clfsRow).not.toBeNull()
+    expect(duplicate?.medicareRate).toBe(clfsRow!.rate)
     expect(duplicate?.standardDescription).toBe('Blood count; complete (CBC), automated')
   })
 })

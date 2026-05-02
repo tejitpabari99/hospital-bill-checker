@@ -220,7 +220,6 @@ let lcdCoverage: LcdCoverageData = {}
 
 // Try to load static data — fail silently if not built yet
 try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
-try { clfs = (await import('$lib/data/clfs.json', { assert: { type: 'json' } })).default } catch {}
 try {
   const rawEmMdmTiers = (await import('$lib/data/em_mdm_tiers.json', { assert: { type: 'json' } })).default as unknown as Record<string, string>
   emMdmTiers = Object.fromEntries(

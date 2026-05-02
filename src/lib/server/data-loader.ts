@@ -126,7 +126,17 @@ export type ClfsRow = {
 }
 
 export function loadClfsRate(hcpcsCode: string): ClfsRow | null {
-  return null  // implemented in step-04
+  const db = getClfsDb()
+  if (!db) return null
+
+  // Use clfs_current for fast lookup (latest rate per code)
+  const row = db.prepare(`
+    SELECT hcpcs_code, rate, description, indicator, eff_date
+    FROM clfs_current
+    WHERE hcpcs_code = ?
+  `).get(hcpcsCode.toUpperCase().trim()) as ClfsRow | undefined
+
+  return row ?? null
 }
 
 // ─── ASP ─────────────────────────────────────────────────────────────────────
