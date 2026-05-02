@@ -101,7 +101,18 @@ export type MpfsRow = {
 }
 
 export function loadMpfsRate(hcpcsCode: string): MpfsRow | null {
-  return null  // implemented in step-03
+  const db = getMpfsDb()
+  if (!db) return null
+
+  const row = db.prepare(`
+    SELECT hcpcs_code, description, status_code, nonfac_rate, fac_rate
+    FROM mpfs_rates
+    WHERE hcpcs_code = ?
+    ORDER BY fiscal_year DESC
+    LIMIT 1
+  `).get(hcpcsCode.toUpperCase().trim()) as MpfsRow | undefined
+
+  return row ?? null
 }
 
 // ─── CLFS ────────────────────────────────────────────────────────────────────

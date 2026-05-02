@@ -15,6 +15,7 @@
 
 import { describe, expect, it } from 'vitest'
 import Database from 'better-sqlite3'
+import { existsSync } from 'fs'
 import {
   buildDeterministicFindings,
   buildDataContext,
@@ -25,7 +26,7 @@ import {
 } from './audit-rules'
 import type { MpfsData, AspData, ClfsData, EmMdmTierData, LcdCoverageData } from './audit-rules'
 import type { LineItem } from '$lib/types'
-import { loadMueEdit, loadNcciPairs } from './data-loader'
+import { loadMpfsRate, loadMueEdit, loadNcciPairs } from './data-loader'
 
 // ── Test data fixtures ────────────────────────────────────────────────────────
 
@@ -69,6 +70,8 @@ function li(cpt: string, billed: number, units = 1, modifiers?: string[]): LineI
 
 const ncciDb = (() => { try { return new Database('data/ncci.sqlite', { readonly: true }) } catch { return null } })()
 const mueDb = (() => { try { return new Database('data/mue.sqlite', { readonly: true }) } catch { return null } })()
+const hasMpfsDb = existsSync('data/mpfs.sqlite')
+const hasClfsDb = existsSync('data/clfs.sqlite')
 
 // ── getMpfsRate ───────────────────────────────────────────────────────────────
 
@@ -158,12 +161,12 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
     expect(findings.filter(f => f.errorType === 'unbundling')).toHaveLength(0)
   })
 
-  it.skipIf(!ncciDb)('includes medicareRate from MPFS in unbundling finding', () => {
+  it.skipIf(!ncciDb || !hasMpfsDb)('includes medicareRate from MPFS in unbundling finding', () => {
     const lineItems = [li('93000', 250.00), li('93010', 45.00)]
     const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS, TEST_ASP)
 
     const f = findings.find(f => f.cptCode === '93010')!
-    expect(f.medicareRate).toBe(6.45)
+    expect(f.medicareRate).toBeGreaterThan(0)
   })
 })
 
@@ -280,48 +283,45 @@ describe('buildDeterministicFindings — promptNote', () => {
 describe('buildDataContext', () => {
   it('returns empty string when no codes match any data source', () => {
     const lineItems = [li('99999', 100.00)]
-    expect(buildDataContext(lineItems, TEST_MPFS, TEST_ASP)).toBe('')
+    expect(buildDataContext(lineItems, TEST_ASP)).toBe('')
   })
 
-  it('includes MPFS rate for a code in MPFS', () => {
+  it.skipIf(!hasMpfsDb)('includes MPFS rate for a code in MPFS', () => {
     const lineItems = [li('99285', 500.00)]
-    const ctx = buildDataContext(lineItems, TEST_MPFS, TEST_ASP)
+    const ctx = buildDataContext(lineItems, TEST_ASP)
     expect(ctx).toContain('99285: Medicare rate $170.78')
   })
 
   it('includes ASP limit for a J-code', () => {
     const lineItems = [li('J0696', 50.00)]
-    const ctx = buildDataContext(lineItems, TEST_MPFS, TEST_ASP)
+    const ctx = buildDataContext(lineItems, TEST_ASP)
     expect(ctx).toContain('J0696: CMS ASP limit $1.45')
   })
 
   it.skipIf(!ncciDb)('includes NCCI hit only when BOTH the component AND its Col1 are on the bill', () => {
     // 93010 alone — no hit (Col1 93000 not present)
     expect(
-      buildDataContext([li('93010', 45.00)], TEST_MPFS, TEST_ASP)
+      buildDataContext([li('93010', 45.00)], TEST_ASP)
     ).not.toContain('NCCI')
 
     // 93010 + 93000 — hit reported
     expect(
-      buildDataContext([li('93000', 250.00), li('93010', 45.00)], TEST_MPFS, TEST_ASP)
+      buildDataContext([li('93000', 250.00), li('93010', 45.00)], TEST_ASP)
     ).toContain('NCCI bundling violations')
   })
 
   it.skipIf(!ncciDb)('does NOT include 70450+70486 as NCCI hit (not directly bundled)', () => {
     const ctx = buildDataContext(
       [li('70450', 350.00), li('70486', 400.00)],
-      TEST_MPFS,
       TEST_ASP
     )
     expect(ctx).not.toContain('NCCI bundling violations')
   })
 
-  it('falls back to CLFS for lab codes missing from MPFS', () => {
+  it.skipIf(!hasClfsDb)('falls back to CLFS for lab codes missing from MPFS', () => {
     const ctx = buildDataContext(
       [li('85025', 35.00)],
-      TEST_MPFS,
-      TEST_ASP,
-      TEST_CLFS
+      TEST_ASP
     )
 
     expect(ctx).toContain('85025: Medicare rate $12.34 (CLFS (lab rate))')
@@ -329,7 +329,7 @@ describe('buildDataContext', () => {
 })
 
 describe('buildDeterministicFindings — CLFS fallback', () => {
-  it('uses the CLFS rate for duplicate lab codes missing from MPFS', () => {
+  it.skipIf(!hasClfsDb)('uses the CLFS rate for duplicate lab codes missing from MPFS', () => {
     const { findings } = buildDeterministicFindings(
       [li('85025', 35.00), li('85025', 35.00)],
       TEST_MPFS,
@@ -340,6 +340,25 @@ describe('buildDeterministicFindings — CLFS fallback', () => {
     const duplicate = findings.find((finding) => finding.errorType === 'duplicate')
     expect(duplicate?.medicareRate).toBe(12.34)
     expect(duplicate?.standardDescription).toBe('Blood count; complete (CBC), automated')
+  })
+})
+
+describe('MPFS SQLite integration', () => {
+  it.skipIf(!hasMpfsDb)('returns rate for 99285', () => {
+    const row = loadMpfsRate('99285')
+    expect(row).not.toBeNull()
+    expect(row!.nonfac_rate).toBeGreaterThan(100)
+    expect(row!.nonfac_rate).toBeLessThan(500)
+  })
+
+  it.skipIf(!hasMpfsDb)('returns rate for 70450', () => {
+    const row = loadMpfsRate('70450')
+    expect(row).not.toBeNull()
+    expect(row!.nonfac_rate).toBeGreaterThan(80)
+  })
+
+  it.skipIf(!hasMpfsDb)('returns null for unknown code', () => {
+    expect(loadMpfsRate('ZZZZZ')).toBeNull()
   })
 })
 

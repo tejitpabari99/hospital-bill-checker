@@ -13,10 +13,9 @@ import {
   buildArithmeticFindings,
   buildDateFindings,
   buildGfeFindings,
-  getMpfsRate,
   CPT_DESCRIPTIONS,
 } from './audit-rules'
-import { loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
+import { loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
 import type {
   MpfsData,
   AspData,
@@ -107,8 +106,10 @@ export function executeTool(
   switch (name) {
     case 'lookup_mpfs_rate': {
       const code = String(args.cptCode ?? '').trim().toUpperCase()
-      const rate = getMpfsRate(data.mpfs[code]) ?? data.clfs[code]?.rate ?? null
-      return { code, rate, source: rate != null ? (data.mpfs[code] ? 'mpfs' : 'clfs') : 'not_found' }
+      const mpfsRow = loadMpfsRate(code)
+      const clfsRow = mpfsRow?.nonfac_rate == null ? loadClfsRate(code) : null
+      const rate = mpfsRow?.nonfac_rate ?? clfsRow?.rate ?? null
+      return { code, rate, source: rate != null ? (mpfsRow ? 'mpfs' : 'clfs') : 'not_found' }
     }
     case 'check_ncci_bundling': {
       const code = String(args.cptCode ?? '').trim().toUpperCase()
@@ -217,10 +218,7 @@ let clfs: ClfsData = {}
 let emMdmTiers: EmMdmTierData = {}
 let lcdCoverage: LcdCoverageData = {}
 
-// CPT_DESCRIPTIONS and getMpfsRate are re-exported from audit-rules.ts
-
 // Try to load static data — fail silently if not built yet
-try { mpfs = (await import('$lib/data/mpfs.json', { assert: { type: 'json' } })).default } catch {}
 try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
 try { clfs = (await import('$lib/data/clfs.json', { assert: { type: 'json' } })).default } catch {}
 try {
@@ -346,7 +344,7 @@ function buildAboveListPriceFindings(
       description: `${code} was billed at $${lineItem.billedAmount.toFixed(2)}, but this hospital's own CMS-required price transparency file lists the gross charge as $${grossCharge.toFixed(2)} — a difference of $${overcharge.toFixed(2)}. The billed amount exceeds the hospital's own published rate.`,
       standardDescription: CPT_DESCRIPTIONS[code] ?? lineItem.description,
       recommendation: `Ask billing why the charge exceeds the hospital's published gross charge of $${grossCharge.toFixed(2)}. The hospital's own price transparency file (${hospitalPrices.mrfUrl}) is public record and can be cited in a dispute.`,
-      medicareRate: getMpfsRate(mpfs[code]) ?? clfs[code]?.rate,
+      medicareRate: loadMpfsRate(code)?.nonfac_rate ?? loadClfsRate(code)?.rate ?? clfs[code]?.rate,
       markupRatio: undefined,
       ncciBundledWith: undefined,
       hospitalGrossCharge: grossCharge,
@@ -360,7 +358,7 @@ function buildAboveListPriceFindings(
 
 // Thin wrappers that bind module-level data to the pure functions in audit-rules.ts
 function buildDataContext(input: BillInput): string {
-  return _buildDataContext(input.lineItems, mpfs, asp, clfs, input.billType ?? 'unknown', input.dateOfService)
+  return _buildDataContext(input.lineItems, asp, input.billType ?? 'unknown', input.dateOfService)
 }
 
 function buildDeterministicFindings(input: BillInput): {
@@ -522,7 +520,7 @@ Respond ONLY with valid JSON:
   const potentialOvercharge = call1Result.findings.reduce((s, f) => {
     const li = input.lineItems[f.lineItemIndex]
     const billedAmt = li?.billedAmount ?? 0
-    const mpfsRate = getMpfsRate(mpfs[f.cptCode]) ?? clfs[f.cptCode]?.rate ?? 0
+    const mpfsRate = loadMpfsRate(f.cptCode)?.nonfac_rate ?? loadClfsRate(f.cptCode)?.rate ?? clfs[f.cptCode]?.rate ?? 0
     if (f.errorType === 'upcoding') return s + Math.max(0, billedAmt - mpfsRate)
     if (f.errorType === 'unbundling') return s + (billedAmt || mpfsRate)
     if (f.errorType === 'pharmacy_markup') {

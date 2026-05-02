@@ -6,7 +6,7 @@
  */
 
 import type { LineItem, AuditFinding, ConfidenceLevel, BillType } from '$lib/types'
-import { loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
+import { loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -94,9 +94,7 @@ export function getMpfsRate(entry: MpfsEntry | undefined): number | undefined {
  */
 export function buildDataContext(
   lineItems: LineItem[],
-  mpfs: MpfsData,
   asp: AspData,
-  clfs: ClfsData = {},
   billType: BillType = 'unknown',
   serviceDateStr?: string
 ): string {
@@ -130,11 +128,11 @@ export function buildDataContext(
       }
     }
 
-    const mpfsRate = getMpfsRate(mpfs[code])
-    const clfsRate = mpfsRate === undefined && clfs[code] ? clfs[code].rate : undefined
-    const effectiveRate = mpfsRate ?? clfsRate
-    if (effectiveRate !== undefined) {
-      const source = clfsRate !== undefined ? 'CLFS (lab rate)' : 'MPFS'
+    const mpfsRow = loadMpfsRate(code)
+    const clfsRow = mpfsRow?.nonfac_rate == null ? loadClfsRate(code) : null
+    const effectiveRate = mpfsRow?.nonfac_rate ?? clfsRow?.rate
+    if (effectiveRate != null) {
+      const source = clfsRow != null ? 'CLFS (lab rate)' : 'MPFS'
       mpfsRates.push(`${code}: Medicare rate $${effectiveRate.toFixed(2)} (${source})`)
     }
     if (asp[code]) aspRates.push(`${code}: CMS ASP limit $${asp[code].toFixed(2)}`)
@@ -177,9 +175,17 @@ export function buildDeterministicFindings(
   const findings: AuditFinding[] = []
   const alreadyFlaggedCodes = new Set<string>()
 
-  // Lab codes are in CLFS, not MPFS — use CLFS as fallback for any rate lookup.
-  function getEffectiveRate(code: string): number | undefined {
-    return getMpfsRate(mpfs[code]) ?? clfs[code]?.rate
+  // Rate lookup — MPFS first, CLFS fallback (step 04 adds CLFS).
+  function getEffectiveRate(code: string): { rate: number; source: string } | null {
+    const mpfsRow = loadMpfsRate(code)
+    if (mpfsRow?.nonfac_rate != null) {
+      return { rate: mpfsRow.nonfac_rate, source: 'MPFS' }
+    }
+    const clfsRow = loadClfsRate(code)
+    if (clfsRow?.rate != null) {
+      return { rate: clfsRow.rate, source: 'CLFS' }
+    }
+    return null
   }
 
   // 1. NCCI unbundling — deterministic, per-pair modifier check
@@ -214,7 +220,7 @@ export function buildDeterministicFindings(
         standardDescription: CPT_DESCRIPTIONS[code],
         recommendation: `Request that the hospital remove CPT ${code} from the claim or provide documentation justifying separate billing with modifier -59.`,
         ncciBundledWith: pair.col1_code,
-        medicareRate: getEffectiveRate(code),
+        medicareRate: getEffectiveRate(code)?.rate,
         markupRatio: undefined,
       })
       alreadyFlaggedCodes.add(code)
@@ -241,7 +247,7 @@ export function buildDeterministicFindings(
         description: `CPT ${code} appears ${indexes.length} times on this bill. Duplicate billing is a common billing error.`,
         standardDescription: CPT_DESCRIPTIONS[code],
         recommendation: 'Request a corrected bill with the duplicate charge removed.',
-        medicareRate: getEffectiveRate(code),
+        medicareRate: getEffectiveRate(code)?.rate,
         markupRatio: undefined,
         ncciBundledWith: undefined,
       })
@@ -301,7 +307,7 @@ export function buildDeterministicFindings(
       description: `CPT ${code} may not be covered for the diagnosis codes on this bill (${icd10s.join(', ')}). Per CMS LCD ${lcdRef}, this procedure requires specific qualifying diagnoses that are not present on the bill.`,
       standardDescription: CPT_DESCRIPTIONS[code],
       recommendation: `Request documentation showing medical necessity for CPT ${code}. The CMS LCD (${lcdRef}) specifies which diagnoses qualify this procedure for coverage. If your diagnosis is not listed, ask billing to explain or correct the diagnosis codes.`,
-      medicareRate: getEffectiveRate(code),
+      medicareRate: getEffectiveRate(code)?.rate,
       markupRatio: undefined,
       ncciBundledWith: undefined,
     })
@@ -366,7 +372,7 @@ export function buildDeterministicFindings(
       description: `CPT ${code} requires ${TIER_NAMES[emTier]} medical decision-making, but the diagnosis codes on this bill (${icd10s.join(', ')}) suggest at most ${TIER_NAMES[maxIcdTier]} MDM. This may be worth questioning.`,
       standardDescription: CPT_DESCRIPTIONS[code],
       recommendation: 'Request the clinical notes supporting this E&M level. Ask billing to explain why the documentation justifies this complexity tier per AMA 2021 E&M guidelines.',
-      medicareRate: getEffectiveRate(code),
+      medicareRate: getEffectiveRate(code)?.rate,
       markupRatio: undefined,
       ncciBundledWith: undefined,
     })
