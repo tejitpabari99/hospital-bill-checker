@@ -15,10 +15,9 @@ import {
   buildGfeFindings,
   CPT_DESCRIPTIONS,
 } from './audit-rules'
-import { loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
 import type {
   MpfsData,
-  AspData,
   ClfsData,
   EmMdmTierData,
   LcdCoverageData,
@@ -94,7 +93,6 @@ async function callClaude(prompt: string, timeoutMs: number, traceId?: string): 
 type ToolExecutionData = {
   mpfs: MpfsData
   lcdCoverage: LcdCoverageData
-  asp: AspData
   clfs: ClfsData
 }
 
@@ -199,7 +197,6 @@ async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: 
           response: executeTool(functionCall.name, functionCall.args ?? {}, {
             mpfs,
             lcdCoverage,
-            asp,
             clfs,
           }),
         },
@@ -213,13 +210,11 @@ async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: 
 
 // Static data — loaded once at module init, never per-request
 let mpfs: MpfsData = {}
-let asp: AspData = {}
 let clfs: ClfsData = {}
 let emMdmTiers: EmMdmTierData = {}
 let lcdCoverage: LcdCoverageData = {}
 
 // Try to load static data — fail silently if not built yet
-try { asp = (await import('$lib/data/asp.json', { assert: { type: 'json' } })).default } catch {}
 try {
   const rawEmMdmTiers = (await import('$lib/data/em_mdm_tiers.json', { assert: { type: 'json' } })).default as unknown as Record<string, string>
   emMdmTiers = Object.fromEntries(
@@ -357,7 +352,7 @@ function buildAboveListPriceFindings(
 
 // Thin wrappers that bind module-level data to the pure functions in audit-rules.ts
 function buildDataContext(input: BillInput): string {
-  return _buildDataContext(input.lineItems, asp, input.billType ?? 'unknown', input.dateOfService)
+  return _buildDataContext(input.lineItems, input.billType ?? 'unknown', input.dateOfService)
 }
 
 function buildDeterministicFindings(input: BillInput): {
@@ -367,7 +362,6 @@ function buildDeterministicFindings(input: BillInput): {
   return _buildDeterministicFindings(
     input.lineItems,
     mpfs,
-    asp,
     clfs,
     emMdmTiers,
     lcdCoverage,
@@ -523,7 +517,7 @@ Respond ONLY with valid JSON:
     if (f.errorType === 'upcoding') return s + Math.max(0, billedAmt - mpfsRate)
     if (f.errorType === 'unbundling') return s + (billedAmt || mpfsRate)
     if (f.errorType === 'pharmacy_markup') {
-      const aspRate = asp[f.cptCode] ?? 0
+      const aspRate = loadAspLimit(f.cptCode)?.payment_limit ?? 0
       return s + Math.max(0, billedAmt - aspRate * (li?.units ?? 1) * 1.06)
     }
     if (f.errorType === 'duplicate') return s + (billedAmt || mpfsRate)

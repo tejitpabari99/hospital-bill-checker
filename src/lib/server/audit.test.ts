@@ -91,10 +91,6 @@ vi.mock('$lib/data/mpfs.json', () => ({
   },
 }))
 
-vi.mock('$lib/data/asp.json', () => ({
-  default: {},
-}))
-
 describe('auditBill', () => {
   beforeEach(() => {
     workerOutputs.length = 0

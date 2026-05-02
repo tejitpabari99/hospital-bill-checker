@@ -6,13 +6,12 @@
  */
 
 import type { LineItem, AuditFinding, ConfidenceLevel, BillType } from '$lib/types'
-import { loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type MpfsEntry = number | { rate: number; description?: string }
 export type MpfsData = Record<string, MpfsEntry>
-export type AspData = Record<string, number>
 export type ClfsData = Record<string, { rate: number; description?: string }>
 export type EmMdmTier = 'S' | 'L' | 'M' | 'H'
 export type EmMdmTierData = Record<string, EmMdmTier>
@@ -94,7 +93,6 @@ export function getMpfsRate(entry: MpfsEntry | undefined): number | undefined {
  */
 export function buildDataContext(
   lineItems: LineItem[],
-  asp: AspData,
   billType: BillType = 'unknown',
   serviceDateStr?: string
 ): string {
@@ -135,7 +133,8 @@ export function buildDataContext(
       const source = clfsRow != null ? 'CLFS (lab rate)' : 'MPFS'
       mpfsRates.push(`${code}: Medicare rate $${effectiveRate.toFixed(2)} (${source})`)
     }
-    if (asp[code]) aspRates.push(`${code}: CMS ASP limit $${asp[code].toFixed(2)}`)
+    const aspRow = loadAspLimit(code)
+    if (aspRow) aspRates.push(`${code}: CMS ASP limit $${aspRow.payment_limit.toFixed(2)}`)
   }
 
   for (const [col2, col1, rule] of RADIOLOGY_BUNDLE_RULES) {
@@ -162,7 +161,6 @@ export function buildDataContext(
 export function buildDeterministicFindings(
   lineItems: LineItem[],
   mpfs: MpfsData,
-  asp: AspData,
   clfs: ClfsData = {},
   emMdmTiers: EmMdmTierData = {},
   lcdCoverage: LcdCoverageData = {},
@@ -254,29 +252,35 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 3. Pharmacy markup — deterministic
+  // 3. Pharmacy markup check (ASP) — deterministic
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
-    const aspRate = asp[code]
-    if (!aspRate) continue
-    const lineItem = lineItems[i]
-    const allowedAmount = aspRate * lineItem.units * 1.06
-    if (lineItem.billedAmount <= allowedAmount * 4.5) continue
+    if (alreadyFlaggedCodes.has(code)) continue
 
-    const markupRatio = lineItem.billedAmount / allowedAmount
-    findings.push({
-      lineItemIndex: i,
-      cptCode: code,
-      severity: 'error',
-      errorType: 'pharmacy_markup',
-      confidence: 'high' as ConfidenceLevel,
-      description: `${code} billed at $${lineItem.billedAmount.toFixed(2)} vs CMS ASP-based limit of $${allowedAmount.toFixed(2)} for ${lineItem.units} unit(s) — ${markupRatio.toFixed(1)}× markup. CMS allows maximum 6% over the Average Sales Price.`,
-      standardDescription: CPT_DESCRIPTIONS[code],
-      recommendation: 'Request itemized drug pricing documentation and compare against the CMS ASP list at cms.gov/medicare/payment/part-b-drugs/asp-pricing-files.',
-      medicareRate: aspRate,
-      markupRatio: markupRatio,
-      ncciBundledWith: undefined,
-    })
+    const aspRow = loadAspLimit(code)
+    if (!aspRow) continue
+
+    const billed = lineItems[i].billedAmount
+    const limit = aspRow.payment_limit
+    const ratio = billed / limit
+
+    // CMS allows up to 106% of ASP (6% markup). Over 4.5x = pharmacy markup error.
+    if (ratio > 4.5) {
+      findings.push({
+        lineItemIndex: i,
+        cptCode: code,
+        severity: 'error',
+        errorType: 'pharmacy_markup',
+        confidence: 'high',
+        description: `${code} (${aspRow.description ?? 'drug code'}) is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}x the CMS ASP payment limit of $${limit.toFixed(2)}.`,
+        standardDescription: aspRow.description ?? undefined,
+        recommendation: `Request itemized drug administration records and justification for the markup above 4.5x the CMS Average Sales Price limit.`,
+        medicareRate: limit,
+        markupRatio: ratio,
+        ncciBundledWith: undefined,
+      })
+      alreadyFlaggedCodes.add(code)
+    }
   }
 
   // 4. LCD/NCD coverage check

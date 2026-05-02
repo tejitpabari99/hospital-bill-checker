@@ -149,7 +149,16 @@ export type AspRow = {
 }
 
 export function loadAspLimit(hcpcsCode: string): AspRow | null {
-  return null  // implemented in step-05
+  const db = getAspDb()
+  if (!db) return null
+
+  const row = db.prepare(`
+    SELECT hcpcs_code, payment_limit, description, dosage
+    FROM asp_payment_limits
+    WHERE hcpcs_code = ?
+  `).get(hcpcsCode.toUpperCase().trim()) as AspRow | undefined
+
+  return row ?? null
 }
 
 // ─── OPPS ────────────────────────────────────────────────────────────────────

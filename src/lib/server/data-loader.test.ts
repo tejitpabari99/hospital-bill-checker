@@ -1,6 +1,6 @@
 import { existsSync } from 'fs'
 import { describe, it, expect } from 'vitest'
-import { loadClfsRate, toServiceDateInt } from './data-loader'
+import { loadAspLimit, loadClfsRate, toServiceDateInt } from './data-loader'
 
 describe('toServiceDateInt', () => {
   it('parses YYYY-MM-DD', () => {
@@ -50,5 +50,17 @@ describe('CLFS SQLite integration', () => {
     const row = loadClfsRate('99285')
     // May or may not be null — just assert it doesn't throw
     expect(row === null || typeof row.rate === 'number').toBe(true)
+  })
+})
+
+describe('ASP SQLite integration', () => {
+  it.skipIf(!existsSync('data/asp.sqlite'))('returns limit for J0696 (Ceftriaxone)', () => {
+    const row = loadAspLimit('J0696')
+    expect(row).not.toBeNull()
+    expect(row!.payment_limit).toBeGreaterThan(0)
+  })
+
+  it.skipIf(!existsSync('data/asp.sqlite'))('returns null for non-drug code', () => {
+    expect(loadAspLimit('99285')).toBeNull()
   })
 })
