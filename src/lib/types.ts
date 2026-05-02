@@ -1,3 +1,5 @@
+export type BillType = 'practitioner' | 'outpatient' | 'dme' | 'inpatient' | 'unknown'
+
 export interface LineItem {
   cpt: string        // CPT or HCPCS code
   description: string
@@ -6,6 +8,7 @@ export interface LineItem {
   serviceDate?: string
   modifiers?: string[]  // e.g. ["-25", "LT"]
   icd10Codes?: string[] // diagnosis codes on the bill
+  quantity?: number
 }
 
 export interface BillInput {
@@ -22,6 +25,9 @@ export interface BillInput {
   dischargeDate?: string
   goodFaithEstimate?: number
   patientName?: string  // NOT sent to Claude — for letter placeholders only
+  billType?: BillType
+  patientState?: string
+  drgCode?: string
 }
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low'
