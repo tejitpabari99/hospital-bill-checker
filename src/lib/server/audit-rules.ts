@@ -144,7 +144,7 @@ export function checkNcciBundling(
 
 export function checkMueExceeded(
   lineItems: LineItem[],
-  edits: Array<{ hcpcs_code: string; mue_value: number; mue_adjudication_indicator?: string | number; mai?: string | number }>
+  edits: Array<{ hcpcs_code: string; mue_value: number | null; mue_adjudication_indicator?: string | number; mai?: string | number }>
 ): RuleFinding[] {
   const editByCode = new Map(edits.map(edit => [edit.hcpcs_code.trim().toUpperCase(), edit]))
 
@@ -153,6 +153,7 @@ export function checkMueExceeded(
     const edit = editByCode.get(code)
     const units = lineItem.units ?? lineItem.quantity ?? 1
     const mai = String(edit?.mue_adjudication_indicator ?? edit?.mai ?? '')
+    if (edit?.mue_value == null) return []
     if (!edit || mai !== '3' || units <= edit.mue_value) return []
     return [{ findingType: 'mue_exceeded', lineItemIndex: index, cptCode: code }]
   })
@@ -407,6 +408,8 @@ export function buildDeterministicFindings(
     const maxUnits = mueEntry.mue_value
     const mai = String(mueEntry.mue_adjudication_indicator ?? '')
 
+    // mue_value is NULL for CMS-suppressed codes — skip the check (no limit published)
+    if (maxUnits == null) continue
     if (mai === '3' && unitsBilled > maxUnits) {
       findings.push({
         lineItemIndex: i,

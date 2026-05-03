@@ -70,10 +70,16 @@ def parse_mue_csv(csv_bytes: bytes, bill_type: str, source: str) -> list[tuple]:
             continue
 
         mue_val_str = str(row[1]).strip() if len(row) > 1 else ""
-        try:
-            mue_value = int(mue_val_str)
-        except ValueError:
-            continue
+        if mue_val_str == "*":
+            # CMS-suppressed value — store as NULL so the code is still visible in the DB
+            mue_value = None
+        else:
+            try:
+                mue_value = int(mue_val_str)
+            except ValueError:
+                # Skip completely unparseable values (non-numeric, non-suppressed)
+                print(f"  Skipping unparseable mue_value {mue_val_str!r} for code {code!r}")
+                continue
 
         mai = str(row[2]).strip() if len(row) > 2 else "1"
         # Normalize MAI to just the leading digit
@@ -92,7 +98,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS mue_edits (
             hcpcs_code                  TEXT NOT NULL,
-            mue_value                   INTEGER NOT NULL,
+            mue_value                   INTEGER,
             mue_adjudication_indicator  TEXT NOT NULL,
             mue_rationale               TEXT,
             bill_type                   TEXT NOT NULL,

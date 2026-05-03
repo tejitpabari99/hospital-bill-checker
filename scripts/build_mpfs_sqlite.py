@@ -86,21 +86,44 @@ def parse_xlsx(xlsx_bytes: bytes, source_file: str) -> list[tuple]:
     wb = openpyxl.load_workbook(io.BytesIO(xlsx_bytes), read_only=True, data_only=True)
     ws = wb.active
 
+    # Default (fallback) column positions if header scanning fails
     HCPCS_COL = 0
     MOD_COL = 1
     DESC_COL = 2
     STATUS_COL = 3
-    NONFAC_TOTAL_COL = 11
-    FAC_TOTAL_COL = 12
+    NONFAC_TOTAL_COL = 11  # fallback only — see header scan below
+    FAC_TOTAL_COL = 12     # fallback only — see header scan below
 
     header_found = False
+    nonfac_col_found = False
+    fac_col_found = False
     rows: list[tuple] = []
 
     for row in ws.iter_rows(values_only=True):
         if not header_found:
-            # Look for the row where first cell is 'HCPCS'
             val = str(row[HCPCS_COL]).strip().upper() if row[HCPCS_COL] is not None else ""
             if val == "HCPCS":
+                # Scan the header row to find rate column positions by name
+                header_cells = [str(c).strip().upper() if c is not None else "" for c in row]
+                for idx, cell in enumerate(header_cells):
+                    # CMS MPFS headers: "NON-FACILITY PRICING AMOUNT", "FACILITY PRICING AMOUNT"
+                    # or variations like "NONFAC TOTAL" / "FAC TOTAL"
+                    if any(kw in cell for kw in ("NON-FAC", "NONFAC", "NON FAC", "NONFACILITY")):
+                        if "TOTAL" in cell or "PRICING" in cell or "AMOUNT" in cell:
+                            NONFAC_TOTAL_COL = idx
+                            nonfac_col_found = True
+                            print(f"  Found NONFAC_TOTAL_COL at index {idx}: {cell!r}")
+                    if "FAC" in cell and "NON" not in cell:
+                        if "TOTAL" in cell or "PRICING" in cell or "AMOUNT" in cell:
+                            FAC_TOTAL_COL = idx
+                            fac_col_found = True
+                            print(f"  Found FAC_TOTAL_COL at index {idx}: {cell!r}")
+                if not nonfac_col_found or not fac_col_found:
+                    raise ValueError(
+                        "Could not find MPFS facility/non-facility pricing columns by header name. "
+                        f"Fallback indexes are NONFAC_TOTAL_COL={NONFAC_TOTAL_COL}, FAC_TOTAL_COL={FAC_TOTAL_COL}; "
+                        "check the CMS worksheet layout before loading rates."
+                    )
                 header_found = True
             continue
 
@@ -140,6 +163,21 @@ def parse_xlsx(xlsx_bytes: bytes, source_file: str) -> list[tuple]:
         ))
 
     wb.close()
+    if rows:
+        sample_nonfac = [r[6] for r in rows[:20] if r[6] is not None]
+        if sample_nonfac:
+            avg = sum(sample_nonfac) / len(sample_nonfac)
+            if avg < 1.0:
+                print(
+                    f"WARNING: Average nonfac_rate is {avg:.4f} — this looks like raw RVUs, not dollars. "
+                    "Expected ~$50–$200 for common CPT codes. "
+                    "Check that NONFAC_TOTAL_COL points to the dollar column, not the RVU column."
+                )
+            elif avg > 10_000:
+                print(
+                    f"WARNING: Average nonfac_rate is {avg:.2f} — this looks too high. "
+                    "Check column mapping."
+                )
     return rows
 
 

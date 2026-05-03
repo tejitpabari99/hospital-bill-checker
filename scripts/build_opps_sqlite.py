@@ -160,17 +160,26 @@ def parse_addendum_b(xlsx_bytes: bytes, source_file: str) -> list[tuple]:
 
     rows: list[tuple] = []
     data_started = False
+    rows_attempted = 0
 
     for row in ws.iter_rows(values_only=True):
         if not data_started:
-            # Skip until past header
-            if row == tuple(header_row):
-                data_started = True
-            continue
+            # Detect data start: look for a cell matching a HCPCS code pattern
+            # in the HCPCS column position. More robust than exact header row equality.
+            if hcpcs_col is not None and hcpcs_col < len(row) and row[hcpcs_col] is not None:
+                candidate = str(row[hcpcs_col]).strip().upper()
+                if CODE_PATTERN.match(candidate):
+                    data_started = True
+                    # Fall through — process this row as data
+                else:
+                    continue
+            else:
+                continue
 
         if hcpcs_col is None or hcpcs_col >= len(row):
             continue
 
+        rows_attempted += 1
         code = str(row[hcpcs_col]).strip().upper() if row[hcpcs_col] is not None else ""
         if not CODE_PATTERN.match(code):
             continue
@@ -198,6 +207,12 @@ def parse_addendum_b(xlsx_bytes: bytes, source_file: str) -> list[tuple]:
         ))
 
     wb.close()
+    MIN_EXPECTED_OPPS_ROWS = 1_000
+    if len(rows) < MIN_EXPECTED_OPPS_ROWS:
+        raise ValueError(
+            f"OPPS: only {len(rows):,} rows parsed (expected >= {MIN_EXPECTED_OPPS_ROWS:,}). "
+            "Header detection may have failed — check Excel column layout."
+        )
     return rows
 
 

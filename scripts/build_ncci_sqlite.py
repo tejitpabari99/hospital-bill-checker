@@ -41,6 +41,7 @@ from pathlib import Path
 DB_PATH = Path(__file__).parent.parent / "data" / "ncci.sqlite"
 
 CODE_PATTERN = re.compile(r"^(?:[0-9]{5}|[0-9]{4}[A-Z]|[A-Z][0-9]{4})$")
+MIN_EXPECTED_NCCI_ROWS = 5_000  # NCCI files typically have 200k+ pairs; 5k is a hard floor
 
 # All downloads keyed by bill_type
 SOURCES: dict[str, list[str]] = {
@@ -151,6 +152,13 @@ def process_zip(zip_bytes: bytes, bill_type: str, source: str) -> list[tuple]:
             print(f"  Parsing {fname} ...")
             parsed = parse_txt(archive.read(fname), bill_type, source)
             print(f"    -> {len(parsed):,} rows")
+            if len(parsed) < MIN_EXPECTED_NCCI_ROWS:
+                raise ValueError(
+                    f"Suspiciously few rows from {fname}: {len(parsed):,} "
+                    f"(expected >= {MIN_EXPECTED_NCCI_ROWS:,}). "
+                    "This usually means the layout detection (is_medicare_layout) failed. "
+                    "Check that column offsets match the current CMS file format."
+                )
             rows.extend(parsed)
     return rows
 
@@ -181,9 +189,27 @@ def create_schema(conn: sqlite3.Connection) -> None:
 
 
 def insert_rows(conn: sqlite3.Connection, rows: list[tuple]) -> int:
+    """
+    Insert rows, logging any conflicts where modifier_indicator differs.
+    INSERT OR REPLACE is kept intentionally — later ZIPs are assumed to be more authoritative —
+    but conflicts are logged so they can be investigated if needed.
+    """
     inserted = 0
+    replaced = 0
     for row in rows:
+        col1, col2, eff_date, del_date, mod, rationale, bill_type, source = row
         try:
+            existing = conn.execute(
+                """SELECT modifier_indicator FROM ncci_ptp
+                   WHERE col1_code=? AND col2_code=? AND effective_date=? AND bill_type=?""",
+                (col1, col2, eff_date, bill_type),
+            ).fetchone()
+            if existing and existing[0] != mod:
+                print(
+                    f"  CONFLICT: {col1}/{col2} eff={eff_date} {bill_type}: "
+                    f"modifier {existing[0]!r} -> {mod!r} (source={source})"
+                )
+                replaced += 1
             conn.execute(
                 """INSERT OR REPLACE INTO ncci_ptp
                    (col1_code, col2_code, effective_date, deletion_date,
@@ -192,8 +218,10 @@ def insert_rows(conn: sqlite3.Connection, rows: list[tuple]) -> int:
                 row,
             )
             inserted += 1
-        except sqlite3.Error:
-            pass
+        except sqlite3.Error as e:
+            print(f"  ERROR inserting {col1}/{col2}: {e}")
+    if replaced:
+        print(f"  WARNING: {replaced} rows had modifier_indicator conflicts — review output above.")
     return inserted
 
 

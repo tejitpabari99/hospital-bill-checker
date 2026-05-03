@@ -165,7 +165,22 @@ def main() -> None:
             n for n in csv_files
             if "payment limit" in n.lower() and "not payable" not in n.lower()
         ]
-        fname = payment_limit_files[0] if payment_limit_files else csv_files[0]
+        not_payable_files = [n for n in csv_files if "not payable" in n.lower()]
+
+        if payment_limit_files:
+            fname = payment_limit_files[0]
+            print(f"  Selected payment limits file: {fname}")
+        elif csv_files and not not_payable_files:
+            # Only one CSV and it's not obviously "not payable" — use it with a warning
+            fname = csv_files[0]
+            print(f"  WARNING: Could not identify payment limits file by name. Using: {fname}")
+            print(f"  All CSV files in ZIP: {csv_files}")
+            print("  Verify this file contains 'HCPCS Code' and 'Payment Limit' columns.")
+        else:
+            print(f"ERROR: Could not find ASP payment limits CSV. ZIP contains: {csv_files}")
+            print("Expected a file with 'payment limit' in the name (case-insensitive).")
+            print("CMS may have renamed the file. Check: https://www.cms.gov/Medicare/Medicare-Fee-for-Service-Part-B-Drugs/McrPartBDrugAvgSalesPrice/2025ASPFiles")
+            sys.exit(1)
         print(f"Parsing {fname} ...")
         rows = parse_asp_csv(archive.read(fname), EFFECTIVE_QUARTER, f"cms-asp-{EFFECTIVE_QUARTER}")
         print(f"Parsed {len(rows):,} rows")
