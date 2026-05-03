@@ -290,6 +290,38 @@ def coerce_float(value: object) -> float | None:
         return None
 
 
+def find_min_col(cols: list[str]) -> str | None:
+    """Find the minimum negotiated rate column by common MRF naming patterns."""
+    # Exact matches first (highest confidence)
+    exact = {"minimum", "min_negotiated_rate", "min_negotiated", "min_rate",
+             "minimum_negotiated_rate", "minimum_rate", "min_neg_rate",
+             "negotiated_rate_min", "minimum_negotiated"}
+    for c in cols:
+        if c.lower() in exact:
+            return sql_ident(c)
+    # Substring fallback: must contain "min" and ("negot" or "rate")
+    for c in cols:
+        cl = c.lower()
+        if "min" in cl and ("negot" in cl or "rate" in cl) and "max" not in cl:
+            return sql_ident(c)
+    return None
+
+
+def find_max_col(cols: list[str]) -> str | None:
+    """Find the maximum negotiated rate column by common MRF naming patterns."""
+    exact = {"maximum", "max_negotiated_rate", "max_negotiated", "max_rate",
+             "maximum_negotiated_rate", "maximum_rate", "max_neg_rate",
+             "negotiated_rate_max", "maximum_negotiated"}
+    for c in cols:
+        if c.lower() in exact:
+            return sql_ident(c)
+    for c in cols:
+        cl = c.lower()
+        if "max" in cl and ("negot" in cl or "rate" in cl) and "min" not in cl:
+            return sql_ident(c)
+    return None
+
+
 def convert_duckdb_to_sqlite(duckdb_path: Path, sqlite_path: Path, source_url: str) -> bool:
     """
     Open DuckDB file, export key tables to SQLite.
@@ -372,12 +404,16 @@ def convert_duckdb_to_sqlite(duckdb_path: Path, sqlite_path: Path, source_url: s
                 "description": next((sql_ident(c) for c in cols if c.lower() == "description" or "desc" in c.lower() or "name" in c.lower()), None),
                 "gross_charge": next((sql_ident(c) for c in cols if "gross" in c.lower()), None),
                 "discounted_cash": next((sql_ident(c) for c in cols if "cash" in c.lower() or "discount" in c.lower()), None),
-                "min_negotiated": next((sql_ident(c) for c in cols if c.lower() in ("minimum", "min_negotiated_rate", "min_negotiated")), None),
-                "max_negotiated": next((sql_ident(c) for c in cols if c.lower() in ("maximum", "max_negotiated_rate", "max_negotiated")), None),
+                "min_negotiated": find_min_col(cols),
+                "max_negotiated": find_max_col(cols),
                 "setting": next((sql_ident(c) for c in cols if "setting" in c.lower() or "outpatient" in c.lower()), None),
                 "payer_name": next((sql_ident(c) for c in cols if c.lower() == "payer_name"), None),
                 "plan_name": next((sql_ident(c) for c in cols if c.lower() == "plan_name"), None),
             }
+            if col_map.get("min_negotiated") is None:
+                print(f"  WARNING: Could not find min_negotiated column. Available columns: {cols}")
+            if col_map.get("max_negotiated") is None:
+                print(f"  WARNING: Could not find max_negotiated column. Available columns: {cols}")
             print(f"  Column mapping: {col_map}")
 
             select_cols = []
@@ -445,6 +481,15 @@ def convert_duckdb_to_sqlite(duckdb_path: Path, sqlite_path: Path, source_url: s
 
     except Exception as exc:
         print(f"  DuckDB conversion failed: {exc}")
+        # Clean up partial SQLite immediately — do not leave a corrupt file on disk.
+        # The server may poll the cache directory between this exception and the caller
+        # cleaning up, which would serve corrupt data.
+        if sqlite_path.exists():
+            try:
+                sqlite_path.unlink()
+                print(f"  Cleaned up partial SQLite: {sqlite_path}")
+            except OSError as cleanup_err:
+                print(f"  WARNING: Could not clean up partial SQLite {sqlite_path}: {cleanup_err}")
         return False
 
 
@@ -458,10 +503,17 @@ def fetch_hospital_pricing(
     """
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Build a stable hospital_id for the cache
+    # Build a stable hospital_id for the cache.
+    # Include phone number (normalized) when provided — same name + state can match
+    # different hospitals (e.g. two "Memorial Hospital" in Texas).
     hospital_id = normalize_name(hospital_name).replace(" ", "_")[:60]
     if state:
         hospital_id += f"_{state.lower()}"
+    if phone:
+        # Normalize phone to digits only for a stable cache key component
+        phone_digits = "".join(c for c in phone if c.isdigit())
+        if phone_digits:
+            hospital_id += f"_ph{phone_digits[-10:]}"  # last 10 digits (local number)
     cache_path = make_cache_path(hospital_id)
 
     if is_cache_fresh(cache_path):
