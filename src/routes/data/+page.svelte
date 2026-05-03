@@ -11,6 +11,7 @@
     buildScript: string
     columnsUsed: string[]
     table: string
+    frequency: 'quarterly' | 'annual' | 'on-demand'
   }
 
   const sources: DataSource[] = [
@@ -25,6 +26,7 @@
       localFile: 'data/ncci.sqlite',
       buildScript: 'scripts/build_ncci_sqlite.py',
       table: 'ncci_ptp',
+      frequency: 'quarterly',
       columnsUsed: ['col1_code', 'col2_code', 'effective_date', 'deletion_date', 'modifier_indicator', 'bill_type'],
     },
     {
@@ -38,6 +40,7 @@
       localFile: 'data/mue.sqlite',
       buildScript: 'scripts/build_mue_sqlite.py',
       table: 'mue_edits',
+      frequency: 'quarterly',
       columnsUsed: ['hcpcs_code', 'mue_value', 'mai', 'bill_type'],
     },
     {
@@ -51,6 +54,7 @@
       localFile: 'data/mpfs.sqlite',
       buildScript: 'scripts/build_mpfs_sqlite.py',
       table: 'mpfs_rates',
+      frequency: 'annual',
       columnsUsed: ['hcpcs_code', 'modifier', 'nonfac_total_rvu', 'nonfac_rate'],
     },
     {
@@ -64,6 +68,7 @@
       localFile: 'data/clfs.sqlite',
       buildScript: 'scripts/build_clfs_sqlite.py',
       table: 'clfs_rates (full history), clfs_current (latest per code view)',
+      frequency: 'quarterly',
       columnsUsed: ['hcpcs_code', 'payment_limit', 'effective_date'],
     },
     {
@@ -77,6 +82,7 @@
       localFile: 'data/asp.sqlite',
       buildScript: 'scripts/build_asp_sqlite.py',
       table: 'asp_payment_limits',
+      frequency: 'quarterly',
       columnsUsed: ['hcpcs_code', 'asp_payment_limit', 'quarter'],
     },
     {
@@ -90,6 +96,7 @@
       localFile: 'data/opps.sqlite',
       buildScript: 'scripts/build_opps_sqlite.py',
       table: 'opps_addendum_b, opps_addendum_a',
+      frequency: 'quarterly',
       columnsUsed: ['hcpcs_code', 'apc', 'payment_rate', 'apc_title'],
     },
     {
@@ -103,6 +110,7 @@
       localFile: 'data/ipps.sqlite',
       buildScript: 'scripts/build_ipps_sqlite.py',
       table: 'ipps_drg_rates',
+      frequency: 'annual',
       columnsUsed: ['drg_code', 'drg_title', 'relative_weight', 'geometric_mean_los'],
     },
     {
@@ -116,6 +124,7 @@
       localFile: 'data/dmepos.sqlite',
       buildScript: 'scripts/build_dmepos_sqlite.py',
       table: 'dmepos_base, dmepos_state_rates',
+      frequency: 'annual',
       columnsUsed: ['hcpcs_code', 'state', 'modifier', 'rental_rate'],
     },
     {
@@ -129,6 +138,7 @@
       localFile: 'data/ambulance.sqlite',
       buildScript: 'scripts/build_ambulance_sqlite.py',
       table: 'ambulance_rates, ambulance_geography',
+      frequency: 'annual',
       columnsUsed: ['hcpcs_code', 'carrier', 'locality', 'base_rate', 'zip_code'],
     },
     {
@@ -142,6 +152,7 @@
       localFile: 'data/hospital_directory.sqlite',
       buildScript: 'scripts/build_hospital_directory_sqlite.py',
       table: 'hospitals',
+      frequency: 'annual',
       columnsUsed: ['facility_name', 'normalized_name', 'state', 'phone_digits', 'provider_id'],
     },
     {
@@ -155,9 +166,13 @@
       localFile: 'data/hospital_cache/<hospital_id>.sqlite',
       buildScript: 'scripts/fetch_hospital_trilliant.py',
       table: 'charges, meta',
+      frequency: 'on-demand',
       columnsUsed: ['code', 'description', 'gross_charge', 'discounted_cash', 'min_negotiated', 'max_negotiated', 'setting'],
     },
   ]
+
+  const quarterlyCount = sources.filter(s => s.frequency === 'quarterly').length
+  const annualCount = sources.filter(s => s.frequency === 'annual').length
 </script>
 
 <svelte:head>
@@ -168,7 +183,7 @@
 <div class="page">
   <div class="page-header">
     <h1>Data Sources</h1>
-    <p class="subtitle">Every dataset the app uses to check your bill. All rates come directly from CMS — no third-party data is used for pricing benchmarks.</p>
+    <p class="subtitle">Every dataset the app uses to check your bill. CMS rate schedules are used for all billing benchmarks. Hospital price data is sourced via Trilliant Health / Oria (a CMS-registered aggregator) and cached locally.</p>
   </div>
 
   <div class="summary-row">
@@ -177,11 +192,11 @@
       <span class="summary-label">Data sources</span>
     </div>
     <div class="summary-card">
-      <span class="summary-num">4</span>
+      <span class="summary-num">{quarterlyCount}</span>
       <span class="summary-label">Updated quarterly</span>
     </div>
     <div class="summary-card">
-      <span class="summary-num">6</span>
+      <span class="summary-num">{annualCount}</span>
       <span class="summary-label">Updated annually</span>
     </div>
     <div class="summary-card">

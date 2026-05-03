@@ -120,8 +120,18 @@
 <p><strong>Data freshness:</strong> Hospital MRF data is cached for up to 7 days. Hospital directory is rebuilt from CMS on demand.</p>`,
     },
     {
-      id: 'classification',
+      id: 'vision',
       num: '11',
+      title: 'Vision Extraction',
+      tag: 'AI',
+      simple: `We use Google's Gemini AI to read your bill image or PDF and extract all the important details — procedure codes, charges, hospital name, dates of service, and more. This is a purely mechanical transcription step. The AI is not making any medical or financial judgments here; it's just reading the document and pulling out structured data.`,
+      detailed: `<p><strong>Model:</strong> Gemini 2.5 Flash (vision-capable). Run as a child process (<code>src/lib/server/vision-extract.mjs</code>).</p>
+<p><strong>Extracts:</strong> <code>lineItems[]</code> (code, description, units, quantity, amount, modifiers, serviceDate, icd10Codes), <code>hospitalName</code>, <code>hospitalAddress</code>, <code>hospitalPhone</code>, <code>patientName</code>, <code>patientState</code>, <code>serviceZip</code>, <code>dateOfService</code>, <code>billTotal</code>, <code>admissionDate</code>, <code>dischargeDate</code>, <code>drgCode</code>, <code>accountNumber</code>, <code>goodFaithEstimate</code>.</p>
+<p><strong>Why AI?</strong> Bill formats vary enormously across thousands of hospitals, billing services, and software systems. A deterministic parser would require custom templates for each. Vision models generalize across formats. This is one of three approved AI uses.</p>`,
+    },
+    {
+      id: 'classification',
+      num: '12',
       title: 'Bill Type Classification',
       tag: 'AI',
       simple: `Before we run any of the checks above, we determine what kind of bill you uploaded. Is it from a doctor's office? A hospital? A medical equipment supplier? Different rules apply to different bill types — a doctor's bill uses different rate schedules than a hospital outpatient bill. We use AI to read the bill and classify it, because the same procedure code can appear on multiple bill types.`,
@@ -129,16 +139,6 @@
 <p><strong>Inputs:</strong> Raw bill text (first 400 chars), CPT/HCPCS codes list, DRG presence, admission/discharge dates, hospital name.</p>
 <p><strong>Output:</strong> One of: <code>practitioner</code>, <code>outpatient</code>, <code>dme</code>, <code>inpatient</code>, <code>unknown</code>.</p>
 <p><strong>Why AI, not deterministic?</strong> The same CPT code (e.g., 99285) can appear on both practitioner bills and hospital outpatient bills. Form type (UB-04 vs CMS-1500) is not reliably extractable from vision alone. Revenue codes and contextual signals require language understanding. This is one of three approved AI uses in the system.</p>`,
-    },
-    {
-      id: 'vision',
-      num: '12',
-      title: 'Vision Extraction',
-      tag: 'AI',
-      simple: `We use Google's Gemini AI to read your bill image or PDF and extract all the important details — procedure codes, charges, hospital name, dates of service, and more. This is a purely mechanical transcription step. The AI is not making any medical or financial judgments here; it's just reading the document and pulling out structured data.`,
-      detailed: `<p><strong>Model:</strong> Gemini 2.5 Flash (vision-capable). Run as a child process (<code>src/lib/server/vision-extract.mjs</code>).</p>
-<p><strong>Extracts:</strong> <code>lineItems[]</code> (code, description, units, quantity, amount, modifiers, serviceDate, icd10Codes), <code>hospitalName</code>, <code>hospitalAddress</code>, <code>hospitalPhone</code>, <code>patientName</code>, <code>patientState</code>, <code>serviceZip</code>, <code>dateOfService</code>, <code>billTotal</code>, <code>admissionDate</code>, <code>dischargeDate</code>, <code>drgCode</code>, <code>accountNumber</code>, <code>goodFaithEstimate</code>.</p>
-<p><strong>Why AI?</strong> Bill formats vary enormously across thousands of hospitals, billing services, and software systems. A deterministic parser would require custom templates for each. Vision models generalize across formats. This is one of three approved AI uses.</p>`,
     },
     {
       id: 'letter',

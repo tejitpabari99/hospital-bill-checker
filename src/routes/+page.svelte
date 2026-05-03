@@ -33,6 +33,7 @@
   let auditLineItems: LineItem[] = $state([])
   let detectedBillType: BillType = $state('unknown')
   let goodFaithEstimate = $state('')
+  let gfeError = $state('')
   const resultSections = $derived.by(() => {
     if (!auditResult) return []
     const result = auditResult as ExtendedAuditResult
@@ -109,6 +110,19 @@
 
   async function startAudit() {
     if (!file) return
+    gfeError = ''
+    // Strip currency symbols and commas before parsing GFE input.
+    const gfeTrimmed = goodFaithEstimate.trim()
+    let parsedGfe: number | undefined = undefined
+    if (gfeTrimmed) {
+      const cleaned = gfeTrimmed.replace(/[$,\s]/g, '')
+      const num = Number(cleaned)
+      if (!Number.isFinite(num) || num < 0) {
+        gfeError = 'Please enter a valid dollar amount (e.g. 1200 or $1,200.00)'
+        return
+      }
+      parsedGfe = num
+    }
     screen = 'processing'
     trackAuditStarted()
     currentStep = 0
@@ -159,7 +173,7 @@
         billTotal: parsed.extractedMeta?.billTotal ?? undefined,
         admissionDate: parsed.extractedMeta?.admissionDate ?? undefined,
         dischargeDate: parsed.extractedMeta?.dischargeDate ?? undefined,
-        goodFaithEstimate: goodFaithEstimate.trim() ? Number(goodFaithEstimate) : undefined,
+        goodFaithEstimate: parsedGfe,
         billType: detectedBillType,
         patientState: parsed.patientState ?? undefined,
         serviceZip: parsed.serviceZip ?? undefined,
@@ -206,6 +220,7 @@
     file = null
     fileWarning = ''
     errorMessage = ''
+    gfeError = ''
     auditResult = null
     auditLineItems = []
     detectedBillType = 'unknown'
@@ -313,6 +328,9 @@
         aria-label="Good Faith Estimate total"
       />
       <span class="gfe-help">If you received a Good Faith Estimate, we compare the final bill against it.</span>
+      {#if gfeError}
+        <p class="field-error">{gfeError}</p>
+      {/if}
     </label>
 
     <div class="trust-row">
@@ -669,6 +687,13 @@
   .gfe-help {
     font-size: 12px;
     color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .field-error {
+    margin: 0;
+    color: var(--error);
+    font-size: 12px;
     line-height: 1.4;
   }
 

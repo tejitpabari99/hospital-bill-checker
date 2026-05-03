@@ -135,7 +135,7 @@
     </div>
 
     <p style="margin-top:16px;">These datasets are free, public, and updated regularly. You can download them yourself at <a href="https://www.cms.gov" target="_blank" rel="noopener noreferrer">cms.gov</a>. We rebuild our lookup files from these sources using open-source Python scripts included in the repository. NCCI bundling violations, MUE unit violations, duplicate billing, pharmacy markup overcharges, facility-rate checks, DME rate checks, and lab-rate lookups are all detected by these lookup tables — Gemini is not involved in those checks.</p>
-    <p>Two error types require AI is not how the current audit pipeline works: billing findings are deterministic. Unbundling is detected by CMS NCCI rule lookup, drug checks use the 931-entry ASP dataset, and we prefer the Medicare NCCI file and fall back to the Medicaid Practitioner Services edition when needed.</p>
+    <p>All billing error findings are deterministic — AI is not involved in any audit decision. Unbundling is detected by CMS NCCI lookup, drug overcharges use the CMS ASP dataset, and unit limits use CMS MUE edits. We use the Medicare NCCI PTP file and fall back to the Medicaid Practitioner Services edition for bill types not covered by Medicare NCCI. AI is used only for three mechanical tasks: reading bill images (Vision Extraction), classifying bill type, and formatting the dispute letter.</p>
     <p class="reference-row">
       Direct sources:
       <a href="https://www.cms.gov/medicare/payment/fee-schedules/physician" target="_blank" rel="noopener noreferrer">Physician Fee Schedule</a>
