@@ -70,4 +70,46 @@
   />
 {/if}
 
+<nav class="site-nav" aria-label="Main navigation">
+  <a href="/">Home</a>
+  <a href="/how-it-works">How it works</a>
+  <a href="/learn">Learn</a>
+  <a href="/data">Data</a>
+</nav>
+
 {@render children()}
+
+<style>
+  .site-nav {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+  }
+
+  .site-nav a {
+    color: #475569;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .site-nav a:hover {
+    color: #0f172a;
+    text-decoration: underline;
+  }
+
+  @media (max-width: 480px) {
+    .site-nav {
+      gap: 12px;
+      overflow-x: auto;
+      justify-content: flex-start;
+    }
+
+    .site-nav a {
+      flex: 0 0 auto;
+    }
+  }
+</style>
