@@ -86,8 +86,14 @@ export const POST: RequestHandler = async ({ request }) => {
       lineItems: result.lineItems?.length ?? 0,
       parseWarning: result.parseWarning ?? null,
       usedVision: result.usedVision,
+      billType: result.billType ?? 'unknown',
+      drgCode: result.drgCode ?? null,
     })
-    return json(result)
+    return json({
+      ...result,
+      billType: result.billType ?? 'unknown',
+      drgCode: result.drgCode ?? undefined,
+    })
   } catch (err) {
     log.error('request-failed', { error: serializeError(err) })
     throw error(500, 'Failed to parse PDF')

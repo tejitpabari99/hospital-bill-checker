@@ -377,6 +377,8 @@ export async function auditBill(input: BillInput, traceId?: string): Promise<Aud
   log.info('audit-start', {
     lineItems: input.lineItems.length,
     hospitalName: input.hospitalName ?? null,
+    billType: input.billType ?? 'unknown',
+    drgCode: input.drgCode ?? null,
   })
   const dataContext = buildDataContext(input)
   const { findings: deterministicCoreFindings, promptNote } = buildDeterministicFindings(input)
@@ -409,6 +411,8 @@ Account: ${input.accountNumber ?? 'Unknown'}
 Bill total: ${input.billTotal ?? 'Unknown'}
 Admission date: ${input.admissionDate ?? 'Unknown'}
 Discharge date: ${input.dischargeDate ?? 'Unknown'}
+Bill type: ${input.billType ?? 'unknown'}
+DRG code: ${input.drgCode ?? 'Unknown'}
 
 Line items:
 ${JSON.stringify(input.lineItems, null, 2)}

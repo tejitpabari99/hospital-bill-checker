@@ -1,12 +1,14 @@
 import { spawn } from 'child_process'
 import { join } from 'path'
 import { GEMINI_API_KEY } from '$env/static/private'
+import type { BillInput, BillType } from '$lib/types'
 import { createServerLogger, serializeError } from './logger.js'
 
 // All Anthropic API calls and pdf-parse are run in child processes so that
 // any fatal signal (SDK crash, pdfjs Worker crash) is isolated from the main server.
 // Paths are anchored to CWD (Vite dev runs from project root).
 const VISION_SCRIPT = join(process.cwd(), 'src/lib/server/vision-extract.mjs')
+const CLASSIFY_WORKER = join(process.cwd(), 'src/lib/server/classify-bill.mjs')
 
 function callVision(base64: string, traceId?: string): Promise<{ text: string } | { error: string }> {
   const log = createServerLogger('parse', traceId)
@@ -36,6 +38,43 @@ function callVision(base64: string, traceId?: string): Promise<{ text: string } 
       resolve({ error: err.message })
     })
     child.stdin.write(JSON.stringify({ base64, traceId }))
+    child.stdin.end()
+  })
+}
+
+export async function classifyBill(billInput: BillInput, geminiApiKey: string): Promise<BillType> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [CLASSIFY_WORKER], {
+      timeout: 30_000,
+      stdio: ['pipe', 'pipe', 'inherit'],
+      env: { ...process.env, GEMINI_API_KEY: geminiApiKey },
+    })
+
+    let output = ''
+    child.stdout?.on('data', (chunk: Buffer) => { output += chunk.toString() })
+
+    child.on('close', () => {
+      try {
+        const result = JSON.parse(output)
+        const billType = result.billType as BillType
+        const VALID: BillType[] = ['practitioner', 'outpatient', 'dme', 'inpatient', 'unknown']
+        resolve(VALID.includes(billType) ? billType : 'unknown')
+      } catch {
+        resolve('unknown')
+      }
+    })
+
+    child.on('error', () => resolve('unknown'))
+
+    // Send the bill data needed for classification
+    child.stdin.write(JSON.stringify({
+      rawText: billInput.rawText ?? '',
+      lineItems: billInput.lineItems.slice(0, 30),
+      hospitalName: billInput.hospitalName,
+      admissionDate: billInput.admissionDate,
+      dischargeDate: billInput.dischargeDate,
+      drgCode: billInput.drgCode,
+    }))
     child.stdin.end()
   })
 }
@@ -89,6 +128,11 @@ function sanitizeStringArray(value: unknown): string[] {
     .filter(Boolean)
 }
 
+function sanitizeDrgCode(value: unknown): string | undefined {
+  const cleaned = toCleanString(value).replace(/[^0-9]/g, '')
+  return cleaned ? cleaned : undefined
+}
+
 export function sanitizeVisionCodes(codes: unknown): string[] {
   if (!Array.isArray(codes)) return []
   return codes
@@ -128,6 +172,8 @@ export interface ParsedBill {
   lineItems?: ParsedLineItem[]     // structured items from Vision (has amounts)
   patientState?: string
   serviceZip?: string
+  billType?: BillType
+  drgCode?: string
   extractedMeta?: {
     hospitalName?: string | null
     hospitalAddress?: string | null
@@ -223,14 +269,46 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     const filteredLineItems = sanitizeVisionLineItems(parsed.lineItems)
     const patientState: string | undefined = parsed.patientState ?? undefined
     const serviceZip: string | undefined = parsed.serviceZip ?? undefined
+    const drgCode = sanitizeDrgCode(parsed.drgCode)
     log.info('vision-sanitized', {
       sanitizedCptCount: sanitizedCodes.length,
       filteredLineItemCount: filteredLineItems.length,
       sampleCodes: sanitizedCodes.slice(0, 10),
+      hasDrgCode: Boolean(drgCode),
     })
 
+    const rawText = parsed.rawText ?? text
+    const extractedMeta = {
+      hospitalName: parsed.hospitalName ?? null,
+      hospitalAddress: parsed.hospitalAddress ?? null,
+      hospitalPhone: parsed.hospitalPhone ?? null,
+      accountNumber: parsed.accountNumber ?? null,
+      dateOfService: parsed.dateOfService ?? null,
+      billTotal: typeof parsed.billTotal === 'number' ? parsed.billTotal : null,
+      admissionDate: parsed.admissionDate ?? null,
+      dischargeDate: parsed.dischargeDate ?? null,
+    }
+    const billType = await classifyBill({
+      rawText,
+      lineItems: filteredLineItems.map((lineItem) => ({
+        cpt: lineItem.code,
+        description: lineItem.description,
+        units: lineItem.units,
+        quantity: lineItem.quantity,
+        billedAmount: lineItem.amount,
+        serviceDate: lineItem.serviceDate,
+        modifiers: lineItem.modifiers,
+        icd10Codes: lineItem.icd10Codes,
+      })),
+      hospitalName: extractedMeta.hospitalName ?? undefined,
+      admissionDate: extractedMeta.admissionDate ?? undefined,
+      dischargeDate: extractedMeta.dischargeDate ?? undefined,
+      drgCode,
+    }, GEMINI_API_KEY)
+    log.info('bill-classified', { billType })
+
     return {
-      rawText: parsed.rawText ?? text,
+      rawText,
       cptCodesFound: sanitizedCodes,
       pageCount,
       usedVision: true,
@@ -238,16 +316,9 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
       lineItems: filteredLineItems,
       patientState,
       serviceZip,
-      extractedMeta: {
-        hospitalName: parsed.hospitalName ?? null,
-        hospitalAddress: parsed.hospitalAddress ?? null,
-        hospitalPhone: parsed.hospitalPhone ?? null,
-        accountNumber: parsed.accountNumber ?? null,
-        dateOfService: parsed.dateOfService ?? null,
-        billTotal: typeof parsed.billTotal === 'number' ? parsed.billTotal : null,
-        admissionDate: parsed.admissionDate ?? null,
-        dischargeDate: parsed.dischargeDate ?? null,
-      },
+      billType,
+      drgCode,
+      extractedMeta,
     }
   } catch (error) {
     log.error('vision-json-parse-failed', {

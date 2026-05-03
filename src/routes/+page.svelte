@@ -5,7 +5,7 @@
   import ShareButton from '$lib/components/ShareButton.svelte'
   import FeedbackForm from '$lib/components/FeedbackForm.svelte'
   import MissingCodesNote from '$lib/components/MissingCodesNote.svelte'
-  import type { AuditResult, LineItem } from '$lib/types'
+  import type { AuditResult, BillType, LineItem } from '$lib/types'
   import { trackAuditStarted, trackAuditCompleted, trackBillParseError, trackFileSelected, trackFileTooLarge, trackNewBill } from '$lib/analytics'
   import { downloadResultReport } from '$lib/result-report'
   import { buildResultSections, buildSummaryFindings } from '$lib/results'
@@ -31,6 +31,7 @@
   let errorMessage = $state('')
   let auditResult: unknown = $state(null)
   let auditLineItems: LineItem[] = $state([])
+  let detectedBillType: BillType = $state('unknown')
   let goodFaithEstimate = $state('')
   const resultSections = $derived.by(() => {
     if (!auditResult) return []
@@ -55,6 +56,7 @@
   const STEPS = [
     'Reading your bill...',
     'Extracting billing codes...',
+    'Identifying bill type...',
     'Checking NCCI codes...',
     'Comparing Medicare rates...',
     'Checking lab rates...',
@@ -65,6 +67,21 @@
   ]
   let currentStep = $state(0)
   let stepTimer: ReturnType<typeof setInterval> | null = null
+
+  const BILL_TYPE_LABELS: Record<BillType, string> = {
+    practitioner: 'Practitioner / Professional',
+    outpatient: 'Outpatient Hospital Facility',
+    dme: 'Durable Medical Equipment',
+    inpatient: 'Inpatient Hospital Admission',
+    unknown: 'Unknown',
+  }
+
+  function stepLabel(step: string, index: number): string {
+    if (index === 2 && detectedBillType !== 'unknown') {
+      return `Bill type identified: ${BILL_TYPE_LABELS[detectedBillType]}`
+    }
+    return step
+  }
 
   function handleDrop(e: DragEvent) {
     e.preventDefault()
@@ -114,6 +131,8 @@
       }
 
       const parsed = await parseRes.json()
+      detectedBillType = parsed.billType ?? 'unknown'
+      currentStep = Math.max(currentStep, 2)
       if (parsed.parseWarning && parsed.cptCodesFound.length === 0) {
         trackBillParseError('no_cpt_codes_found')
         throw new Error(parsed.parseWarning)
@@ -141,8 +160,10 @@
         admissionDate: parsed.extractedMeta?.admissionDate ?? undefined,
         dischargeDate: parsed.extractedMeta?.dischargeDate ?? undefined,
         goodFaithEstimate: goodFaithEstimate.trim() ? Number(goodFaithEstimate) : undefined,
+        billType: detectedBillType,
         patientState: parsed.patientState ?? undefined,
         serviceZip: parsed.serviceZip ?? undefined,
+        drgCode: parsed.drgCode ?? undefined,
       }
 
       const auditRes = await fetch('/api/audit', {
@@ -187,6 +208,7 @@
     errorMessage = ''
     auditResult = null
     auditLineItems = []
+    detectedBillType = 'unknown'
     currentStep = 0
     if (stepTimer) clearInterval(stepTimer)
   }
@@ -327,7 +349,7 @@
                 <span class="step-dot"></span>
               {/if}
             </span>
-            <span class="step-label">{step}</span>
+            <span class="step-label">{stepLabel(step, i)}</span>
           </div>
         {/each}
       </div>
