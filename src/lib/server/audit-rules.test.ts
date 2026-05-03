@@ -71,6 +71,10 @@ const mueDb = (() => { try { return new Database('data/mue.sqlite', { readonly: 
 const hasMpfsDb = existsSync('data/mpfs.sqlite')
 const hasClfsDb = existsSync('data/clfs.sqlite')
 const hasAspDb = existsSync('data/asp.sqlite')
+const hasOppsDb = existsSync('data/opps.sqlite')
+const hasIppsDb = existsSync('data/ipps.sqlite')
+const hasDmeposDb = existsSync('data/dmepos.sqlite')
+const hasAmbulanceDb = existsSync('data/ambulance.sqlite')
 
 // ── getMpfsRate ───────────────────────────────────────────────────────────────
 
@@ -268,6 +272,93 @@ describe('buildDeterministicFindings — summary', () => {
     const { summary } = buildDeterministicFindings(lineItems)
     expect(summary).toContain('Errors: 1')
     expect(summary).toContain('Potential overcharge: $500.00')
+  })
+})
+
+describe('buildDeterministicFindings — SQLite audit routes', () => {
+  it.skipIf(!hasOppsDb)('emits a concrete outpatient OPPS benchmark finding', () => {
+    const { findings, summary } = buildDeterministicFindings(
+      [li('99285', 2000)],
+      'outpatient',
+      '2026-04-01',
+    )
+
+    const finding = findings.find(finding => finding.errorType === 'opps_benchmark')
+    expect(finding).toMatchObject({
+      lineItemIndex: 0,
+      cptCode: '99285',
+      severity: 'warning',
+      errorType: 'opps_benchmark',
+      confidence: 'medium',
+      medicareRate: 608.43,
+    })
+    expect(finding?.description).toContain('APC 5025: Level 5 Type A ED Visits')
+    expect(summary).toContain('Bill type: outpatient')
+    expect(summary).toContain('Warnings: 2')
+  })
+
+  it.skipIf(!hasIppsDb)('emits a concrete inpatient DRG informational finding', () => {
+    const { findings, summary } = buildDeterministicFindings(
+      [li('27447', 30000)],
+      'inpatient',
+      '2026-04-01',
+      '470',
+    )
+
+    const finding = findings.find(finding => finding.errorType === 'ipps_drg')
+    expect(finding).toMatchObject({
+      lineItemIndex: -1,
+      cptCode: 'DRG-470',
+      severity: 'info',
+      errorType: 'ipps_drg',
+      confidence: 'high',
+      standardDescription: 'MAJOR HIP AND KNEE JOINT REPLACEMENT OR REATTACHMENT OF LOWER EXTREMITY WITHOUT MCC',
+    })
+    expect(finding?.description).toContain('CMS relative weight: 1.9289')
+    expect(summary).toContain('Bill type: inpatient')
+  })
+
+  it.skipIf(!hasDmeposDb)('emits a concrete DMEPOS benchmark finding', () => {
+    const { findings } = buildDeterministicFindings(
+      [li('E0601', 200)],
+      'dme',
+      '2026-04-01',
+      undefined,
+      'TX',
+    )
+
+    expect(findings).toHaveLength(1)
+    expect(findings[0]).toMatchObject({
+      lineItemIndex: 0,
+      cptCode: 'E0601',
+      severity: 'warning',
+      errorType: 'dmepos_benchmark',
+      confidence: 'medium',
+      medicareRate: 50.91,
+    })
+    expect(findings[0].description).toContain('CMS DMEPOS fee schedule rate of $50.91 for TX')
+  })
+
+  it.skipIf(!hasAmbulanceDb)('emits a concrete ambulance benchmark finding', () => {
+    const { findings } = buildDeterministicFindings(
+      [li('A0428', 1000)],
+      'outpatient',
+      '2026-04-01',
+      undefined,
+      undefined,
+      '94002',
+    )
+
+    const finding = findings.find(finding => finding.errorType === 'ambulance_benchmark')
+    expect(finding).toMatchObject({
+      lineItemIndex: 0,
+      cptCode: 'A0428',
+      severity: 'warning',
+      errorType: 'ambulance_benchmark',
+      confidence: 'medium',
+      medicareRate: 284.56,
+    })
+    expect(finding?.description).toContain('locality 05')
   })
 })
 

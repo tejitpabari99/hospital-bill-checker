@@ -133,6 +133,20 @@ function sanitizeDrgCode(value: unknown): string | undefined {
   return cleaned ? cleaned : undefined
 }
 
+export function sanitizeVisionMeta(parsed: {
+  patientState?: unknown
+  serviceZip?: unknown
+  drgCode?: unknown
+}): { patientState?: string; serviceZip?: string; drgCode?: string } {
+  const patientState = toCleanString(parsed.patientState).toUpperCase()
+  const zipDigits = toCleanString(parsed.serviceZip).replace(/[^0-9]/g, '')
+  return {
+    patientState: /^[A-Z]{2}$/.test(patientState) ? patientState : undefined,
+    serviceZip: zipDigits.length >= 5 ? zipDigits.slice(0, 5) : undefined,
+    drgCode: sanitizeDrgCode(parsed.drgCode),
+  }
+}
+
 export function sanitizeVisionCodes(codes: unknown): string[] {
   if (!Array.isArray(codes)) return []
   return codes
@@ -267,9 +281,7 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     // Strip leading zeros to recover the real 5-char CPT/HCPCS code, then filter to valid format.
     const sanitizedCodes = sanitizeVisionCodes(parsed.cptCodes)
     const filteredLineItems = sanitizeVisionLineItems(parsed.lineItems)
-    const patientState: string | undefined = parsed.patientState ?? undefined
-    const serviceZip: string | undefined = parsed.serviceZip ?? undefined
-    const drgCode = sanitizeDrgCode(parsed.drgCode)
+    const { patientState, serviceZip, drgCode } = sanitizeVisionMeta(parsed)
     log.info('vision-sanitized', {
       sanitizedCptCount: sanitizedCodes.length,
       filteredLineItemCount: filteredLineItems.length,

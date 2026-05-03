@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { existsSync, mkdirSync, rmSync } from 'fs'
+import { existsSync, mkdtempSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
+import { tmpdir } from 'os'
 import Database from 'better-sqlite3'
 import { lookupHospitalPricesV2 } from './hospital-prices-v2'
 
-const cacheDir = join(process.cwd(), 'data', 'hospital_cache')
-const dbPath = join(cacheDir, 'test_hospital.sqlite')
+let cacheDir = ''
+let dbPath = ''
 
 function writeTestDatabase(rows: Array<{
   code: string
@@ -62,11 +63,14 @@ function writeTestDatabase(rows: Array<{
 }
 
 beforeEach(() => {
-  rmSync(dbPath, { force: true })
+  cacheDir = mkdtempSync(join(tmpdir(), 'hospital-cache-'))
+  dbPath = join(cacheDir, 'test_hospital.sqlite')
+  process.env.HOSPITAL_CACHE_DIR = cacheDir
 })
 
 afterEach(() => {
-  rmSync(dbPath, { force: true })
+  delete process.env.HOSPITAL_CACHE_DIR
+  rmSync(cacheDir, { recursive: true, force: true })
 })
 
 describe('hospital pricing v2', () => {
@@ -148,7 +152,7 @@ describe('hospital pricing v2', () => {
   })
 
   it('hospital cache dir exists or can be created', async () => {
-    const hospitalCacheDir = join(process.cwd(), 'data', 'hospital_cache')
+    const hospitalCacheDir = process.env.HOSPITAL_CACHE_DIR!
     if (!existsSync(hospitalCacheDir)) {
       mkdirSync(hospitalCacheDir, { recursive: true })
     }

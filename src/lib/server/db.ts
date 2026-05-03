@@ -80,6 +80,16 @@ export function getHospitalDirectoryDb(): Database.Database | null {
 /** Open a per-hospital pricing SQLite (converted from DuckDB). Returns null if not cached. */
 export function getHospitalCacheDb(hospitalId: string): Database.Database | null {
   const safeName = hospitalId.replace(/[^a-z0-9_-]/gi, '_').slice(0, 80)
+  if (process.env.HOSPITAL_CACHE_DIR) {
+    const path = join(process.env.HOSPITAL_CACHE_DIR, `${safeName}.sqlite`)
+    if (!existsSync(path)) return null
+    try {
+      return new Database(path, { readonly: true })
+    } catch (err) {
+      console.warn(`[db] Failed to open ${path}:`, err)
+      return null
+    }
+  }
   return openDb(join('hospital_cache', `${safeName}.sqlite`))
 }
 

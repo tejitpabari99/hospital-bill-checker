@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sanitizeVisionCodes, sanitizeVisionLineItems } from './pdf'
+import { sanitizeVisionCodes, sanitizeVisionLineItems, sanitizeVisionMeta } from './pdf'
 
 describe('pdf sanitizer', () => {
   it('drops malformed vision codes without throwing', () => {
@@ -25,24 +25,6 @@ describe('pdf sanitizer', () => {
 })
 
 describe('vision extraction modifier handling', () => {
-  it('preserves modifiers array from extracted data', () => {
-    const mockExtracted = {
-      lineItems: [
-        { code: '99285', description: 'ER visit', units: 1, quantity: 1, amount: 800, modifiers: ['25', 'LT'] },
-        { code: '70450', description: 'CT head', units: 1, quantity: 1, amount: 1200, modifiers: [] },
-      ],
-      patientState: 'TX',
-      serviceZip: '78701',
-    }
-
-    const modifiers = mockExtracted.lineItems[0].modifiers
-    expect(modifiers).toContain('25')
-    expect(modifiers).toContain('LT')
-    expect(mockExtracted.lineItems[1].modifiers).toHaveLength(0)
-    expect(mockExtracted.patientState).toBe('TX')
-    expect(mockExtracted.serviceZip).toBe('78701')
-  })
-
   it('sanitizes quantity, modifiers, and diagnosis fields from vision line items', () => {
     expect(sanitizeVisionLineItems([
       {
@@ -67,5 +49,27 @@ describe('vision extraction modifier handling', () => {
         icd10Codes: ['R07.9'],
       },
     ])
+  })
+
+  it('sanitizes patient state, service ZIP, and DRG metadata from vision output', () => {
+    expect(sanitizeVisionMeta({
+      patientState: ' tx ',
+      serviceZip: '78701-1234',
+      drgCode: 'MS-DRG 470',
+    })).toEqual({
+      patientState: 'TX',
+      serviceZip: '78701',
+      drgCode: '470',
+    })
+
+    expect(sanitizeVisionMeta({
+      patientState: 'Texas',
+      serviceZip: 'abc',
+      drgCode: null,
+    })).toEqual({
+      patientState: undefined,
+      serviceZip: undefined,
+      drgCode: undefined,
+    })
   })
 })

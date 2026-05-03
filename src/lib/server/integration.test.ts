@@ -102,10 +102,9 @@ describe('MUE integration', () => {
 
   skipIf(!DB.mue, 'loadMueEdit returns a result for code 99213', () => {
     const edit = loadMueEdit('99213', 'practitioner')
-    if (edit) {
-      expect(edit.mue_value).toBeGreaterThan(0)
-      expect(edit.mue_adjudication_indicator).toBeDefined()
-    }
+    expect(edit).not.toBeNull()
+    expect(edit!.mue_value).toBeGreaterThan(0)
+    expect(edit!.mue_adjudication_indicator).toBeDefined()
   })
 
   skipIf(!DB.mue, 'checkMueExceeded flags when units exceed limit', () => {
@@ -129,9 +128,8 @@ describe('MPFS integration', () => {
 
   skipIf(!DB.mpfs, 'loadMpfsRate returns a rate for 99213', () => {
     const rate = loadMpfsRate('99213')
-    if (rate) {
-      expect(rate.nonfac_rate).toBeGreaterThan(0)
-    }
+    expect(rate).not.toBeNull()
+    expect(rate!.nonfac_rate).toBeGreaterThan(0)
   })
 
   skipIf(!DB.mpfs, 'checkMpfsBenchmark flags above 2x rate', () => {
@@ -162,9 +160,8 @@ describe('CLFS integration', () => {
 
   skipIf(!DB.clfs, 'loadClfsRate returns a result for a lab code', () => {
     const rate = loadClfsRate('G0103')
-    if (rate) {
-      expect(rate.rate).toBeGreaterThan(0)
-    }
+    expect(rate).not.toBeNull()
+    expect(rate!.rate).toBeGreaterThan(0)
   })
 })
 
@@ -178,11 +175,10 @@ describe('ASP integration', () => {
     expect(row.c).toBeGreaterThan(100)
   })
 
-  skipIf(!DB.asp, 'loadAspLimit returns result for a J-code', () => {
-    const limit = loadAspLimit('J0171')
-    if (limit) {
-      expect(limit.payment_limit).toBeGreaterThan(0)
-    }
+  skipIf(!DB.asp, 'loadAspLimit returns result for a known ASP code', () => {
+    const limit = loadAspLimit('A9573')
+    expect(limit).not.toBeNull()
+    expect(limit!.payment_limit).toBeGreaterThan(0)
   })
 
   skipIf(!DB.asp, 'checkAspDrugOvercharge flags 10x ASP rate', () => {
@@ -208,9 +204,8 @@ describe('OPPS integration', () => {
 
   skipIf(!DB.opps, 'loadOppsRate returns APC rate for a common code', () => {
     const rate = loadOppsRate('99285')
-    if (rate) {
-      expect(rate.payment_rate).toBeGreaterThanOrEqual(0)
-    }
+    expect(rate).not.toBeNull()
+    expect(rate!.payment_rate).toBeGreaterThanOrEqual(0)
   })
 })
 
@@ -226,19 +221,17 @@ describe('IPPS/DRG integration', () => {
 
   skipIf(!DB.ipps, 'loadDrgRate returns data for DRG 470 (major joint)', () => {
     const rate = loadDrgRate('470')
-    if (rate) {
-      expect(rate.title).toBeDefined()
-      expect(rate.relative_weight).toBeGreaterThan(0)
-    }
+    expect(rate).not.toBeNull()
+    expect(rate!.title).toBeDefined()
+    expect(rate!.relative_weight).toBeGreaterThan(0)
   })
 
   skipIf(!DB.ipps, 'DRG codes are zero-padded to 3 digits', () => {
     const db = new Database('data/ipps.sqlite', { readonly: true })
     const row = db.prepare('SELECT ms_drg FROM ipps_drg_rates WHERE CAST(ms_drg AS INTEGER) < 10 LIMIT 1').get() as { ms_drg: string } | undefined
-    if (row) {
-      expect(row.ms_drg.length).toBe(3)
-    }
     db.close()
+    expect(row).toBeDefined()
+    expect(row!.ms_drg.length).toBe(3)
   })
 })
 
@@ -256,9 +249,8 @@ describe('DMEPOS integration', () => {
 
   skipIf(!DB.dmepos, 'loadDmeposRate returns rate for a state', () => {
     const rate = loadDmeposRate('E0601', 'TX')
-    if (rate) {
-      expect(rate.fee_amount).toBeGreaterThan(0)
-    }
+    expect(rate).not.toBeNull()
+    expect(rate!.fee_amount).toBeGreaterThan(0)
   })
 })
 
@@ -275,8 +267,9 @@ describe('Ambulance integration', () => {
   })
 
   skipIf(!DB.ambulance, 'loadAmbulanceRate resolves a ZIP to locality', () => {
-    const rate = loadAmbulanceRate('A0428', '78701')
-    expect(rate === null || typeof rate === 'object').toBe(true)
+    const rate = loadAmbulanceRate('A0428', '94002')
+    expect(rate).not.toBeNull()
+    expect(rate!.rate_amount).toBeGreaterThan(0)
   })
 })
 

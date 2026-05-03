@@ -57,6 +57,10 @@ function hospitalCacheId(hospitalName: string, state: string): string {
   return (normalizedName + (state ? `_${state.toLowerCase()}` : '')).replace(/[^a-z0-9_-]/g, '_').slice(0, 80)
 }
 
+function hospitalCacheFile(cacheId: string): string {
+  return join(process.env.HOSPITAL_CACHE_DIR ?? join(process.cwd(), 'data', 'hospital_cache'), `${cacheId}.sqlite`)
+}
+
 export async function lookupHospitalPricesV2(
   hospitalName: string,
   hospitalState: string,
@@ -66,7 +70,7 @@ export async function lookupHospitalPricesV2(
   if (!hospitalName || codes.length === 0) return null
 
   const cacheId = hospitalCacheId(hospitalName, hospitalState)
-  const cacheFile = join(process.cwd(), 'data', 'hospital_cache', `${cacheId}.sqlite`)
+  const cacheFile = hospitalCacheFile(cacheId)
 
   // Ensure cache exists (trigger fetch if missing or stale)
   const cacheExists = existsSync(cacheFile) &&
