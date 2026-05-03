@@ -27,6 +27,7 @@ import {
   checkMueExceeded,
   checkMpfsBenchmark,
   checkOppsBenchmark,
+  checkAspDrugOvercharge,
 } from './audit-rules'
 import type { MpfsData, ClfsData, EmMdmTierData, LcdCoverageData } from './audit-rules'
 import type { LineItem } from '$lib/types'
@@ -348,6 +349,31 @@ describe('buildDeterministicFindings — pharmacy markup', () => {
     const { findings } = buildDeterministicFindings(lineItems)
 
     expect(findings.filter(f => f.errorType === 'pharmacy_markup')).toHaveLength(0)
+  })
+
+  it.skipIf(!hasAspDb)('does NOT flag a multi-unit J-code where per-unit rate is within ASP limit', () => {
+    const lineItems = [li('J0696', 3.00, 10)]
+    const { findings } = buildDeterministicFindings(lineItems)
+
+    expect(findings.filter(f => f.errorType === 'pharmacy_markup')).toHaveLength(0)
+  })
+
+  it.skipIf(!hasAspDb)('DOES flag a multi-unit J-code where per-unit rate exceeds ASP limit significantly', () => {
+    const lineItems = [li('J0696', 500.00, 1)]
+    const { findings } = buildDeterministicFindings(lineItems)
+
+    expect(findings.filter(f => f.errorType === 'pharmacy_markup')).not.toHaveLength(0)
+  })
+
+  it.skipIf(!hasAspDb)('describes multi-unit ASP findings using per-unit billed amount', () => {
+    const lineItems = [li('J0696', 500.00, 10)]
+    const { findings } = buildDeterministicFindings(lineItems)
+
+    const f = findings.find(f => f.errorType === 'pharmacy_markup')!
+    expect(f.description).toContain('per unit vs ASP limit')
+    expect(f.description).toContain('10 units')
+    expect(f.description).toContain('$50.00')
+    expect(f.description).toContain('$500.00 total')
   })
 
   it('does NOT flag a non-J-code even if highly marked up', () => {
@@ -706,6 +732,16 @@ describe('audit-rules edge cases', () => {
     const rates = [{ hcpcs_code: '99213', nonfac_rate: 100 }]
     const findings = checkMpfsBenchmark(lineItems, rates)
     expect(findings.length).toBe(1)
+  })
+
+  it('checkAspDrugOvercharge: compares per-unit billed amount to ASP benchmark', () => {
+    const lineItems = [
+      { cpt: 'J0696', description: '', units: 10, billedAmount: 30, modifiers: [], icd10Codes: [] },
+      { cpt: 'J0696', description: '', units: 10, billedAmount: 500, modifiers: [], icd10Codes: [] },
+    ]
+    const limits = [{ hcpcs_code: 'J0696', payment_limit: 5 }]
+    const findings = checkAspDrugOvercharge(lineItems, limits)
+    expect(findings).toEqual([{ findingType: 'asp_overcharge', lineItemIndex: 1, cptCode: 'J0696' }])
   })
 
   it('unknown bill type skips bill-type-specific checks', async () => {

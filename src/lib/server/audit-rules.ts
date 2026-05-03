@@ -198,7 +198,9 @@ export function checkAspDrugOvercharge(
     const code = lineItem.cpt.trim().toUpperCase()
     const limit = limitByCode.get(code)
     const benchmark = limit?.payment_limit ?? limit?.asp_payment_limit
-    if (benchmark == null || benchmark <= 0 || lineItem.billedAmount <= benchmark * 4.5) return []
+    const units = lineItem.units ?? lineItem.quantity ?? 1
+    const billedPerUnit = lineItem.billedAmount / Math.max(1, units)
+    if (benchmark == null || benchmark <= 0 || billedPerUnit <= benchmark * 4.5) return []
     return [{ findingType: 'asp_overcharge', lineItemIndex: index, cptCode: code }]
   })
 }
@@ -443,9 +445,10 @@ export function buildDeterministicFindings(
     const aspRow = loadAspLimit(code)
     if (!aspRow) continue
 
-    const billed = lineItems[i].billedAmount
+    const units = lineItems[i].units ?? lineItems[i].quantity ?? 1
+    const billedPerUnit = lineItems[i].billedAmount / Math.max(1, units)
     const limit = aspRow.payment_limit
-    const ratio = billed / limit
+    const ratio = billedPerUnit / limit
 
     // CMS allows up to 106% of ASP (6% markup). Over 4.5x = pharmacy markup error.
     if (ratio > 4.5) {
@@ -455,7 +458,7 @@ export function buildDeterministicFindings(
         severity: 'error',
         errorType: 'pharmacy_markup',
         confidence: 'high',
-        description: `${code} (${aspRow.description ?? 'drug code'}) is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}x the CMS ASP payment limit of $${limit.toFixed(2)}.`,
+        description: `${code} (${aspRow.description ?? 'drug code'}) is billed at $${billedPerUnit.toFixed(2)} per unit vs ASP limit of $${limit.toFixed(2)} per unit (${units} unit${units !== 1 ? 's' : ''} × $${billedPerUnit.toFixed(2)} = $${lineItems[i].billedAmount.toFixed(2)} total), which is ${ratio.toFixed(1)}x the CMS ASP payment limit.`,
         standardDescription: aspRow.description ?? undefined,
         recommendation: `Request itemized drug administration records and justification for the markup above 4.5x the CMS Average Sales Price limit.`,
         medicareRate: limit,
