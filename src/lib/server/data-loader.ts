@@ -281,7 +281,45 @@ export type AmbulanceRow = {
 }
 
 export function loadAmbulanceRate(hcpcsCode: string, zipCode: string): AmbulanceRow | null {
-  return null  // implemented in step-09
+  const db = getAmbulanceDb()
+  if (!db) return null
+
+  // Step 1: ZIP → locality
+  const geoRow = db.prepare(`
+    SELECT locality FROM ambulance_geography WHERE zip_code = ?
+  `).get(zipCode.trim().padStart(5, '0').slice(0, 5)) as { locality: string } | undefined
+
+  if (!geoRow?.locality) return null
+
+  const locality = geoRow.locality
+
+  // Step 2: code + locality → rate
+  const row = db.prepare(`
+    SELECT
+      hcpcs_code,
+      short_description,
+      locality,
+      area_type,
+      base_rate,
+      mileage_rate,
+      rate_amount
+    FROM ambulance_rates
+    WHERE hcpcs_code = ? AND locality = ?
+    LIMIT 1
+  `).get(hcpcsCode.toUpperCase().trim(), locality) as AmbulanceRow | undefined
+
+  // Fallback: any row for this code if no locality match
+  if (!row) {
+    const fallback = db.prepare(`
+      SELECT hcpcs_code, short_description, locality, area_type, base_rate, mileage_rate, rate_amount
+      FROM ambulance_rates
+      WHERE hcpcs_code = ?
+      LIMIT 1
+    `).get(hcpcsCode.toUpperCase().trim()) as AmbulanceRow | undefined
+    return fallback ?? null
+  }
+
+  return row
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

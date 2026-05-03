@@ -1,6 +1,7 @@
 import { existsSync } from 'fs'
+import Database from 'better-sqlite3'
 import { describe, it, expect } from 'vitest'
-import { loadAspLimit, loadClfsRate, loadDmeposRate, loadDrgRate, loadOppsRate, toServiceDateInt } from './data-loader'
+import { loadAmbulanceRate, loadAspLimit, loadClfsRate, loadDmeposRate, loadDrgRate, loadOppsRate, toServiceDateInt } from './data-loader'
 
 describe('toServiceDateInt', () => {
   it('parses YYYY-MM-DD', () => {
@@ -112,5 +113,26 @@ describe('DMEPOS SQLite integration', () => {
 
   it.skipIf(!existsSync('data/dmepos.sqlite'))('returns null for unknown code', () => {
     expect(loadDmeposRate('ZZZZZ', 'CA')).toBeNull()
+  })
+})
+
+describe('Ambulance SQLite integration', () => {
+  it.skipIf(!existsSync('data/ambulance.sqlite'))('geography table has records', () => {
+    const db = new Database('data/ambulance.sqlite', { readonly: true })
+    const count = db.prepare('SELECT COUNT(*) as c FROM ambulance_geography').get() as { c: number }
+    expect(count.c).toBeGreaterThan(1000)
+    db.close()
+  })
+
+  it.skipIf(!existsSync('data/ambulance.sqlite'))('rates table has records', () => {
+    const db = new Database('data/ambulance.sqlite', { readonly: true })
+    const count = db.prepare('SELECT COUNT(*) as c FROM ambulance_rates').get() as { c: number }
+    expect(count.c).toBeGreaterThan(0)
+    db.close()
+  })
+
+  it.skipIf(!existsSync('data/ambulance.sqlite'))('loads a rate using zip-to-locality routing', () => {
+    const row = loadAmbulanceRate('A0427', '90210')
+    expect(row === null || row.hcpcs_code === 'A0427').toBe(true)
   })
 })

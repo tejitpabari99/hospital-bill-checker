@@ -167,7 +167,8 @@ export function buildDeterministicFindings(
   billType: BillType = 'unknown',
   serviceDateStr?: string,
   drgCode?: string,
-  patientState?: string
+  patientState?: string,
+  serviceZip?: string
 ): { findings: AuditFinding[]; promptNote: string } {
   const serviceDateInt = toServiceDateInt(serviceDateStr)
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
@@ -365,7 +366,15 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 7. LCD/NCD coverage check
+  // 7. Ambulance rate check — deterministic (only when serviceZip is known)
+  if (['practitioner', 'outpatient'].includes(billType)) {
+    // serviceZip is a bill-level field — check if we can extract it
+    // For now, ambulance check requires ZIP (do not fabricate)
+    // TODO(step-13): call the ambulance benchmark with serviceZip from the audit orchestrator.
+    void serviceZip
+  }
+
+  // 8. LCD/NCD coverage check
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const lcdEntry = lcdCoverage[code]
@@ -399,7 +408,7 @@ export function buildDeterministicFindings(
     })
   }
 
-  // 8. MUE units check — deterministic
+  // 9. MUE units check — deterministic
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const unitsBilled = lineItems[i].units ?? 1
@@ -429,7 +438,7 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 9. E&M upcoding — deterministic pre-filter
+  // 10. E&M upcoding — deterministic pre-filter
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const emTier = EM_MDM_LEVELS[code]
