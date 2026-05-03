@@ -323,6 +323,8 @@
       <a href="/privacy" class="trust-link">Privacy policy</a>
       <span class="trust-sep" aria-hidden="true">·</span>
       <a href="/how-it-works" class="trust-link">How it works</a>
+      <span class="trust-sep" aria-hidden="true">·</span>
+      <a href="/learn" class="trust-link">Learn</a>
     </div>
 
     <div class="feedback-section">
@@ -443,6 +445,9 @@
       <div class="transparency-link-wrap">
         <a href="/how-it-works" target="_blank" rel="noopener noreferrer">
           How we check your bill - full transparency ↗
+        </a>
+        <a href="/learn" target="_blank" rel="noopener noreferrer">
+          Learn every check we run ↗
         </a>
       </div>
 
