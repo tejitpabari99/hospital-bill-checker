@@ -22,6 +22,7 @@ import tempfile
 import unicodedata
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -37,6 +38,17 @@ SEARCH_BASE = "https://oria-data.trillianthealth.com/hospitals"
 INDEX_URL = "https://oria-data.trillianthealth.com/search-index.json"
 CACHE_TTL_DAYS = 7
 USER_AGENT = "HospitalBillChecker/1.0"
+TRILLIANT_HOST = "oria-data.trillianthealth.com"
+TRILLIANT_DUCKDB_PATH_RE = re.compile(
+    r"^/data/[^/]+/completed/[^/]+/[^/]+_parsed\.duckdb$"
+)
+# Current committed Trilliant-derived SQLite caches are under 10 MB. Keep the
+# DuckDB source cap much larger for upstream variance while preventing unbounded
+# downloads from a scraped link.
+MAX_DUCKDB_DOWNLOAD_BYTES = 1_073_741_824
+DOWNLOAD_CHUNK_BYTES = 1_048_576
+BATCH_CHARGE_ROWS = 10_000
+MAX_CONVERTED_CHARGE_ROWS = 5_000_000
 
 HEADERS = {
     "User-Agent": USER_AGENT,
@@ -55,6 +67,22 @@ def normalize_name(name: str) -> str:
 def make_cache_path(hospital_id: str) -> Path:
     safe = re.sub(r"[^a-z0-9_-]", "_", hospital_id.lower())[:80]
     return CACHE_DIR / f"{safe}.sqlite"
+
+
+def normalize_trilliant_duckdb_url(href: str) -> str | None:
+    """Return an allowlisted Trilliant DuckDB URL, or None when unsafe."""
+    href = href.strip()
+    if href.startswith("/"):
+        href = f"https://{TRILLIANT_HOST}{href}"
+
+    parsed = urlparse(href)
+    if parsed.scheme != "https" or parsed.hostname != TRILLIANT_HOST:
+        return None
+    if parsed.params or parsed.query or parsed.fragment:
+        return None
+    if not TRILLIANT_DUCKDB_PATH_RE.fullmatch(parsed.path):
+        return None
+    return href
 
 
 def is_cache_fresh(path: Path) -> bool:
@@ -76,12 +104,15 @@ def find_duckdb_url_from_page(hospital_id: str) -> str | None:
     soup = BeautifulSoup(resp.text, "html.parser")
     for link in soup.find_all("a", href=True):
         href = link["href"]
+        duckdb_url = normalize_trilliant_duckdb_url(href)
+        if duckdb_url:
+            return duckdb_url
         if "_parsed.duckdb" in href:
-            return href if href.startswith("http") else f"https://oria-data.trillianthealth.com{href}"
+            print(f"  Rejected non-allowlisted DuckDB URL: {href}")
 
     match = re.search(r'(/data/[^"\']+_parsed\.duckdb)', resp.text)
     if match:
-        return f"https://oria-data.trillianthealth.com{match.group(1)}"
+        return normalize_trilliant_duckdb_url(match.group(1))
 
     return None
 
@@ -173,7 +204,10 @@ def search_trilliant(query: str, state: str | None = None) -> list[dict]:
             continue
 
         hospital_id = match.group(1)
-        duckdb_url = href if href.startswith("http") else f"https://oria-data.trillianthealth.com{href}"
+        duckdb_url = normalize_trilliant_duckdb_url(href)
+        if duckdb_url is None:
+            print(f"  Rejected non-allowlisted DuckDB URL: {href}")
+            continue
 
         # Try to extract name from surrounding context
         parent = link.find_parent(["div", "article", "li", "tr"])
@@ -205,15 +239,41 @@ def search_trilliant(query: str, state: str | None = None) -> list[dict]:
 
 def download_duckdb(url: str, dest: Path) -> bool:
     """Download DuckDB file. Returns True on success."""
+    if normalize_trilliant_duckdb_url(url) is None:
+        print(f"  Rejected non-allowlisted DuckDB URL: {url}")
+        return False
+
     print(f"  Downloading DuckDB from {url} ...")
     try:
         resp = requests.get(url, headers=HEADERS, stream=True, timeout=300)
         resp.raise_for_status()
-        dest.write_bytes(resp.content)
-        print(f"  Downloaded {len(resp.content):,} bytes → {dest}")
+
+        content_length = resp.headers.get("Content-Length")
+        if content_length:
+            expected_bytes = int(content_length)
+            if expected_bytes > MAX_DUCKDB_DOWNLOAD_BYTES:
+                raise ValueError(
+                    f"Content-Length {expected_bytes:,} exceeds cap "
+                    f"{MAX_DUCKDB_DOWNLOAD_BYTES:,}"
+                )
+
+        downloaded = 0
+        with dest.open("wb") as output:
+            for chunk in resp.iter_content(chunk_size=DOWNLOAD_CHUNK_BYTES):
+                if not chunk:
+                    continue
+                downloaded += len(chunk)
+                if downloaded > MAX_DUCKDB_DOWNLOAD_BYTES:
+                    raise ValueError(
+                        f"download exceeded cap {MAX_DUCKDB_DOWNLOAD_BYTES:,} bytes"
+                    )
+                output.write(chunk)
+
+        print(f"  Downloaded {downloaded:,} bytes → {dest}")
         return True
     except Exception as exc:
         print(f"  Download failed: {exc}")
+        dest.unlink(missing_ok=True)
         return False
 
 
@@ -230,7 +290,7 @@ def coerce_float(value: object) -> float | None:
         return None
 
 
-def convert_duckdb_to_sqlite(duckdb_path: Path, sqlite_path: Path) -> bool:
+def convert_duckdb_to_sqlite(duckdb_path: Path, sqlite_path: Path, source_url: str) -> bool:
     """
     Open DuckDB file, export key tables to SQLite.
     Returns True on success.
@@ -328,35 +388,53 @@ def convert_duckdb_to_sqlite(duckdb_path: Path, sqlite_path: Path) -> bool:
                 src = col_map.get(dest_col)
                 select_cols.append(f"{src} AS {dest_col}" if src else f"NULL AS {dest_col}")
 
-            rows = con.execute(f"SELECT {', '.join(select_cols)} FROM {sql_ident(charge_table)}").fetchall()
-            print(f"  Fetched {len(rows):,} charge rows")
+            result = con.execute(f"SELECT {', '.join(select_cols)} FROM {sql_ident(charge_table)}")
+            fetched_rows = 0
+            inserted_rows = 0
 
-            for row in rows:
-                (
-                    code, code_type, description, gross_charge, discounted_cash,
-                    min_negotiated, max_negotiated, setting, payer_name, plan_name,
-                ) = row
-                normalized_code = str(code or "").strip().upper()
-                if not normalized_code:
-                    continue
-                sqlite_con.execute("""INSERT INTO charges
+            while True:
+                batch = result.fetchmany(BATCH_CHARGE_ROWS)
+                if not batch:
+                    break
+
+                fetched_rows += len(batch)
+                if fetched_rows > MAX_CONVERTED_CHARGE_ROWS:
+                    raise ValueError(
+                        f"charge row count exceeded cap {MAX_CONVERTED_CHARGE_ROWS:,}"
+                    )
+
+                sqlite_rows = []
+                for row in batch:
+                    (
+                        code, code_type, description, gross_charge, discounted_cash,
+                        min_negotiated, max_negotiated, setting, payer_name, plan_name,
+                    ) = row
+                    normalized_code = str(code or "").strip().upper()
+                    if not normalized_code:
+                        continue
+                    sqlite_rows.append((
+                        normalized_code,
+                        str(code_type or ""),
+                        str(description or ""),
+                        coerce_float(gross_charge),
+                        coerce_float(discounted_cash),
+                        coerce_float(min_negotiated),
+                        coerce_float(max_negotiated),
+                        str(setting or ""),
+                        str(payer_name or ""),
+                        str(plan_name or ""),
+                    ))
+
+                sqlite_con.executemany("""INSERT INTO charges
                     (code, code_type, description, gross_charge, discounted_cash,
                      min_negotiated, max_negotiated, setting, payer_name, plan_name)
-                    VALUES (?,?,?,?,?,?,?,?,?,?)""", (
-                    normalized_code,
-                    str(code_type or ""),
-                    str(description or ""),
-                    coerce_float(gross_charge),
-                    coerce_float(discounted_cash),
-                    coerce_float(min_negotiated),
-                    coerce_float(max_negotiated),
-                    str(setting or ""),
-                    str(payer_name or ""),
-                    str(plan_name or ""),
-                ))
+                    VALUES (?,?,?,?,?,?,?,?,?,?)""", sqlite_rows)
+                inserted_rows += len(sqlite_rows)
+
+            print(f"  Fetched {fetched_rows:,} charge rows; inserted {inserted_rows:,}")
 
         # Store metadata
-        sqlite_con.execute("INSERT OR REPLACE INTO meta VALUES ('source', ?)", (str(duckdb_path.name),))
+        sqlite_con.execute("INSERT OR REPLACE INTO meta VALUES ('source', ?)", (source_url,))
         sqlite_con.execute("INSERT OR REPLACE INTO meta VALUES ('converted_at', ?)",
                            (datetime.now(timezone.utc).isoformat(),))
 
@@ -410,7 +488,7 @@ def fetch_hospital_pricing(
 
     # Convert to SQLite
     print(f"  Converting DuckDB → SQLite: {cache_path}")
-    success = convert_duckdb_to_sqlite(tmp_path, cache_path)
+    success = convert_duckdb_to_sqlite(tmp_path, cache_path, best["duckdb_url"])
     tmp_path.unlink(missing_ok=True)
 
     if not success:
