@@ -135,7 +135,7 @@ export function checkNcciBundling(
 
 export function checkMueExceeded(
   lineItems: LineItem[],
-  edits: Array<{ hcpcs_code: string; mue_value: number }>
+  edits: Array<{ hcpcs_code: string; mue_value: number; mue_adjudication_indicator?: string | number; mai?: string | number }>
 ): RuleFinding[] {
   const editByCode = new Map(edits.map(edit => [edit.hcpcs_code.trim().toUpperCase(), edit]))
 
@@ -143,7 +143,8 @@ export function checkMueExceeded(
     const code = lineItem.cpt.trim().toUpperCase()
     const edit = editByCode.get(code)
     const units = lineItem.units ?? lineItem.quantity ?? 1
-    if (!edit || units <= edit.mue_value) return []
+    const mai = String(edit?.mue_adjudication_indicator ?? edit?.mai ?? '')
+    if (!edit || mai !== '3' || units <= edit.mue_value) return []
     return [{ findingType: 'mue_exceeded', lineItemIndex: index, cptCode: code }]
   })
 }
@@ -391,14 +392,14 @@ export function buildDeterministicFindings(
     const maxUnits = mueEntry.mue_value
     const mai = mueEntry.mue_adjudication_indicator
 
-    if (unitsBilled > maxUnits) {
+    if (mai === '3' && unitsBilled > maxUnits) {
       findings.push({
         lineItemIndex: i,
         cptCode: code,
         severity: 'error',
         errorType: 'mue_units',
         confidence: 'high' as ConfidenceLevel,
-        description: `CPT ${code} has ${unitsBilled} units billed, which exceeds the CMS Medically Unlikely Edit (MUE) limit of ${maxUnits} units per ${mai === '1' ? 'claim line' : 'date of service'}.`,
+        description: `CPT ${code} has ${unitsBilled} units billed, which exceeds the CMS Medically Unlikely Edit (MUE) limit of ${maxUnits} units per date of service.`,
         standardDescription: CPT_DESCRIPTIONS[code],
         recommendation: `Request itemized documentation for each unit of CPT ${code}. The MUE limit is ${maxUnits} unit(s).`,
         medicareRate: undefined,

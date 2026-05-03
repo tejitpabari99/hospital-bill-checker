@@ -38,9 +38,11 @@ export function loadNcciPairs(
   const db = getNcciDb()
   if (!db) return []
 
-  // Map unknown/inpatient to practitioner as a conservative default until
-  // later classification/routing steps handle bill type more explicitly.
-  const dbBillType = billType === 'unknown' || billType === 'inpatient' ? 'practitioner' : billType
+  // NCCI PTP data is loaded for practitioner, outpatient, and DME only.
+  // Inpatient claims route through DRG checks instead of practitioner PTP edits.
+  if (billType === 'inpatient') return []
+
+  const dbBillType = billType === 'unknown' ? 'practitioner' : billType
 
   const rows = db.prepare(`
     SELECT col1_code, modifier_indicator, rationale

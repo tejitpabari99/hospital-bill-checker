@@ -466,6 +466,26 @@ describe('audit-rules edge cases', () => {
     expect(findings.length).toBe(0)
   })
 
+  it('checkMueExceeded: MAI 1 and 2 are not hard-error flagged', () => {
+    const lineItems = [
+      { cpt: '99213', description: '', units: 99, billedAmount: 100, modifiers: [], icd10Codes: [] },
+      { cpt: '99214', description: '', units: 99, billedAmount: 100, modifiers: [], icd10Codes: [] },
+      { cpt: '99215', description: '', units: 99, billedAmount: 100, modifiers: [], icd10Codes: [] },
+    ]
+    const edits = [
+      { hcpcs_code: '99213', mue_value: 1, mue_adjudication_indicator: '1' },
+      { hcpcs_code: '99214', mue_value: 1, mue_adjudication_indicator: '2' },
+      { hcpcs_code: '99215', mue_value: 1, mue_adjudication_indicator: '3' },
+    ]
+    const findings = checkMueExceeded(lineItems, edits)
+    expect(findings).toEqual([{ findingType: 'mue_exceeded', lineItemIndex: 2, cptCode: '99215' }])
+  })
+
+  it.skipIf(!ncciDb)('inpatient bills do not inherit practitioner NCCI edits', () => {
+    const pairs = loadNcciPairs('93010', 'inpatient', 20260401)
+    expect(pairs).toHaveLength(0)
+  })
+
   it('checkMpfsBenchmark: exactly at 2x threshold is not flagged', () => {
     const lineItems = [
       { cpt: '99213', description: '', units: 1, billedAmount: 200, modifiers: [], icd10Codes: [] },
