@@ -161,9 +161,17 @@ export function sanitizeVisionLineItems(lineItems: unknown): ParsedLineItem[] {
     const rawItem = item as VisionLineItem
     const code = normalizeCptHcpcsCode(rawItem.code)
     if (!code) return []
-    const units = toFiniteNumber(rawItem.units, 1)
-    const quantity = toFiniteNumber(rawItem.quantity, units)
-    const amount = toFiniteNumber(rawItem.amount, 0)
+    const MAX_VISION_UNITS = 10_000    // matches MAX_UNITS in the API validator
+    const MAX_VISION_AMOUNT = 100_000_000  // matches MAX_MONEY in the API validator
+
+    const rawUnits = toFiniteNumber(rawItem.units, 1)
+    const units = Math.min(Math.max(rawUnits, 0), MAX_VISION_UNITS)
+
+    const rawQuantity = toFiniteNumber(rawItem.quantity, units)
+    const quantity = Math.min(Math.max(rawQuantity, 0), MAX_VISION_UNITS)
+
+    const rawAmount = toFiniteNumber(rawItem.amount, 0)
+    const amount = Math.min(Math.max(rawAmount, 0), MAX_VISION_AMOUNT)
     return [{
       code,
       description: toCleanString(rawItem.description),
@@ -266,12 +274,29 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
 
     if (parsed.errorMessage) {
       log.error('vision-domain-error', { errorMessage: parsed.errorMessage })
+      // Sanitize the LLM-produced error string before returning to the client.
+      // Only pass through messages matching a safe allow-list of expected reasons.
+      // All other LLM-generated text is replaced with a generic message.
+      const SAFE_ERROR_PATTERNS = [
+        /not a medical bill/i,
+        /not a hospital bill/i,
+        /could not read/i,
+        /too blurry/i,
+        /too large/i,
+        /password.?protected/i,
+        /corrupt/i,
+        /blank/i,
+      ]
+      const isSafe = SAFE_ERROR_PATTERNS.some(re => re.test(String(parsed.errorMessage)))
+      const safeWarning = isSafe
+        ? String(parsed.errorMessage).slice(0, 200)
+        : "We couldn't process this document. Please try uploading a clearer scan of your itemized bill."
       return {
         rawText: '',
         cptCodesFound: [],
         pageCount,
         usedVision: true,
-        parseWarning: parsed.errorMessage,
+        parseWarning: safeWarning,
       }
     }
 

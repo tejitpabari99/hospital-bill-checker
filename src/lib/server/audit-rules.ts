@@ -63,7 +63,9 @@ export const CPT_DESCRIPTIONS: Record<string, string> = {
   '99215': 'Office/outpatient visit, established patient, high complexity',
 }
 
-const MODIFIER_59_FAMILY = ['59', '-59', 'XE', 'XP', 'XS', 'XU']
+// '-59' is intentionally excluded: the sanitizer in +server.ts strips leading dashes
+// (see sanitizeStringList → replace(/^-/, '')), so '-59' never appears in modifiers[].
+const MODIFIER_59_FAMILY = ['59', 'XE', 'XP', 'XS', 'XU']
 const TIER_RANK: Record<EmMdmTier, number> = { S: 0, L: 1, M: 2, H: 3 }
 const TIER_NAMES: Record<EmMdmTier, string> = {
   S: 'straightforward',

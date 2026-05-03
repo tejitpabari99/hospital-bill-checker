@@ -208,6 +208,9 @@ export async function auditBill(
     potentialOvercharge,
   })
 
+  // SECURITY NOTE: disputeLetter.text is raw LLM output.
+  // The frontend MUST render it as plain text (e.g. inside <pre> or with textContent).
+  // Never render with {@html ...} or innerHTML — the LLM output is not sanitized for HTML.
   return {
     findings: allFindings,
     disputeLetter: { text: disputeLetterText, placeholders },

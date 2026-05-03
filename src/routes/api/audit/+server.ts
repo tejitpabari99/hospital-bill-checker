@@ -9,8 +9,21 @@ import { createServerLogger, serializeError } from '$lib/server/logger.js'
 
 const RATE_LIMIT_MAX = 5
 const RATE_LIMIT_WINDOW_MS = 60_000
+// NOTE: rateLimitMap is in-process only. In a multi-process or containerized deployment,
+// replace with a shared Redis store (e.g. ioredis + sliding window) or rely on a
+// reverse-proxy rate limiter (nginx limit_req, Cloudflare rate limiting, etc.).
+// The in-process limiter is adequate for single-process deployments only.
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+// Purge expired rate-limit entries every 5 minutes to prevent unbounded memory growth.
+// This runs in-process; for multi-process deployments replace with Redis or a reverse-proxy rule.
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitMap) {
+    if (now >= entry.resetAt) rateLimitMap.delete(key)
+  }
+}, 5 * 60 * 1000).unref()
+
 const MAX_LINE_ITEMS = 100
 const MAX_RAW_TEXT_LENGTH = 200_000
 const MAX_MONEY = 100_000_000
@@ -68,8 +81,14 @@ function sanitizeMoney(value: unknown, field: string, required = false): number 
 
 function sanitizeCount(value: unknown, field: string): number | undefined {
   if (value == null) return undefined
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > MAX_UNITS) {
-    throw error(400, `${field} invalid`)
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value <= 0 ||
+    !Number.isInteger(value) ||
+    value > MAX_UNITS
+  ) {
+    throw error(400, `${field} must be a positive integer`)
   }
   return value
 }
@@ -172,7 +191,11 @@ export const POST: RequestHandler = async ({ request }) => {
   const traceId = randomUUID().slice(0, 8)
   const log = createServerLogger('audit', traceId)
   const forwarded = request.headers.get('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown'
+  // Only trust the header if it looks like a real IP (IPv4 or IPv6).
+  // Client-controlled header — do not trust arbitrary strings as the rate-limit key.
+  const IP_RE = /^(?:\d{1,3}\.){3}\d{1,3}$|^[0-9a-fA-F:]{3,39}$/
+  const rawIp = forwarded ? forwarded.split(',')[0].trim() : ''
+  const ip = IP_RE.test(rawIp) ? rawIp : 'unknown'
   const start = Date.now()
   log.info('request-start', { ip })
 
