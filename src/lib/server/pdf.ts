@@ -44,14 +44,22 @@ export interface ParsedLineItem {
   code: string
   description: string
   units: number
+  quantity?: number
   amount: number
+  modifiers?: string[]
+  serviceDate?: string
+  icd10Codes?: string[]
 }
 
 type VisionLineItem = {
   code?: unknown
   description?: unknown
   units?: unknown
+  quantity?: unknown
   amount?: unknown
+  modifiers?: unknown
+  serviceDate?: unknown
+  icd10Codes?: unknown
 }
 
 function toCleanString(value: unknown, fallback = ''): string {
@@ -70,6 +78,17 @@ function normalizeCptHcpcsCode(code: unknown): string | null {
   return /^([0-9]{5}|[JGABC][0-9]{4})$/.test(normalized) ? normalized : null
 }
 
+function toFiniteNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function sanitizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => toCleanString(item))
+    .filter(Boolean)
+}
+
 export function sanitizeVisionCodes(codes: unknown): string[] {
   if (!Array.isArray(codes)) return []
   return codes
@@ -84,13 +103,18 @@ export function sanitizeVisionLineItems(lineItems: unknown): ParsedLineItem[] {
     const rawItem = item as VisionLineItem
     const code = normalizeCptHcpcsCode(rawItem.code)
     if (!code) return []
-    const units = typeof rawItem.units === 'number' && Number.isFinite(rawItem.units) ? rawItem.units : 1
-    const amount = typeof rawItem.amount === 'number' && Number.isFinite(rawItem.amount) ? rawItem.amount : 0
+    const units = toFiniteNumber(rawItem.units, 1)
+    const quantity = toFiniteNumber(rawItem.quantity, units)
+    const amount = toFiniteNumber(rawItem.amount, 0)
     return [{
       code,
       description: toCleanString(rawItem.description),
       units,
+      quantity,
       amount,
+      modifiers: sanitizeStringArray(rawItem.modifiers),
+      serviceDate: toCleanString(rawItem.serviceDate) || undefined,
+      icd10Codes: sanitizeStringArray(rawItem.icd10Codes),
     }]
   })
 }
@@ -102,6 +126,8 @@ export interface ParsedBill {
   usedVision: boolean
   parseWarning?: string  // set if >8 pages, blurry, etc.
   lineItems?: ParsedLineItem[]     // structured items from Vision (has amounts)
+  patientState?: string
+  serviceZip?: string
   extractedMeta?: {
     hospitalName?: string | null
     hospitalAddress?: string | null
@@ -195,6 +221,8 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
     // Strip leading zeros to recover the real 5-char CPT/HCPCS code, then filter to valid format.
     const sanitizedCodes = sanitizeVisionCodes(parsed.cptCodes)
     const filteredLineItems = sanitizeVisionLineItems(parsed.lineItems)
+    const patientState: string | undefined = parsed.patientState ?? undefined
+    const serviceZip: string | undefined = parsed.serviceZip ?? undefined
     log.info('vision-sanitized', {
       sanitizedCptCount: sanitizedCodes.length,
       filteredLineItemCount: filteredLineItems.length,
@@ -208,6 +236,8 @@ async function parseWithVision(buffer: Buffer, pageCount: number, parseWarning?:
       usedVision: true,
       parseWarning,
       lineItems: filteredLineItems,
+      patientState,
+      serviceZip,
       extractedMeta: {
         hospitalName: parsed.hospitalName ?? null,
         hospitalAddress: parsed.hospitalAddress ?? null,

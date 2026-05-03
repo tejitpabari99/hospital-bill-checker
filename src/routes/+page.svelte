@@ -124,6 +124,7 @@
         cpt: li.code ?? li.cpt,
         description: li.description ?? '',
         units: li.units ?? 1,
+        quantity: li.quantity ?? li.units ?? 1,
         billedAmount: li.amount ?? li.billedAmount ?? 0,
         serviceDate: li.serviceDate ?? undefined,
         modifiers: li.modifiers ?? [],
@@ -140,6 +141,8 @@
         admissionDate: parsed.extractedMeta?.admissionDate ?? undefined,
         dischargeDate: parsed.extractedMeta?.dischargeDate ?? undefined,
         goodFaithEstimate: goodFaithEstimate.trim() ? Number(goodFaithEstimate) : undefined,
+        patientState: parsed.patientState ?? undefined,
+        serviceZip: parsed.serviceZip ?? undefined,
       }
 
       const auditRes = await fetch('/api/audit', {

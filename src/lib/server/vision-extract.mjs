@@ -31,12 +31,25 @@ process.stdin.on('end', async () => {
   "admissionDate": "2024-01-14 or null",
   "dischargeDate": "2024-01-16 or null",
   "lineItems": [
-    { "code": "99285", "description": "ER visit", "units": 1, "amount": 800.00 }
+    {
+      "code": "99285",
+      "description": "ER visit",
+      "units": 1,
+      "quantity": 1,
+      "amount": 800.00,
+      "modifiers": ["25", "LT"]
+    }
   ],
+  "patientState": "TX or null",
+  "serviceZip": "78701 or null",
   "errorMessage": null
 }
 
 IMPORTANT: Extract ALL line items with CPT/HCPCS codes. If the bill has more than 40 items, prioritize: (1) any with CPT/HCPCS codes, (2) highest billed amounts. Do NOT omit any CPT or HCPCS code visible anywhere on the bill.
+For each line item, extract billing modifiers exactly as printed (e.g., "25", "LT", "RT", "59"). Modifiers are 2-character codes that appear after the CPT code, often separated by a dash or space. List them as strings in the "modifiers" array. If no modifiers are present, set "modifiers" to [].
+"quantity" is the quantity column if present; if only "units" appears, copy that value to "quantity" as well.
+Extract "patientState" as the 2-letter state code from the patient's address on the bill (null if not found).
+Extract "serviceZip" as the 5-digit ZIP code of the service location or hospital address (null if not found).
 For UB-04 facility bills (with Revenue Codes), extract ONLY standard 5-digit CPT codes or HCPCS Level II codes (letter J/G/A/B/C + 4 digits) from the CPT/HCPCS column. Do NOT include 4-digit Revenue Codes (e.g. 0730, 0450) or hospital-local/internal charge codes (e.g. 2000000001) in cptCodes or lineItems. If only Revenue Codes are visible with no CPT column, extract any CPT/HCPCS codes you can identify from the description column.
 The hospital address and phone number almost always appear in the header/letterhead of the bill. Extract them exactly as printed.
 admissionDate and dischargeDate are only relevant for inpatient hospital bills. For outpatient bills, set both to null.

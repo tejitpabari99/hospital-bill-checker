@@ -27,6 +27,7 @@ export interface BillInput {
   patientName?: string  // NOT sent to Claude — for letter placeholders only
   billType?: BillType
   patientState?: string
+  serviceZip?: string
   drgCode?: string
 }
 
