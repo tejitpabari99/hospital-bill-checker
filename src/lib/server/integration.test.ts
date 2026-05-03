@@ -292,4 +292,42 @@ describe('full audit pipeline smoke test', () => {
     )
     expect(Array.isArray(findings)).toBe(true)
   })
+
+  skipIf(!allDBsPresent, 'buildDeterministicFindings returns findings array with correct shape', () => {
+    const lineItems: LineItem[] = [
+      makeLineItem({ cpt: '99213', billedAmount: 200 }),
+    ]
+    const { findings, summary } = buildDeterministicFindings(
+      lineItems,
+      'practitioner',
+      '2025-01-01',
+      undefined,
+      'TX',
+      undefined
+    )
+    expect(Array.isArray(findings)).toBe(true)
+    expect(typeof summary).toBe('string')
+    for (const f of findings) {
+      expect(typeof f.errorType).toBe('string')
+      expect(typeof f.severity).toBe('string')
+      expect(['error', 'warning', 'info']).toContain(f.severity)
+    }
+  })
+
+  skipIf(!allDBsPresent, 'buildDeterministicFindings flags a known extreme overcharge', () => {
+    const lineItems: LineItem[] = [
+      makeLineItem({ cpt: '99213', billedAmount: 50_000 }),
+    ]
+    const { findings } = buildDeterministicFindings(
+      lineItems,
+      'practitioner',
+      '2025-01-01',
+      undefined,
+      undefined,
+      undefined
+    )
+    expect(Array.isArray(findings)).toBe(true)
+    const upcodings = findings.filter(f => f.errorType === 'upcoding')
+    expect(upcodings.length).toBeGreaterThan(0)
+  })
 })

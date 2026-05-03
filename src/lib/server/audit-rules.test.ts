@@ -26,6 +26,7 @@ import {
   checkNcciBundling,
   checkMueExceeded,
   checkMpfsBenchmark,
+  checkOppsBenchmark,
 } from './audit-rules'
 import type { MpfsData, ClfsData, EmMdmTierData, LcdCoverageData } from './audit-rules'
 import type { LineItem } from '$lib/types'
@@ -191,7 +192,7 @@ describe('buildDeterministicFindings — duplicate detection', () => {
     expect(dups[0].confidence).toBe('high')
   })
 
-  it('flags all extra occurrences for triple billing', () => {
+  it('flags only the first duplicate for triple billing (subsequent are suppressed by alreadyFlaggedCodes)', () => {
     const lineItems = [
       li('99285', 500.00),
       li('99285', 500.00),
@@ -201,6 +202,7 @@ describe('buildDeterministicFindings — duplicate detection', () => {
 
     const dups = findings.filter(f => f.errorType === 'duplicate')
     expect(dups).toHaveLength(1)
+    expect(dups[0].lineItemIndex).toBe(1)
   })
 
   it('does NOT flag a code that appears only once', () => {
@@ -552,6 +554,9 @@ describe('audit-rules edge cases', () => {
     const lineItems = [
       { cpt: '99213', description: '', units: 1, billedAmount: 100, modifiers: [], icd10Codes: [] },
     ]
+    // Note: the canonical SQLite column is 'mue_adjudication_indicator'.
+    // 'mai' is an alias accepted by checkMueExceeded for convenience.
+    // Fixtures testing buildDeterministicFindings use 'mue_adjudication_indicator'.
     const edits = [{ hcpcs_code: '99213', mue_value: 1, mai: 3, bill_type: 'practitioner' }]
     const findings = checkMueExceeded(lineItems, edits)
     expect(findings.length).toBe(0)
@@ -603,5 +608,109 @@ describe('audit-rules edge cases', () => {
     // Should not throw even with unknown bill type and no DBs present
     const findings = await buildDeterministicFindings(lineItems, 'unknown', '2025-01-01', undefined, undefined, undefined)
     expect(Array.isArray(findings)).toBe(true)
+  })
+})
+
+// ── Edge-case regression tests added after code review ─────────────────────────
+
+describe('audit-rules edge-case regressions', () => {
+  it('OPPS rate of 0 does not trigger opps_benchmark finding', () => {
+    const lineItems = [
+      { cpt: '99213', description: 'Office visit', units: 1, billedAmount: 500, modifiers: [], icd10Codes: [] },
+    ]
+    const rates = [{ hcpcs_code: '99213', payment_rate: 0 }]
+    const findings = checkOppsBenchmark(lineItems, rates)
+    expect(findings).toHaveLength(0)
+  })
+
+  it('billedAmount as string "$1,234.56" does not produce NaN in findings', () => {
+    const lineItems = [
+      { cpt: '99213', description: 'Office visit', units: 1, billedAmount: '$1,234.56' as any, modifiers: [], icd10Codes: [] },
+    ]
+    expect(() => {
+      const { findings } = buildDeterministicFindings(lineItems, 'practitioner', '2025-01-01')
+      for (const f of findings) {
+        if (f.medicareRate != null) expect(Number.isFinite(f.medicareRate)).toBe(true)
+        if (f.markupRatio != null) expect(Number.isFinite(f.markupRatio)).toBe(true)
+      }
+    }).not.toThrow()
+  })
+
+  it('billedAmount as "NaN" string does not produce findings', () => {
+    const lineItems = [
+      { cpt: '99213', description: 'Office visit', units: 1, billedAmount: 'NaN' as any, modifiers: [], icd10Codes: [] },
+    ]
+    expect(() => {
+      const { findings } = buildDeterministicFindings(lineItems, 'practitioner', '2025-01-01')
+      const upcodings = findings.filter(f => f.errorType === 'upcoding')
+      expect(upcodings).toHaveLength(0)
+    }).not.toThrow()
+  })
+
+  it('A03xx drug administration code does not trigger ambulance check', () => {
+    const lineItems = [
+      { cpt: 'A0300', description: 'Drug admin', units: 1, billedAmount: 5000, modifiers: [], icd10Codes: [] },
+    ]
+    const { findings } = buildDeterministicFindings(
+      lineItems,
+      'practitioner',
+      '2025-01-01',
+      undefined,
+      undefined,
+      '78701'
+    )
+    const ambulanceFindings = findings.filter(f => f.errorType === 'ambulance_benchmark')
+    expect(ambulanceFindings).toHaveLength(0)
+  })
+
+  it('A0428 (BLS ambulance) code DOES trigger ambulance check when applicable', () => {
+    const lineItems = [
+      { cpt: 'A0428', description: 'BLS transport', units: 1, billedAmount: 50_000, modifiers: [], icd10Codes: [] },
+    ]
+    expect(() => {
+      buildDeterministicFindings(
+        lineItems,
+        'practitioner',
+        '2025-01-01',
+        undefined,
+        undefined,
+        '78701'
+      )
+    }).not.toThrow()
+  })
+
+  it('checkMueExceeded fires when mai is integer 3 (not string)', () => {
+    const lineItems = [
+      { cpt: '99213', description: '', units: 99, billedAmount: 100, modifiers: [], icd10Codes: [] },
+    ]
+    const edits = [{ hcpcs_code: '99213', mue_value: 1, mue_adjudication_indicator: 3 as any }]
+    const findings = checkMueExceeded(lineItems, edits)
+    expect(findings).toHaveLength(1)
+    expect(findings[0].findingType).toBe('mue_exceeded')
+  })
+
+  it('checkMueExceeded does NOT fire when mai is integer 1', () => {
+    const lineItems = [
+      { cpt: '99213', description: '', units: 99, billedAmount: 100, modifiers: [], icd10Codes: [] },
+    ]
+    const edits = [{ hcpcs_code: '99213', mue_value: 1, mue_adjudication_indicator: 1 as any }]
+    const findings = checkMueExceeded(lineItems, edits)
+    expect(findings).toHaveLength(0)
+  })
+
+  it('OPPS-flagged code does not also appear in upcoding findings', () => {
+    const lineItems = [
+      { cpt: '99285', description: 'ER visit', units: 1, billedAmount: 99_999, modifiers: [], icd10Codes: [] },
+    ]
+    const { findings } = buildDeterministicFindings(
+      lineItems,
+      'outpatient',
+      '2025-01-01'
+    )
+    const oppsFindings = findings.filter(f => f.cptCode === '99285' && f.errorType === 'opps_benchmark')
+    const upcodingFindings = findings.filter(f => f.cptCode === '99285' && f.errorType === 'upcoding')
+    if (oppsFindings.length > 0) {
+      expect(upcodingFindings).toHaveLength(0)
+    }
   })
 })

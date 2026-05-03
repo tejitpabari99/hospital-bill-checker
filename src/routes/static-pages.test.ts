@@ -10,11 +10,11 @@ describe('Static page copy', () => {
   it('describes deterministic checks versus AI checks on the how-it-works page', () => {
     const { getByText } = render(HowItWorksPage)
 
-    expect(getByText(/two error types require ai/i)).toBeInTheDocument()
-    expect(getByText(/detected by cms ncci rule lookup/i)).toBeInTheDocument()
-    expect(getByText(/931-entry asp dataset/i)).toBeInTheDocument()
+    expect(getByText(/rule-based lookup from cms data tables/i)).toBeInTheDocument()
+    expect(getByText(/all billing error findings are deterministic/i)).toBeInTheDocument()
+    expect(getByText(/drug overcharges use the cms asp dataset/i)).toBeInTheDocument()
     expect(getByText(/lab codes are checked against clfs when available/i)).toBeInTheDocument()
-    expect(getByText(/we prefer the medicare ncci file and fall back to the medicaid practitioner services edition/i)).toBeInTheDocument()
+    expect(getByText(/medicaid practitioner services edition/i)).toBeInTheDocument()
   })
 
   it('explains which checks never send data to ai in the privacy policy', () => {
