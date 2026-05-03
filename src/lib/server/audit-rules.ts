@@ -366,27 +366,34 @@ export function buildDeterministicFindings(
     if (presentCol1.length === 0) continue
 
     const lineModifiers = (lineItems[i].modifiers ?? []).map(m => m.trim().toUpperCase())
-    const hasModifier59 = lineModifiers.some(m => MODIFIER_59_FAMILY.includes(m))
+    const hasModifier59Family = lineModifiers.some(m => MODIFIER_59_FAMILY.includes(m))
 
     for (const pair of presentCol1) {
-      const modifierCanOverride = pair.modifier_indicator !== '0'
-      const modifierOverrides = modifierCanOverride && hasModifier59
+      const ind = String(pair.modifier_indicator).trim()
+      if (ind === '9') continue
+
+      const modifierCanOverride = ind === '1'
+      const modifierOverrides = modifierCanOverride && hasModifier59Family
 
       if (modifierOverrides) continue
 
+      const severity: 'error' | 'warning' = modifierCanOverride ? 'warning' : 'error'
       const modNote = modifierCanOverride
         ? '(modifier -59 may override with documented distinct clinical indication)'
         : '(no modifier override allowed — always an unbundling error)'
+      const recommendation = modifierCanOverride
+        ? 'Separate billing may be permitted with modifier -59 or X{EPSU} and appropriate documentation. Request the medical record and authorization letter.'
+        : 'This code pair is always bundled — separate billing is not permitted regardless of documentation.'
 
       findings.push({
         lineItemIndex: i,
         cptCode: code,
-        severity: 'error',
+        severity,
         errorType: 'unbundling',
         confidence: 'high' as ConfidenceLevel,
         description: `CPT ${code} is bundled into CPT ${pair.col1_code} per CMS NCCI PTP edits. Both codes should not be billed separately on the same claim ${modNote}.`,
         standardDescription: CPT_DESCRIPTIONS[code],
-        recommendation: `Request that the hospital remove CPT ${code} from the claim or provide documentation justifying separate billing with modifier -59.`,
+        recommendation,
         ncciBundledWith: pair.col1_code,
         medicareRate: getEffectiveRate(code)?.rate,
         markupRatio: undefined,

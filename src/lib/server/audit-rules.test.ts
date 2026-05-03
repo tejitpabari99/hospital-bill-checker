@@ -106,7 +106,7 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
     const unbundled = findings.filter(f => f.errorType === 'unbundling')
     expect(unbundled).toHaveLength(1)
     expect(unbundled[0].cptCode).toBe('93010')
-    expect(unbundled[0].severity).toBe('error')
+    expect(unbundled[0].severity).toBe('warning')
     expect(unbundled[0].confidence).toBe('high')
     expect(unbundled[0].ncciBundledWith).toBe('93000')
     expect(unbundled[0].lineItemIndex).toBe(1)
@@ -172,6 +172,114 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
     const f = findings.find(f => f.cptCode === '93010')!
     expect(f.medicareRate).toBeGreaterThan(0)
   })
+})
+
+describe('buildDeterministicFindings — NCCI modifier_indicator severity', () => {
+  it.skipIf(!ncciDb)(
+    'modifier_indicator=0 pair without modifier produces severity: error',
+    () => {
+      const pair = ncciDb!
+        .prepare(`
+          SELECT col1_code, col2_code
+          FROM ncci_ptp
+          WHERE modifier_indicator = '0'
+            AND bill_type = 'practitioner'
+            AND effective_date <= 20260401
+            AND deletion_date >= 20260401
+          LIMIT 1
+        `)
+        .get() as { col1_code: string; col2_code: string } | undefined
+      if (!pair) return
+
+      const lineItems = [
+        li(pair.col1_code, 500),
+        li(pair.col2_code, 250),
+      ]
+      const { findings } = buildDeterministicFindings(lineItems, 'practitioner', '2026-04-01')
+      const ncciFinding = findings.find(f => f.errorType === 'unbundling')
+      expect(ncciFinding).toBeDefined()
+      expect(ncciFinding?.severity).toBe('error')
+    }
+  )
+
+  it.skipIf(!ncciDb)(
+    'modifier_indicator=1 pair without modifier produces severity: warning (not error)',
+    () => {
+      const pair = ncciDb!
+        .prepare(`
+          SELECT col1_code, col2_code
+          FROM ncci_ptp
+          WHERE modifier_indicator = '1'
+            AND bill_type = 'practitioner'
+            AND effective_date <= 20260401
+            AND deletion_date >= 20260401
+          LIMIT 1
+        `)
+        .get() as { col1_code: string; col2_code: string } | undefined
+      if (!pair) return
+
+      const lineItems = [
+        li(pair.col1_code, 500),
+        li(pair.col2_code, 250),
+      ]
+      const { findings } = buildDeterministicFindings(lineItems, 'practitioner', '2026-04-01')
+      const ncciFinding = findings.find(f => f.errorType === 'unbundling')
+      expect(ncciFinding).toBeDefined()
+      expect(ncciFinding?.severity).toBe('warning')
+    }
+  )
+
+  it.skipIf(!ncciDb)(
+    'modifier_indicator=1 pair WITH modifier -59 produces no finding (suppressed)',
+    () => {
+      const pair = ncciDb!
+        .prepare(`
+          SELECT col1_code, col2_code
+          FROM ncci_ptp
+          WHERE modifier_indicator = '1'
+            AND bill_type = 'practitioner'
+            AND effective_date <= 20260401
+            AND deletion_date >= 20260401
+          LIMIT 1
+        `)
+        .get() as { col1_code: string; col2_code: string } | undefined
+      if (!pair) return
+
+      const lineItems = [
+        li(pair.col1_code, 500),
+        { ...li(pair.col2_code, 250), modifiers: ['59'] },
+      ]
+      const { findings } = buildDeterministicFindings(lineItems, 'practitioner', '2026-04-01')
+      const ncciFinding = findings.find(f => f.errorType === 'unbundling')
+      expect(ncciFinding).toBeUndefined()
+    }
+  )
+
+  it.skipIf(!ncciDb)(
+    'modifier_indicator=9 pair produces no finding (not applicable)',
+    () => {
+      const pair = ncciDb!
+        .prepare(`
+          SELECT col1_code, col2_code
+          FROM ncci_ptp
+          WHERE modifier_indicator = '9'
+            AND bill_type = 'practitioner'
+            AND effective_date <= 20260401
+            AND deletion_date >= 20260401
+          LIMIT 1
+        `)
+        .get() as { col1_code: string; col2_code: string } | undefined
+      if (!pair) return
+
+      const lineItems = [
+        li(pair.col1_code, 500),
+        li(pair.col2_code, 250),
+      ]
+      const { findings } = buildDeterministicFindings(lineItems, 'practitioner', '2026-04-01')
+      const ncciFinding = findings.find(f => f.errorType === 'unbundling')
+      expect(ncciFinding).toBeUndefined()
+    }
+  )
 })
 
 // ── buildDeterministicFindings: duplicates ────────────────────────────────────

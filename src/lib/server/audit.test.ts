@@ -120,12 +120,11 @@ describe('auditBill', () => {
     )
 
     expect(finding).toBeDefined()
-    expect(finding?.severity).toBe('error')
+    expect(finding?.severity).toBe('warning')
     expect(finding?.confidence).toBe('high')
     expect(finding?.ncciBundledWith).toBe('93000')
     expect(finding?.standardDescription).toBeTruthy()
-    expect(result.summary.errorCount).toBeGreaterThanOrEqual(1)
-    expect(result.summary.potentialOvercharge).toBeGreaterThanOrEqual(45)
+    expect(result.summary.warningCount).toBeGreaterThanOrEqual(1)
     expect(result.disputeLetter.text).toBe('Test dispute letter with [PATIENT NAME]')
   })
 
