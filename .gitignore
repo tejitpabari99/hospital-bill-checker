@@ -11,9 +11,11 @@ src/lib/data/mpfs.json
 src/lib/data/ncci.json
 src/lib/data/asp.json
 .gstack/
+# Ignore regenerated SQLite files by default. Tracked seed snapshots remain committed.
 data/*.sqlite
 data/*.sqlite-*
-data/hospital_cache/
+data/hospital_cache/*
+!data/hospital_cache/*.sqlite
 data/savings.json
 data/stats.json
 data/mrf_cache/

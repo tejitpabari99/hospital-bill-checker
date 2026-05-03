@@ -1,7 +1,8 @@
 # data/
 
 This directory contains all SQLite databases used by the hospital bill checker app.
-Files are NOT committed to git — they must be built from CMS source data using the scripts below.
+The branch includes a checked-in snapshot of the current SQLite databases so a checkout can run without
+first rebuilding every CMS source. The build scripts below remain the source of truth for refreshing them.
 
 ## Directory Structure
 
@@ -17,7 +18,7 @@ data/
   dmepos.sqlite            — DMEPOS state fee schedule
   ambulance.sqlite         — Ambulance Fee Schedule + ZIP geography
   hospital_directory.sqlite — CMS hospital directory (for name matching)
-  hospital_cache/          — Per-hospital MRF pricing (7-day TTL, auto-populated)
+  hospital_cache/          — Per-hospital MRF pricing (7-day TTL, auto-populated; selected seed caches may be committed)
 ```
 
 ## Rebuilding All Databases
@@ -38,7 +39,7 @@ python3 scripts/build_hospital_directory_sqlite.py
 ```
 
 Each script downloads the latest CMS files and creates/replaces the SQLite database.
-Scripts require: `pip install requests openpyxl duckdb`
+Scripts require: `pip install -r scripts/requirements.txt`
 
 ## Checking Database Sizes
 
