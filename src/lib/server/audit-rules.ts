@@ -1,12 +1,16 @@
-/**
- * audit-rules.ts — pure deterministic billing audit rules
- *
- * No imports from $lib/data — all data is passed in as parameters.
- * This keeps the logic testable without needing SvelteKit aliases.
- */
-
 import type { LineItem, AuditFinding, ConfidenceLevel, BillType } from '$lib/types'
-import { loadAspLimit, loadClfsRate, loadDmeposRate, loadDrgRate, loadMpfsRate, loadMueEdit, loadNcciPairs, loadOppsRate, toServiceDateInt } from './data-loader'
+import {
+  loadNcciPairs,
+  loadMueEdit,
+  loadMpfsRate,
+  loadClfsRate,
+  loadAspLimit,
+  loadOppsRate,
+  loadDrgRate,
+  loadDmeposRate,
+  loadAmbulanceRate,
+  toServiceDateInt,
+} from './data-loader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -151,25 +155,14 @@ export function buildDataContext(
   ].filter(Boolean).join('\n\n')
 }
 
-/**
- * Build deterministic pre-findings from CMS rule tables (no AI needed).
- * Covers: NCCI unbundling, exact duplicate billing, pharmacy markup.
- *
- * Returns findings array and a promptNote string to inject into the AI prompt
- * so the AI knows not to re-flag these codes.
- */
 export function buildDeterministicFindings(
   lineItems: LineItem[],
-  mpfs: MpfsData,
-  clfs: ClfsData = {},
-  emMdmTiers: EmMdmTierData = {},
-  lcdCoverage: LcdCoverageData = {},
   billType: BillType = 'unknown',
   serviceDateStr?: string,
   drgCode?: string,
   patientState?: string,
   serviceZip?: string
-): { findings: AuditFinding[]; promptNote: string } {
+): { findings: AuditFinding[]; summary: string } {
   const serviceDateInt = toServiceDateInt(serviceDateStr)
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
   const codeSet = new Set(codes)
@@ -189,7 +182,7 @@ export function buildDeterministicFindings(
     return null
   }
 
-  // 1. NCCI unbundling — deterministic, per-pair modifier check
+  // Check 1: NCCI unbundling
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     const pairs = loadNcciPairs(code, billType, serviceDateInt)
@@ -229,33 +222,37 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 2. Duplicate detection — deterministic
-  const codeIndexes = new Map<string, number[]>()
+  // Check 2: MUE units
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
-    if (!codeIndexes.has(code)) codeIndexes.set(code, [])
-    codeIndexes.get(code)!.push(i)
-  }
-  for (const [code, indexes] of codeIndexes) {
-    if (indexes.length <= 1) continue
-    for (const idx of indexes.slice(1)) {
+    if (alreadyFlaggedCodes.has(code)) continue
+
+    const unitsBilled = lineItems[i].units ?? lineItems[i].quantity ?? 1
+    const mueEntry = loadMueEdit(code, billType)
+    if (!mueEntry) continue
+
+    const maxUnits = mueEntry.mue_value
+    const mai = mueEntry.mue_adjudication_indicator
+
+    if (unitsBilled > maxUnits) {
       findings.push({
-        lineItemIndex: idx,
+        lineItemIndex: i,
         cptCode: code,
         severity: 'error',
-        errorType: 'duplicate',
+        errorType: 'mue_units',
         confidence: 'high' as ConfidenceLevel,
-        description: `CPT ${code} appears ${indexes.length} times on this bill. Duplicate billing is a common billing error.`,
+        description: `CPT ${code} has ${unitsBilled} units billed, which exceeds the CMS Medically Unlikely Edit (MUE) limit of ${maxUnits} units per ${mai === '1' ? 'claim line' : 'date of service'}.`,
         standardDescription: CPT_DESCRIPTIONS[code],
-        recommendation: 'Request a corrected bill with the duplicate charge removed.',
-        medicareRate: getEffectiveRate(code)?.rate,
+        recommendation: `Request itemized documentation for each unit of CPT ${code}. The MUE limit is ${maxUnits} unit(s).`,
+        medicareRate: undefined,
         markupRatio: undefined,
         ncciBundledWith: undefined,
       })
+      alreadyFlaggedCodes.add(code)
     }
   }
 
-  // 3. Pharmacy markup check (ASP) — deterministic
+  // Check 3: Pharmacy markup / ASP
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
     if (alreadyFlaggedCodes.has(code)) continue
@@ -286,7 +283,7 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 4. OPPS benchmark check (outpatient only) — deterministic
+  // Check 4: OPPS benchmark
   if (billType === 'outpatient') {
     for (let i = 0; i < lineItems.length; i++) {
       const code = codes[i]
@@ -303,7 +300,7 @@ export function buildDeterministicFindings(
           lineItemIndex: i,
           cptCode: code,
           severity: 'warning',
-          errorType: 'upcoding',
+          errorType: 'opps_benchmark',
           confidence: 'medium',
           description: `CPT ${code} (${oppsRow.short_descriptor ?? ''}) is billed at $${billed.toFixed(2)}, which is ${(billed / benchmark).toFixed(1)}× the CMS OPPS outpatient facility benchmark of $${benchmark.toFixed(2)} (APC ${oppsRow.apc}: ${oppsRow.apc_title ?? ''}).`,
           standardDescription: oppsRow.short_descriptor ?? undefined,
@@ -316,7 +313,7 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 5. IPPS/DRG inpatient reference - informational
+  // Check 5: IPPS/DRG
   if (billType === 'inpatient' && drgCode) {
     const drg = loadDrgRate(drgCode)
     if (drg) {
@@ -324,7 +321,7 @@ export function buildDeterministicFindings(
         lineItemIndex: -1,
         cptCode: `DRG-${drg.ms_drg}`,
         severity: 'info',
-        errorType: 'other',
+        errorType: 'ipps_drg',
         confidence: 'high',
         description: `This inpatient bill shows MS-DRG ${drg.ms_drg}: "${drg.title}". CMS relative weight: ${drg.relative_weight ?? 'N/A'}. Expected length of stay: ${drg.geometric_mean_los ?? 'N/A'} days (geometric mean).`,
         standardDescription: drg.title ?? undefined,
@@ -336,7 +333,7 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 6. DMEPOS benchmark (DME supplier bills) — deterministic
+  // Check 6: DMEPOS
   if (billType === 'dme' && patientState) {
     for (let i = 0; i < lineItems.length; i++) {
       const code = codes[i]
@@ -353,7 +350,7 @@ export function buildDeterministicFindings(
           lineItemIndex: i,
           cptCode: code,
           severity: 'warning',
-          errorType: 'upcoding',
+          errorType: 'dmepos_benchmark',
           confidence: 'medium',
           description: `${code} (${dmeRow.description ?? 'DME item'}) is billed at $${billed.toFixed(2)}, which is ${(billed / benchmark).toFixed(1)}× the CMS DMEPOS fee schedule rate of $${benchmark.toFixed(2)} for ${dmeRow.state_code}.`,
           standardDescription: dmeRow.description ?? undefined,
@@ -366,125 +363,153 @@ export function buildDeterministicFindings(
     }
   }
 
-  // 7. Ambulance rate check — deterministic (only when serviceZip is known)
-  if (['practitioner', 'outpatient'].includes(billType)) {
-    // serviceZip is a bill-level field — check if we can extract it
-    // For now, ambulance check requires ZIP (do not fabricate)
-    // TODO(step-13): call the ambulance benchmark with serviceZip from the audit orchestrator.
-    void serviceZip
+  // Check 7: Ambulance fee schedule
+  if (serviceZip) {
+    for (let i = 0; i < lineItems.length; i++) {
+      const code = codes[i]
+      if (alreadyFlaggedCodes.has(code)) continue
+      if (!/^A0(4|3)\d{2}$/.test(code)) continue
+
+      const ambulanceRow = loadAmbulanceRate(code, serviceZip)
+      const benchmark = ambulanceRow?.rate_amount ?? ambulanceRow?.base_rate
+      if (!ambulanceRow || benchmark == null || benchmark <= 0) continue
+
+      const billed = lineItems[i].billedAmount
+      const ratio = billed / benchmark
+      if (ratio <= 2.5) continue
+
+      findings.push({
+        lineItemIndex: i,
+        cptCode: code,
+        severity: 'warning',
+        errorType: 'ambulance_benchmark',
+        confidence: 'medium',
+        description: `${code} (${ambulanceRow.short_description ?? 'ambulance service'}) is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the CMS ambulance fee schedule benchmark of $${benchmark.toFixed(2)} for locality ${ambulanceRow.locality ?? 'unknown'}.`,
+        standardDescription: ambulanceRow.short_description ?? undefined,
+        recommendation: `Request itemized documentation. CMS ambulance fee schedule benchmark for this code is $${benchmark.toFixed(2)}.`,
+        medicareRate: benchmark,
+        markupRatio: ratio,
+        ncciBundledWith: undefined,
+      })
+    }
   }
 
-  // 8. LCD/NCD coverage check
+  // Check 7: Exact duplicate billing
+  const seenCodes = new Map<string, number>()
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
-    const lcdEntry = lcdCoverage[code]
-    if (!lcdEntry || lcdEntry.covered.length === 0) continue
-
-    const icd10s = lineItems[i].icd10Codes ?? []
-    if (icd10s.length === 0) continue
-
-    const hasCoveredDx = icd10s.some((icd) =>
-      lcdEntry.covered.some((covered) => icd.toUpperCase().startsWith(covered.toUpperCase()))
-    )
-    const hasExcludedDx = icd10s.some((icd) =>
-      lcdEntry.notCovered.some((excluded) => icd.toUpperCase().startsWith(excluded.toUpperCase()))
-    )
-
-    if (hasCoveredDx) continue
-
-    const lcdRef = lcdEntry.lcdIds.slice(0, 2).join(', ')
-    findings.push({
-      lineItemIndex: i,
-      cptCode: code,
-      severity: hasExcludedDx ? 'error' : 'warning',
-      errorType: 'icd10_mismatch',
-      confidence: hasExcludedDx ? 'high' : 'medium',
-      description: `CPT ${code} may not be covered for the diagnosis codes on this bill (${icd10s.join(', ')}). Per CMS LCD ${lcdRef}, this procedure requires specific qualifying diagnoses that are not present on the bill.`,
-      standardDescription: CPT_DESCRIPTIONS[code],
-      recommendation: `Request documentation showing medical necessity for CPT ${code}. The CMS LCD (${lcdRef}) specifies which diagnoses qualify this procedure for coverage. If your diagnosis is not listed, ask billing to explain or correct the diagnosis codes.`,
-      medicareRate: getEffectiveRate(code)?.rate,
-      markupRatio: undefined,
-      ncciBundledWith: undefined,
-    })
-  }
-
-  // 9. MUE units check — deterministic
-  for (let i = 0; i < lineItems.length; i++) {
-    const code = codes[i]
-    const unitsBilled = lineItems[i].units ?? 1
-    const mueEntry = loadMueEdit(code, billType)
-    if (!mueEntry) continue
-
-    const mai = mueEntry.mue_adjudication_indicator
-    const maxUnits = mueEntry.mue_value
-
-    // MAI 1 = per claim line, MAI 2 or 3 = per date of service
-    // For simplicity: flag if units > maxUnits regardless of MAI
-    if (unitsBilled > maxUnits) {
+    if (alreadyFlaggedCodes.has(code)) continue
+    const prev = seenCodes.get(code)
+    if (prev !== undefined && lineItems[i].billedAmount === lineItems[prev].billedAmount) {
       findings.push({
         lineItemIndex: i,
         cptCode: code,
         severity: 'error',
-        errorType: 'other',
-        confidence: 'high' as ConfidenceLevel,
-        description: `CPT ${code} has ${unitsBilled} units billed, which exceeds the CMS Medically Unlikely Edit (MUE) limit of ${maxUnits} units per ${mai === '1' ? 'claim line' : 'date of service'}.`,
+        errorType: 'duplicate',
+        confidence: 'high',
+        description: `CPT ${code} appears ${lineItems.filter((_, idx) => codes[idx] === code).length} times at the same dollar amount on this bill.`,
         standardDescription: CPT_DESCRIPTIONS[code],
-        recommendation: `Request itemized documentation for each unit of CPT ${code}. The MUE limit is ${maxUnits} unit(s).`,
+        recommendation: 'Request itemized documentation showing why this service was billed multiple times.',
         medicareRate: undefined,
         markupRatio: undefined,
         ncciBundledWith: undefined,
       })
       alreadyFlaggedCodes.add(code)
     }
+    seenCodes.set(code, i)
   }
 
-  // 10. E&M upcoding — deterministic pre-filter
+  // Check 8: Rate comparison (upcoding check)
+  // For each code not already flagged, compare billed to Medicare benchmark
+  const HIGH_MARKUP_THRESHOLD = 5.0
+  const MODERATE_MARKUP_THRESHOLD = 2.5
+
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
-    const emTier = EM_MDM_LEVELS[code]
-    if (!emTier) continue
+    if (alreadyFlaggedCodes.has(code)) continue
 
-    const icd10s = lineItems[i].icd10Codes ?? []
-    if (icd10s.length === 0) continue
+    const billed = lineItems[i].billedAmount
+    if (!billed || billed <= 0) continue
 
-    let maxIcdTier: EmMdmTier = 'S'
-    for (const icd of icd10s) {
-      const prefix = icd.substring(0, 3).toUpperCase()
-      const icdTier = emMdmTiers[prefix] ?? null
-      if (icdTier && TIER_RANK[icdTier] > TIER_RANK[maxIcdTier]) {
-        maxIcdTier = icdTier
+    let benchmark: number | null = null
+    let benchmarkSource = ''
+
+    if (billType === 'outpatient') {
+      const oppsRow = loadOppsRate(code)
+      if (oppsRow?.payment_rate) {
+        benchmark = oppsRow.payment_rate
+        benchmarkSource = `CMS OPPS (APC ${oppsRow.apc})`
       }
     }
 
-    if (TIER_RANK[emTier] - TIER_RANK[maxIcdTier] < 2) continue
+    if (benchmark == null) {
+      const mpfsRow = loadMpfsRate(code)
+      if (mpfsRow?.nonfac_rate) {
+        benchmark = mpfsRow.nonfac_rate
+        benchmarkSource = 'CMS MPFS'
+      }
+    }
 
-    findings.push({
-      lineItemIndex: i,
-      cptCode: code,
-      severity: 'warning',
-      errorType: 'upcoding',
-      confidence: 'medium' as ConfidenceLevel,
-      description: `CPT ${code} requires ${TIER_NAMES[emTier]} medical decision-making, but the diagnosis codes on this bill (${icd10s.join(', ')}) suggest at most ${TIER_NAMES[maxIcdTier]} MDM. This may be worth questioning.`,
-      standardDescription: CPT_DESCRIPTIONS[code],
-      recommendation: 'Request the clinical notes supporting this E&M level. Ask billing to explain why the documentation justifies this complexity tier per AMA 2021 E&M guidelines.',
-      medicareRate: getEffectiveRate(code)?.rate,
-      markupRatio: undefined,
-      ncciBundledWith: undefined,
-    })
+    if (benchmark == null) {
+      const clfsRow = loadClfsRate(code)
+      if (clfsRow?.rate) {
+        benchmark = clfsRow.rate
+        benchmarkSource = 'CMS CLFS'
+      }
+    }
+
+    if (benchmark == null || benchmark <= 0) continue
+
+    const ratio = billed / benchmark
+
+    if (ratio >= HIGH_MARKUP_THRESHOLD) {
+      findings.push({
+        lineItemIndex: i,
+        cptCode: code,
+        severity: 'error',
+        errorType: 'upcoding',
+        confidence: 'high',
+        description: `CPT ${code} is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the Medicare benchmark of $${benchmark.toFixed(2)} (${benchmarkSource}).`,
+        standardDescription: CPT_DESCRIPTIONS[code],
+        recommendation: `Request itemized justification. Medicare pays $${benchmark.toFixed(2)} for this service; your bill is ${ratio.toFixed(1)}× that amount.`,
+        medicareRate: benchmark,
+        markupRatio: ratio,
+        ncciBundledWith: undefined,
+      })
+      alreadyFlaggedCodes.add(code)
+    } else if (ratio >= MODERATE_MARKUP_THRESHOLD) {
+      findings.push({
+        lineItemIndex: i,
+        cptCode: code,
+        severity: 'warning',
+        errorType: 'upcoding',
+        confidence: 'medium',
+        description: `CPT ${code} is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the Medicare benchmark of $${benchmark.toFixed(2)} (${benchmarkSource}).`,
+        standardDescription: CPT_DESCRIPTIONS[code],
+        recommendation: `Compare against your EOB from insurance. Medicare benchmark is $${benchmark.toFixed(2)}.`,
+        medicareRate: benchmark,
+        markupRatio: ratio,
+        ncciBundledWith: undefined,
+      })
+    }
   }
 
-  findings.forEach(f => alreadyFlaggedCodes.add(f.cptCode))
-  const promptNote =
-    findings.length > 0
-      ? `\n\nIMPORTANT: The following findings are CONFIRMED by deterministic CMS rule lookup — do NOT contradict or omit them. Include them in your output exactly as described:\n${findings
-          .map(
-            f =>
-              `- lineItemIndex:${f.lineItemIndex} CPT ${f.cptCode}: ${f.errorType} (severity:${f.severity}, confidence:high)`
-          )
-          .join('\n')}\n\nFor the above codes, do not add duplicate findings. Focus your analysis on the remaining codes: ${codes.filter(c => !alreadyFlaggedCodes.has(c)).join(', ') || 'none'}.`
-      : ''
+  const errorCount = findings.filter(f => f.severity === 'error').length
+  const warningCount = findings.filter(f => f.severity === 'warning').length
+  const totalBilled = lineItems.reduce((s, li) => s + (li.billedAmount ?? 0), 0)
+  const flaggedBilled = findings
+    .filter(f => f.lineItemIndex >= 0 && f.severity === 'error')
+    .map(f => lineItems[f.lineItemIndex]?.billedAmount ?? 0)
+    .reduce((s, v) => s + v, 0)
 
-  return { findings, promptNote }
+  const summary = [
+    `Bill type: ${billType}`,
+    `Total billed: $${totalBilled.toFixed(2)}`,
+    `Errors: ${errorCount}, Warnings: ${warningCount}`,
+    errorCount > 0 ? `Potential overcharge: $${flaggedBilled.toFixed(2)}` : 'No confirmed billing errors found.',
+  ].join('\n')
+
+  return { findings, summary }
 }
 
 export function buildArithmeticFindings(

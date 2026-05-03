@@ -1,50 +1,27 @@
 import { spawn } from 'child_process'
 import { join } from 'path'
 import { GEMINI_API_KEY } from '$env/static/private'
-import type { BillInput, AuditResult, ConfidenceLevel } from '$lib/types'
+import type { BillInput, AuditResult, AuditFinding } from '$lib/types'
 import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/types'
-import type { HospitalPriceResult } from './hospital-prices'
 import { lookupHospitalPricesV2 } from './hospital-prices-v2'
 import { createServerLogger, serializeError } from './logger.js'
-import { AUDIT_TOOL_DECLARATIONS } from './audit-tools.mjs'
 import {
-  buildDataContext as _buildDataContext,
-  buildDeterministicFindings as _buildDeterministicFindings,
+  buildDeterministicFindings,
   buildArithmeticFindings,
   buildDateFindings,
   buildGfeFindings,
   CPT_DESCRIPTIONS,
 } from './audit-rules'
-import { loadAspLimit, loadClfsRate, loadMpfsRate, loadMueEdit, loadNcciPairs, toServiceDateInt } from './data-loader'
-import type {
-  MpfsData,
-  ClfsData,
-  EmMdmTierData,
-  LcdCoverageData,
-} from './audit-rules'
+import { toServiceDateInt } from './data-loader'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
-
-type WorkerResult =
-  | { text: string; functionCalls?: Array<{ name: string; args?: Record<string, unknown> }>; parts?: unknown[] }
-  | { error: string }
-type WorkerRequest = {
-  prompt?: string
-  contents?: Array<{ role: string; parts: unknown[] }>
-  tools?: unknown[]
-  traceId?: string
-}
 
 function createAuditLogger(traceId?: string) {
   return createServerLogger('audit-core', traceId)
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-function runClaudeWorker(input: WorkerRequest, timeoutMs: number): Promise<WorkerResult & { rawOutput?: string }> {
-  const log = createAuditLogger(input.traceId)
+function runWorker(prompt: string, timeoutMs: number, traceId?: string): Promise<{ text?: string; error?: string }> {
+  const log = createAuditLogger(traceId)
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLAUDE_WORKER], {
       timeout: timeoutMs,
@@ -52,633 +29,225 @@ function runClaudeWorker(input: WorkerRequest, timeoutMs: number): Promise<Worke
       env: { ...process.env, GEMINI_API_KEY },
     })
     let output = ''
-    child.stdout?.on('data', (chunk: Buffer) => { output += chunk.toString() })
+    child.stdout?.on('data', (c: Buffer) => { output += c.toString() })
     child.on('close', () => {
-      try {
-        resolve(JSON.parse(output))
-      } catch {
-        log.error('worker-invalid-output', {
-          outputPreview: output.slice(0, 500),
-        })
-        resolve({ error: 'Worker process returned invalid output', rawOutput: output.slice(0, 500) })
-      }
+      try { resolve(JSON.parse(output)) }
+      catch { resolve({ error: 'Invalid worker output' }) }
     })
     child.on('error', (err) => {
-      log.error('worker-process-error', { error: serializeError(err) })
+      log.error('worker-error', { error: serializeError(err) })
       resolve({ error: err.message })
     })
-    child.stdin.write(JSON.stringify(input))
+    child.stdin.write(JSON.stringify({ prompt, traceId }))
     child.stdin.end()
   })
 }
 
-function isTransientWorkerError(error: string): boolean {
-  const lower = error.toLowerCase()
-  return lower.includes('503') || lower.includes('high demand') || lower.includes('temporarily') || lower.includes('invalid output')
-}
-
-async function callClaude(prompt: string, timeoutMs: number, traceId?: string): Promise<WorkerResult> {
-  const first = await runClaudeWorker({ prompt, traceId }, timeoutMs)
-  if (!('error' in first) || !isTransientWorkerError(first.error)) return first
-
-  await sleep(1500)
-  const second = await runClaudeWorker({ prompt, traceId }, timeoutMs)
-  if (!('error' in second) || !isTransientWorkerError(second.error)) return second
-
-  return second.error.includes('invalid output')
-    ? { error: 'Worker process returned invalid output after retry' }
-    : second
-}
-
-type ToolExecutionData = {
-  mpfs: MpfsData
-  lcdCoverage: LcdCoverageData
-  clfs: ClfsData
-}
-
-export function executeTool(
-  name: string,
-  args: Record<string, unknown>,
-  data: ToolExecutionData
-): unknown {
-  switch (name) {
-    case 'lookup_mpfs_rate': {
-      const code = String(args.cptCode ?? '').trim().toUpperCase()
-      const mpfsRow = loadMpfsRate(code)
-      const clfsRow = mpfsRow?.nonfac_rate == null ? loadClfsRate(code) : null
-      const rate = mpfsRow?.nonfac_rate ?? clfsRow?.rate ?? null
-      return { code, rate, source: rate != null ? (mpfsRow ? 'mpfs' : 'clfs') : 'not_found' }
-    }
-    case 'check_ncci_bundling': {
-      const code = String(args.cptCode ?? '').trim().toUpperCase()
-      const allCodes = new Set(((args.allCodesOnBill as string[] | undefined) ?? []).map((value) => value.toUpperCase()))
-      const billType = String(args.billType ?? 'unknown') as BillInput['billType']
-      const serviceDateInt = toServiceDateInt(String(args.serviceDate ?? ''))
-      const pairs = loadNcciPairs(code, billType ?? 'unknown', serviceDateInt)
-      const bundledPairs = pairs.filter((pair) => allCodes.has(pair.col1_code))
-      const modifiers = ((args.modifiers as string[] | undefined) ?? []).map((value) => value.trim().toUpperCase())
-      const hasModifier59 = modifiers.some((modifier) => ['59', '-59', 'XE', 'XP', 'XS', 'XU'].includes(modifier))
-      return {
-        ncciViolation: bundledPairs.length > 0,
-        bundledWith: bundledPairs.map((pair) => pair.col1_code),
-        modifierCanOverride: bundledPairs.some((pair) => pair.modifier_indicator !== '0'),
-        hasModifier59,
-      }
-    }
-    case 'check_mue_units': {
-      const code = String(args.cptCode ?? '').trim().toUpperCase()
-      const unitsBilled = Number(args.unitsBilled ?? 0)
-      const billType = String(args.billType ?? 'unknown') as BillInput['billType']
-      const entry = loadMueEdit(code, billType ?? 'unknown')
-      if (!entry) return { hasMue: false }
-      const adjudicationType = entry.mue_adjudication_indicator === '1' ? 'claim_line' : 'date_of_service'
-      return {
-        hasMue: true,
-        maxUnits: entry.mue_value,
-        adjudicationType,
-        exceedsLimit: unitsBilled > entry.mue_value,
-      }
-    }
-    case 'check_lcd_coverage': {
-      const code = String(args.cptCode ?? '').trim().toUpperCase()
-      const icd10Codes = ((args.icd10Codes as string[] | undefined) ?? []).map((value) => value.toUpperCase())
-      const entry = data.lcdCoverage[code]
-      if (!entry) return { hasLcd: false }
-      const hasCoveredDx = icd10Codes.some((icd) =>
-        entry.covered.some((covered) => icd.startsWith(covered.toUpperCase()))
-      )
-      const hasExcludedDx = icd10Codes.some((icd) =>
-        entry.notCovered.some((excluded) => icd.startsWith(excluded.toUpperCase()))
-      )
-      return {
-        hasLcd: true,
-        lcdIds: entry.lcdIds,
-        hasCoveredDx,
-        hasExcludedDx,
-        coveredCount: entry.covered.length,
-      }
-    }
-    default:
-      return { error: `Unknown tool: ${name}` }
-  }
-}
-
-async function callClaudeWithTools(prompt: string, timeoutMs: number, traceId?: string): Promise<WorkerResult> {
-  const contents: Array<{ role: string; parts: unknown[] }> = [{ role: 'user', parts: [{ text: prompt }] }]
-  const maxTurns = 4
-  const log = createAuditLogger(traceId)
-
-  for (let attempt = 0; attempt < maxTurns; attempt++) {
-    log.info('tool-turn-start', {
-      attempt: attempt + 1,
-      contentsCount: contents.length,
-    })
-    const result = await runClaudeWorker({ contents, tools: AUDIT_TOOL_DECLARATIONS, traceId }, timeoutMs)
-    if ('error' in result) return result
-
-    const functionCalls = result.functionCalls ?? []
-    log.info('tool-turn-result', {
-      attempt: attempt + 1,
-      functionCallCount: functionCalls.length,
-      textLength: result.text.length,
-    })
-    if (functionCalls.length === 0) return result
-
-    const modelParts = Array.isArray(result.parts) && result.parts.length > 0
-      ? result.parts
-      : functionCalls.map((functionCall) => ({ functionCall }))
-
-    contents.push({ role: 'model', parts: modelParts })
-    contents.push({
-      role: 'function',
-      parts: functionCalls.map((functionCall) => ({
-        functionResponse: {
-          name: functionCall.name,
-          response: executeTool(functionCall.name, functionCall.args ?? {}, {
-            mpfs,
-            lcdCoverage,
-            clfs,
-          }),
-        },
-      })),
-    })
-  }
-
-  log.error('tool-loop-exhausted', { maxTurns })
-  return { error: 'Tool-calling loop exceeded maximum turns' }
-}
-
-// Static data — loaded once at module init, never per-request
-let mpfs: MpfsData = {}
-let clfs: ClfsData = {}
-let emMdmTiers: EmMdmTierData = {}
-let lcdCoverage: LcdCoverageData = {}
-
-// Try to load static data — fail silently if not built yet
-try {
-  const rawEmMdmTiers = (await import('$lib/data/em_mdm_tiers.json', { assert: { type: 'json' } })).default as unknown as Record<string, string>
-  emMdmTiers = Object.fromEntries(
-    Object.entries(rawEmMdmTiers).filter(([key]) => !key.startsWith('_'))
-  ) as EmMdmTierData
-} catch {}
-try { lcdCoverage = (await import('$lib/data/lcd_coverage.json', { assert: { type: 'json' } })).default as LcdCoverageData } catch {}
-
-function isRefusal(text: string): boolean {
-  const refusalPhrases = ["i can't", "i cannot", "i'm unable", "i won't", "i am unable", "not able to", "cannot process", "cannot assist"]
-  return refusalPhrases.some(p => text.toLowerCase().includes(p))
-}
-
-function isTransientModelFailure(text: string): boolean {
-  const lower = text.toLowerCase()
-  return lower.includes('503') || lower.includes('high demand') || lower.includes('invalid output')
-}
-
-function extractJSON(text: string): string {
-  // Try code fence first, then outermost {...} block, then raw text
-  const codeFence = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-  if (codeFence) return codeFence[1].trim()
-  const jsonBlock = text.match(/(\{[\s\S]*\})/)
-  if (jsonBlock) return jsonBlock[1].trim()
-  return text.trim()
-}
-
-function normalizeConfidence(value: unknown): ConfidenceLevel | undefined {
-  if (typeof value !== 'string') return undefined
-  const normalized = value.trim().toLowerCase()
-  if (normalized === 'high' || normalized === 'medium' || normalized === 'low') return normalized
-  return undefined
-}
-
-function normalizeFindings(findings: AuditResult['findings']): AuditResult['findings'] {
-  return findings.map((finding) => ({
-    ...finding,
-    confidence: normalizeConfidence((finding as { confidence?: unknown }).confidence),
-  }))
-}
-
-const US_STATE_CODES = new Set([
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
-  'DC',
-])
-
-function extractStateFromHospitalName(hospitalName: string): string {
-  const match = hospitalName.match(/\b([A-Z]{2})\b/g)
-  if (!match) return ''
-  const state = match.find((code) => US_STATE_CODES.has(code))
-  return state ?? ''
-}
-
-function buildHospitalPriceContext(
-  hospitalPrices: HospitalPriceResult | null,
-  findings: AuditResult['findings'],
-  lineItems: BillInput['lineItems']
+function buildDisputeLetterPrompt(
+  billInput: BillInput,
+  findings: AuditFinding[],
+  summary: string,
+  hospitalPrices: Awaited<ReturnType<typeof lookupHospitalPricesV2>>
 ): string {
-  if (!hospitalPrices) return ''
+  const totalBilled = billInput.lineItems.reduce((s, li) => s + (li.billedAmount ?? 0), 0)
 
-  const hospitalPriceLines: string[] = []
-  for (const finding of findings) {
-    const f = finding as typeof finding & { hospitalGrossCharge?: number }
-    if (f.hospitalGrossCharge == null) continue
-    const lineItem = lineItems[finding.lineItemIndex]
-    if (!lineItem || lineItem.billedAmount <= f.hospitalGrossCharge) continue
-    hospitalPriceLines.push(
-      `CPT ${finding.cptCode}: billed $${lineItem.billedAmount.toFixed(2)}, ` +
-      `hospital's own published gross charge $${f.hospitalGrossCharge.toFixed(2)} ` +
-      `(source: ${hospitalPrices.mrfUrl})`
-    )
-  }
-
-  if (hospitalPriceLines.length === 0) return ''
-
-  return [
-    '',
-    'Hospital\'s own CMS-required price transparency file shows these discrepancies:',
-    hospitalPriceLines.join('\n'),
-    'Include a paragraph citing these discrepancies and the MRF URL as evidence.',
-    '',
-  ].join('\n')
-}
-
-/**
- * For line items that have no existing finding, check whether the billed amount
- * exceeds the hospital's own published gross charge and create a warning.
- */
-function buildAboveListPriceFindings(
-  lineItems: BillInput['lineItems'],
-  hospitalPrices: HospitalPriceResult | null,
-  existingIndexes: Set<number>
-): AuditResult['findings'] {
-  if (!hospitalPrices) return []
-
-  const findings: AuditResult['findings'] = []
-
-  for (let i = 0; i < lineItems.length; i++) {
-    if (existingIndexes.has(i)) continue
-
-    const lineItem = lineItems[i]
-    const code = lineItem.cpt.trim().toUpperCase()
-    const record = hospitalPrices.charges[code]
-    if (!record) continue
-
-    const grossCharge = record.grossCharge
-    if (grossCharge == null || lineItem.billedAmount <= grossCharge) continue
-
-    const overcharge = lineItem.billedAmount - grossCharge
-
-    findings.push({
-      lineItemIndex: i,
-      cptCode: code,
-      severity: 'warning',
-      errorType: 'above_hospital_list_price',
-      confidence: 'high',
-      description: `${code} was billed at $${lineItem.billedAmount.toFixed(2)}, but this hospital's own CMS-required price transparency file lists the gross charge as $${grossCharge.toFixed(2)} — a difference of $${overcharge.toFixed(2)}. The billed amount exceeds the hospital's own published rate.`,
-      standardDescription: CPT_DESCRIPTIONS[code] ?? lineItem.description,
-      recommendation: `Ask billing why the charge exceeds the hospital's published gross charge of $${grossCharge.toFixed(2)}. The hospital's own price transparency file (${hospitalPrices.mrfUrl}) is public record and can be cited in a dispute.`,
-      medicareRate: loadMpfsRate(code)?.nonfac_rate ?? loadClfsRate(code)?.rate ?? clfs[code]?.rate,
-      markupRatio: undefined,
-      ncciBundledWith: undefined,
-      hospitalGrossCharge: grossCharge,
-      hospitalCashPrice: record.discountedCash ?? undefined,
-      hospitalPriceSource: hospitalPrices.mrfUrl || undefined,
+  const findingLines = findings
+    .filter(f => f.lineItemIndex >= 0)
+    .map(f => {
+      const rate = f.medicareRate ? ` (Medicare rate: $${f.medicareRate.toFixed(2)})` : ''
+      return `- CPT ${f.cptCode}: ${f.description}${rate}`
     })
-  }
+    .join('\n')
 
-  return findings
-}
-
-// Thin wrappers that bind module-level data to the pure functions in audit-rules.ts
-function buildDataContext(input: BillInput): string {
-  return _buildDataContext(input.lineItems, input.billType ?? 'unknown', input.dateOfService)
-}
-
-function buildDeterministicFindings(input: BillInput): {
-  findings: AuditResult['findings']
-  promptNote: string
-} {
-  return _buildDeterministicFindings(
-    input.lineItems,
-    mpfs,
-    clfs,
-    emMdmTiers,
-    lcdCoverage,
-    input.billType ?? 'unknown',
-    input.dateOfService,
-    input.drgCode,
-    input.patientState
-  )
-}
-
-export async function auditBill(input: BillInput, traceId?: string): Promise<AuditResult> {
-  const log = createAuditLogger(traceId)
-  log.info('audit-start', {
-    lineItems: input.lineItems.length,
-    hospitalName: input.hospitalName ?? null,
-    billType: input.billType ?? 'unknown',
-    drgCode: input.drgCode ?? null,
-  })
-  const dataContext = buildDataContext(input)
-  const { findings: deterministicCoreFindings, promptNote } = buildDeterministicFindings(input)
-  const arithmeticFindings = buildArithmeticFindings(input.lineItems, input.billTotal)
-  const dateFindings = buildDateFindings(input.lineItems, input.admissionDate, input.dischargeDate)
-  const gfeFindings = buildGfeFindings(input.lineItems, input.goodFaithEstimate)
-  const deterministicFindings = [...deterministicCoreFindings, ...arithmeticFindings, ...dateFindings, ...gfeFindings]
-  log.info('deterministic-findings-built', {
-    deterministicCore: deterministicCoreFindings.length,
-    arithmetic: arithmeticFindings.length,
-    date: dateFindings.length,
-    gfe: gfeFindings.length,
-    total: deterministicFindings.length,
-  })
-  const deterministicCodes = new Set(
-    deterministicFindings
-      .filter((finding) => finding.lineItemIndex >= 0)
-      .map((finding) => `${finding.cptCode}:${finding.lineItemIndex}`)
-  )
-
-  // Call 1: findings + summary + extractedMeta
-  const prompt1 = `You are a medical billing auditor helping a patient review their hospital bill for errors.
-
-IMPORTANT: Focus only on billing codes and amounts. Do not request or reference any personal health information beyond what is provided.
-
-Bill details:
-Hospital: ${input.hospitalName ?? 'Unknown'}
-Date of service: ${input.dateOfService ?? 'Unknown'}
-Account: ${input.accountNumber ?? 'Unknown'}
-Bill total: ${input.billTotal ?? 'Unknown'}
-Admission date: ${input.admissionDate ?? 'Unknown'}
-Discharge date: ${input.dischargeDate ?? 'Unknown'}
-Bill type: ${input.billType ?? 'unknown'}
-DRG code: ${input.drgCode ?? 'Unknown'}
-
-Line items:
-${JSON.stringify(input.lineItems, null, 2)}
-
-${dataContext ? `Reference data from CMS (only for codes on this bill):\n${dataContext}` : ''}${promptNote}
-
-Analyze this bill for the following error types. NCCI unbundling, duplicates, and pharmacy markups above 4.5× ASP are already handled above — focus your analysis on:
-1. UPCODING: E&M code (99201-99285) that seems too high for the diagnosis codes present. Frame as "may be worth questioning" — you cannot confirm without clinical notes.
-2. UNBUNDLING: CPT codes billed separately that NCCI says must be bundled. Check the NCCI bundling rules above. IMPORTANT: If a modifier -59 (or X{EPSU} modifier) is present on the component code, the unbundling may be legitimate — flag it as "warning" rather than "error" and note the modifier in your description. Without modifier -59, flag as "error" with confidence "high" when NCCI data is explicit.
-3. ICD10 MISMATCH: Diagnosis codes that don't clinically justify the procedure.
-
-For each finding, add a \`confidence\` field:
-- high: supported by explicit CMS data or direct code-to-rule match
-- medium: likely issue but some context missing
-- low: speculative; use sparingly
-
-For each finding, include \`standardDescription\` — the official clinical name of the CPT/HCPCS code. Do NOT copy from the bill description field.
-Use the available tools before making any claim that depends on MPFS, NCCI, MUE, or LCD data. If you mention one of those data sources in a finding, you must have called the corresponding tool first.
-
-For the summary:
-- totalBilled: sum of ALL line item billedAmounts
-- potentialOvercharge: sum across ALL findings (including confirmed ones above):
-  - UPCODING: billedAmount minus Medicare rate for that code
-  - UNBUNDLING: full billedAmount of the bundled code
-  - PHARMACY_MARKUP: billedAmount minus (ASP × units × 1.06)
-  - DUPLICATE: billedAmount of each duplicate occurrence
-  - ICD10_MISMATCH: full billedAmount of mismatched procedure
-  If billedAmount is 0, use Medicare rate as proxy.
-- errorCount: count of findings with severity "error"
-- warningCount: count of findings with severity "warning"
-- cleanCount: count of line items with NO finding
-
-Respond ONLY with valid JSON:
-{
-  "findings": [
-    {
-      "lineItemIndex": 0,
-      "cptCode": "99285",
-      "severity": "warning",
-      "errorType": "upcoding",
-      "confidence": "medium",
-      "description": "Patient-friendly explanation",
-      "standardDescription": "Emergency department visit, high medical decision making complexity",
-      "medicareRate": 150.00,
-      "markupRatio": null,
-      "ncciBundledWith": null,
-      "recommendation": "What patient should do"
-    }
-  ],
-  "summary": {
-    "totalBilled": 1500.00,
-    "potentialOvercharge": 450.00,
-    "errorCount": 1,
-    "warningCount": 2,
-    "cleanCount": 3
-  },
-  "extractedMeta": {
-    "hospitalName": "General Hospital",
-    "accountNumber": "12345",
-    "dateOfService": "2024-01-15"
-  }
-}`
-
-  const result1 = await callClaudeWithTools(prompt1, 90_000, traceId)
-
-  if ('error' in result1) {
-    log.error('audit-call-1-error', { error: result1.error })
-    if (result1.error.includes('timed out') || result1.error.includes('timeout')) {
-      throw new AuditTimeoutError()
-    }
-    if (isTransientModelFailure(result1.error)) {
-      throw new AuditTimeoutError('Gemini is busy right now — please try again.')
-    }
-    if (result1.error.includes('invalid output')) {
-      throw new AuditParseError(result1.error)
-    }
-    throw new Error(result1.error)
-  }
-
-  if (isRefusal(result1.text)) throw new AuditRefusalError()
-
-  let call1Result: { findings: AuditResult['findings']; summary: AuditResult['summary']; extractedMeta: AuditResult['extractedMeta'] }
-  try {
-    call1Result = JSON.parse(extractJSON(result1.text))
-    call1Result.findings = normalizeFindings(call1Result.findings ?? [])
-    log.info('audit-call-1-parsed', {
-      findings: call1Result.findings.length,
-      hasExtractedMeta: Boolean(call1Result.extractedMeta),
-    })
-  } catch {
-    log.error('audit-call-1-parse-failed', { responsePreview: result1.text.slice(0, 1200) })
-    throw new AuditParseError(`Raw response: ${result1.text.slice(0, 200)}`)
-  }
-
-  // Merge deterministic pre-findings with AI findings.
-  // De-duplicate: if AI already flagged a code the deterministic layer caught, prefer deterministic.
-  const aiFindings = call1Result.findings.filter(
-    (finding) => !deterministicCodes.has(`${finding.cptCode}:${finding.lineItemIndex}`)
-  )
-  call1Result.findings = [...deterministicFindings, ...aiFindings]
-
-  // Recompute summary counts to include deterministic findings
-  const totalBilled = input.lineItems.reduce((s, li) => s + li.billedAmount, 0)
-  const potentialOvercharge = call1Result.findings.reduce((s, f) => {
-    const li = input.lineItems[f.lineItemIndex]
-    const billedAmt = li?.billedAmount ?? 0
-    const mpfsRate = loadMpfsRate(f.cptCode)?.nonfac_rate ?? loadClfsRate(f.cptCode)?.rate ?? clfs[f.cptCode]?.rate ?? 0
-    if (f.errorType === 'upcoding') return s + Math.max(0, billedAmt - mpfsRate)
-    if (f.errorType === 'unbundling') return s + (billedAmt || mpfsRate)
-    if (f.errorType === 'pharmacy_markup') {
-      const aspRate = loadAspLimit(f.cptCode)?.payment_limit ?? 0
-      return s + Math.max(0, billedAmt - aspRate * (li?.units ?? 1) * 1.06)
-    }
-    if (f.errorType === 'duplicate') return s + (billedAmt || mpfsRate)
-    if (f.errorType === 'icd10_mismatch') return s + (billedAmt || mpfsRate)
-    if (f.errorType === 'arithmetic_error') return s + Math.abs(totalBilled - (input.billTotal ?? totalBilled))
-    if (f.errorType === 'date_error') return s + (billedAmt || mpfsRate)
-    if (f.errorType === 'no_surprises_act') return s + Math.max(0, totalBilled - (input.goodFaithEstimate ?? 0))
-    if (f.errorType === 'above_hospital_list_price') {
-      const hosp = (f as typeof f & { hospitalGrossCharge?: number }).hospitalGrossCharge ?? 0
-      return s + Math.max(0, billedAmt - hosp)
-    }
-    return s
-  }, 0)
-  call1Result.summary = {
-    ...call1Result.summary,
-    totalBilled,
-    potentialOvercharge: Math.round(potentialOvercharge * 100) / 100,
-    errorCount: call1Result.findings.filter(f => f.severity === 'error').length,
-    warningCount: call1Result.findings.filter(f => f.severity === 'warning').length,
-    cleanCount: input.lineItems.length - new Set(
-      call1Result.findings
-        .filter((finding) => finding.lineItemIndex >= 0)
-        .map((finding) => finding.lineItemIndex)
-    ).size,
-  }
-
-  const hospitalName = input.hospitalName ?? call1Result.extractedMeta?.hospitalName ?? ''
-  const stateFromAddress = input.hospitalAddress
-    ? extractStateFromHospitalName(input.hospitalAddress)
+  const hospitalPricingNote = hospitalPrices
+    ? `\nHospital's own published prices (from their CMS Machine-Readable File) were also reviewed. Where billed amounts exceed the hospital's own published gross charge, this is noted in the findings.`
     : ''
-  const state = stateFromAddress || extractStateFromHospitalName(hospitalName)
-  const hospitalPhone = input.hospitalPhone ?? null
-  const allCodes = input.lineItems.map((lineItem) => lineItem.cpt)
 
-  let hospitalPrices: HospitalPriceResult | null = null
-  try {
-    hospitalPrices = await lookupHospitalPricesV2(hospitalName, state, allCodes, hospitalPhone ?? undefined)
-  } catch (error) {
-    log.error('hospital-price-lookup-failed', {
-      error: serializeError(error),
-      hospitalName,
-      state,
-      hasPhone: Boolean(hospitalPhone),
-    })
-  }
-
-  const enrichedFindings = call1Result.findings.map((finding) => {
-    if (!hospitalPrices) return finding
-    const record = hospitalPrices.charges[finding.cptCode]
-    if (!record) return finding
-    return {
-      ...finding,
-      hospitalGrossCharge: record.grossCharge ?? undefined,
-      hospitalCashPrice: record.discountedCash ?? undefined,
-      hospitalPriceSource: hospitalPrices.mrfUrl || undefined,
-    }
-  })
-
-  const existingFindingIndexes = new Set(enrichedFindings.map(f => f.lineItemIndex))
-  const aboveListFindings = buildAboveListPriceFindings(
-    input.lineItems,
-    hospitalPrices,
-    existingFindingIndexes
-  )
-  const allFindings = [...enrichedFindings, ...aboveListFindings]
-
-  const hospitalPriceContext = buildHospitalPriceContext(hospitalPrices, allFindings, input.lineItems)
-
-  // Call 2: dispute letter
-  const prompt2 = `You are a medical billing auditor helping a patient write a dispute letter.
+  return `You are a medical billing advocate writing a formal dispute letter on behalf of a patient.
 
 Bill details:
-Hospital: ${input.hospitalName ?? call1Result.extractedMeta?.hospitalName ?? 'Unknown'}
-Date of service: ${input.dateOfService ?? call1Result.extractedMeta?.dateOfService ?? 'Unknown'}
-Account: ${input.accountNumber ?? call1Result.extractedMeta?.accountNumber ?? 'Unknown'}
+- Hospital/provider: ${billInput.hospitalName ?? '[HOSPITAL NAME]'}
+- Bill type: ${billInput.billType ?? 'unknown'}
+- Date of service: ${billInput.dateOfService ?? 'unknown'}
+- Account number: ${billInput.accountNumber ?? '[ACCOUNT NUMBER]'}
+- Total billed: $${totalBilled.toFixed(2)}
 
-Findings from billing audit:
-${JSON.stringify(allFindings, null, 2)}${hospitalPriceContext}
+Audit summary:
+${summary}
 
-Generate a dispute letter for the patient. Use these EXACT placeholder strings (they will be highlighted in amber in the UI):
-- [Your Full Name]
-- [Your Mailing Address]
-- [Today's Date]
-- [Account Number / Patient ID] — replace with extracted account number if found
-- [Date of Service] — replace with extracted date if found
-- [Hospital Name] — replace with extracted hospital name if found
+Confirmed billing errors and warnings (determined by CMS rule tables, NOT AI inference):
+${findingLines || 'No specific billing errors identified.'}
+${hospitalPricingNote}
 
-Letter must include: (1) opening citing right to dispute, (2) itemized table of flagged codes with reason and Medicare benchmark, (3) request for corrected bill or written justification, (4) regulatory reference to CMS billing rights (42 CFR 405.374), (5) signature block.
+Write a professional, factual dispute letter from the patient to the hospital billing department.
+The letter should:
+1. Reference specific CPT codes and findings from the CMS audit
+2. Request itemized explanations for each flagged charge
+3. Cite applicable CMS policies where relevant (NCCI, MUE, MPFS, OPPS as applicable)
+4. Use formal but firm language
+5. Include placeholders [PATIENT NAME] and [DATE] where appropriate
+6. NOT make claims about findings not listed above
 
-Respond ONLY with valid JSON matching this exact schema:
-{
-  "disputeLetter": {
-    "text": "Full letter text with [placeholder] markers",
-    "placeholders": ["[Your Full Name]", "[Your Mailing Address]"]
+Format as a complete letter with greeting, body paragraphs, and closing. Use markdown table for the disputed charges.`
+}
+
+export async function auditBill(
+  billInput: BillInput,
+  traceId?: string
+): Promise<AuditResult> {
+  const log = createAuditLogger(traceId)
+  log.info('audit-start', { lineItemCount: billInput.lineItems.length, billType: billInput.billType })
+
+  // --- Step 1: Deterministic findings from SQLite ---
+  const serviceDateStr = billInput.dateOfService ?? billInput.admissionDate
+  const { findings: deterministicFindings, summary } = buildDeterministicFindings(
+    billInput.lineItems,
+    billInput.billType ?? 'unknown',
+    serviceDateStr,
+    billInput.drgCode,
+    billInput.patientState,
+    billInput.serviceZip
+  )
+
+  // Arithmetic and date findings
+  const arithmeticFindings = buildArithmeticFindings(billInput.lineItems, billInput.billTotal)
+  const dateFindings = buildDateFindings(billInput.lineItems, billInput.admissionDate, billInput.dischargeDate)
+  const gfeFindings = buildGfeFindings(billInput.lineItems, billInput.goodFaithEstimate)
+
+  const allFindings = [...deterministicFindings, ...arithmeticFindings, ...dateFindings, ...gfeFindings]
+
+  log.info('deterministic-findings-complete', {
+    findingCount: allFindings.length,
+    errors: allFindings.filter(f => f.severity === 'error').length,
+  })
+
+  // --- Step 2: Hospital price comparison ---
+  let hospitalPrices: Awaited<ReturnType<typeof lookupHospitalPricesV2>> = null
+  if (billInput.hospitalName && billInput.hospitalAddress) {
+    const stateMatch = billInput.hospitalAddress.match(/\b([A-Z]{2})\b/)
+    const state = stateMatch?.[1] ?? billInput.patientState ?? ''
+    try {
+      hospitalPrices = await lookupHospitalPricesV2(
+        billInput.hospitalName,
+        state,
+        billInput.lineItems.map(li => li.cpt),
+        billInput.hospitalPhone
+      )
+
+      // Add hospital list price findings
+      if (hospitalPrices) {
+        for (let i = 0; i < billInput.lineItems.length; i++) {
+          const li = billInput.lineItems[i]
+          const charge = hospitalPrices.charges[li.cpt]
+          if (!charge?.grossCharge) continue
+          if (li.billedAmount > charge.grossCharge) {
+            allFindings.push({
+              lineItemIndex: i,
+              cptCode: li.cpt,
+              severity: 'error',
+              errorType: 'above_hospital_list_price',
+              confidence: 'high',
+              description: `CPT ${li.cpt} is billed at $${li.billedAmount.toFixed(2)}, which exceeds ${billInput.hospitalName}'s own published gross charge of $${charge.grossCharge.toFixed(2)}.`,
+              standardDescription: CPT_DESCRIPTIONS[li.cpt],
+              recommendation: `Request explanation for why the billed amount exceeds the hospital's own published price. You may cite the hospital's CMS Machine-Readable File.`,
+              medicareRate: undefined,
+              markupRatio: undefined,
+              ncciBundledWith: undefined,
+              hospitalGrossCharge: charge.grossCharge,
+              hospitalCashPrice: charge.discountedCash ?? undefined,
+              hospitalPriceSource: hospitalPrices.mrfUrl,
+            })
+          }
+        }
+      }
+    } catch (err) {
+      log.warn('hospital-price-lookup-failed', { error: serializeError(err as Error) })
+    }
   }
-}`
 
-  const result2 = await callClaude(prompt2, 60_000, traceId)
+  // --- Step 3: Generate dispute letter via LLM ---
+  const letterPrompt = buildDisputeLetterPrompt(billInput, allFindings, summary, hospitalPrices)
+  const letterResult = await runWorker(letterPrompt, 60_000, traceId)
 
-  if ('error' in result2) {
-    log.error('audit-call-2-error', { error: result2.error })
-    if (result2.error.includes('timed out') || result2.error.includes('timeout')) {
-      throw new AuditTimeoutError()
-    }
-    if (isTransientModelFailure(result2.error)) {
-      throw new AuditTimeoutError('Gemini is busy right now — please try again.')
-    }
-    if (result2.error.includes('invalid output')) {
-      throw new AuditParseError(result2.error)
-    }
-    throw new Error(result2.error)
+  let disputeLetterText = ''
+  if (letterResult.text) {
+    disputeLetterText = letterResult.text
+  } else {
+    log.warn('letter-generation-failed', { error: letterResult.error })
+    disputeLetterText = generateFallbackLetter(billInput, allFindings)
   }
 
-  if (isRefusal(result2.text)) throw new AuditRefusalError()
+  // Extract placeholders
+  const placeholderMatches = disputeLetterText.match(/\[[^\]]+\]/g) ?? []
+  const placeholders = [...new Set(placeholderMatches)]
 
-  let call2Result: { disputeLetter: AuditResult['disputeLetter'] }
-  try {
-    call2Result = JSON.parse(extractJSON(result2.text))
-    log.info('audit-call-2-parsed', {
-      disputeLetterLength: call2Result.disputeLetter?.text?.length ?? 0,
-      placeholders: call2Result.disputeLetter?.placeholders?.length ?? 0,
-    })
-  } catch {
-    log.error('audit-call-2-parse-failed', { responsePreview: result2.text.slice(0, 1200) })
-    throw new AuditParseError(`Raw response: ${result2.text.slice(0, 200)}`)
-  }
+  // --- Step 4: Build summary ---
+  const errorCount = allFindings.filter(f => f.severity === 'error').length
+  const warningCount = allFindings.filter(f => f.severity === 'warning').length
+  const totalBilled = billInput.lineItems.reduce((s, li) => s + (li.billedAmount ?? 0), 0)
+  const potentialOvercharge = allFindings
+    .filter(f => f.severity === 'error' && f.lineItemIndex >= 0)
+    .reduce((s, f) => s + (billInput.lineItems[f.lineItemIndex]?.billedAmount ?? 0), 0)
 
-  const aboveHospitalListCount = allFindings.reduce((count, finding) => {
-    const record = finding as typeof finding & { hospitalGrossCharge?: number }
-    const lineItem = input.lineItems[finding.lineItemIndex]
-    if (record.hospitalGrossCharge != null && lineItem && lineItem.billedAmount > record.hospitalGrossCharge) {
-      return count + 1
-    }
-    return count
-  }, 0)
+  const aboveHospitalFindings = allFindings.filter(f => f.errorType === 'above_hospital_list_price')
 
-  const aboveHospitalListTotal = allFindings.reduce((total, finding) => {
-    const record = finding as typeof finding & { hospitalGrossCharge?: number }
-    const lineItem = input.lineItems[finding.lineItemIndex]
-    if (record.hospitalGrossCharge != null && lineItem && lineItem.billedAmount > record.hospitalGrossCharge) {
-      return total + (lineItem.billedAmount - record.hospitalGrossCharge)
-    }
-    return total
-  }, 0)
+  log.info('audit-complete', {
+    findingCount: allFindings.length,
+    errorCount,
+    warningCount,
+    potentialOvercharge,
+  })
 
   return {
-    ...call1Result,
     findings: allFindings,
+    disputeLetter: { text: disputeLetterText, placeholders },
     summary: {
-      ...call1Result.summary,
-      aboveHospitalListCount,
-      aboveHospitalListTotal,
-      hospitalName: hospitalPrices?.hospitalName || undefined,
-      hospitalMrfUrl: hospitalPrices?.mrfUrl || undefined,
+      totalBilled,
+      potentialOvercharge,
+      errorCount,
+      warningCount,
+      cleanCount: billInput.lineItems.length - new Set(allFindings.filter(f => f.lineItemIndex >= 0).map(f => f.lineItemIndex)).size,
+      aboveHospitalListCount: aboveHospitalFindings.length || undefined,
+      aboveHospitalListTotal: aboveHospitalFindings.reduce((s, f) => s + (billInput.lineItems[f.lineItemIndex]?.billedAmount ?? 0), 0) || undefined,
+      hospitalName: hospitalPrices?.hospitalName,
+      hospitalMrfUrl: hospitalPrices?.mrfUrl,
     },
-    ...call2Result,
-  } as AuditResult
+    extractedMeta: {
+      hospitalName: billInput.hospitalName,
+      hospitalAddress: billInput.hospitalAddress,
+      hospitalPhone: billInput.hospitalPhone,
+      accountNumber: billInput.accountNumber,
+      dateOfService: billInput.dateOfService,
+      billType: billInput.billType,
+    },
+  }
 }
+
+function generateFallbackLetter(billInput: BillInput, findings: AuditFinding[]): string {
+  const errorCount = findings.filter(f => f.severity === 'error').length
+  return `[DATE]
+
+[PATIENT NAME]
+[ADDRESS]
+
+${billInput.hospitalName ?? '[HOSPITAL NAME]'}
+Billing Department
+
+Re: Account Number ${billInput.accountNumber ?? '[ACCOUNT NUMBER]'}
+
+Dear Billing Department,
+
+I am writing to dispute ${errorCount} billing error(s) identified in my bill dated ${billInput.dateOfService ?? '[DATE OF SERVICE]'}.
+
+Please provide itemized documentation for the following flagged charges:
+
+${findings.filter(f => f.severity === 'error').map(f => `- CPT ${f.cptCode}: ${f.description}`).join('\n')}
+
+I request a corrected statement within 30 days.
+
+Sincerely,
+[PATIENT NAME]`
+}
+
+// Re-export for compatibility
+export { CPT_DESCRIPTIONS }

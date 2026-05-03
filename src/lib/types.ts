@@ -40,7 +40,12 @@ export interface AuditFinding {
   errorType:
     | 'upcoding'
     | 'unbundling'
+    | 'mue_units'
     | 'pharmacy_markup'
+    | 'opps_benchmark'
+    | 'ipps_drg'
+    | 'dmepos_benchmark'
+    | 'ambulance_benchmark'
     | 'icd10_mismatch'
     | 'duplicate'
     | 'above_hospital_list_price'
@@ -88,6 +93,7 @@ export interface AuditResult {
     billTotal?: number
     admissionDate?: string
     dischargeDate?: string
+    billType?: BillType
   }
 }
 

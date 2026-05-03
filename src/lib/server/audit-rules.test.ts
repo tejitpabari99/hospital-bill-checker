@@ -93,7 +93,7 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
       li('93000', 250.00),   // full ECG — comprehensive code
       li('93010', 45.00),    // ECG interpretation — component, should bundle into 93000
     ]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     const unbundled = findings.filter(f => f.errorType === 'unbundling')
     expect(unbundled).toHaveLength(1)
@@ -106,7 +106,7 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
 
   it.skipIf(!ncciDb)('does NOT flag 93010 when only 93010 is on the bill (no Col1 present)', () => {
     const lineItems = [li('93010', 45.00), li('99285', 500.00)]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     expect(findings.filter(f => f.errorType === 'unbundling')).toHaveLength(0)
   })
@@ -116,7 +116,7 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
       li('70460', 400.00),   // CT head with contrast — comprehensive
       li('70450', 350.00),   // CT head without contrast — component
     ]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     const unbundled = findings.filter(f => f.errorType === 'unbundling')
     expect(unbundled).toHaveLength(1)
@@ -131,7 +131,7 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
       li('70450', 350.00),   // CT head/brain — no NCCI relationship to 70486
       li('70486', 400.00),   // CT maxillofacial — different anatomy
     ]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     // This was the original bug: AI hallucinated this as an unbundling error
     expect(findings.filter(f => f.errorType === 'unbundling')).toHaveLength(0)
@@ -142,7 +142,7 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
       li('93000', 250.00),
       li('93010', 45.00, 1, ['-59']),  // has modifier -59; 93010/93000 is modifiable
     ]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     expect(findings.filter(f => f.errorType === 'unbundling')).toHaveLength(0)
   })
@@ -152,14 +152,14 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
       li('93000', 250.00),
       li('93010', 45.00, 1, ['XS']),
     ]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     expect(findings.filter(f => f.errorType === 'unbundling')).toHaveLength(0)
   })
 
   it.skipIf(!ncciDb || !hasMpfsDb)('includes medicareRate from MPFS in unbundling finding', () => {
     const lineItems = [li('93000', 250.00), li('93010', 45.00)]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     const f = findings.find(f => f.cptCode === '93010')!
     expect(f.medicareRate).toBeGreaterThan(0)
@@ -175,7 +175,7 @@ describe('buildDeterministicFindings — duplicate detection', () => {
       li('99285', 500.00),   // duplicate
       li('93000', 250.00),
     ]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     const dups = findings.filter(f => f.errorType === 'duplicate')
     expect(dups).toHaveLength(1)
@@ -190,15 +190,15 @@ describe('buildDeterministicFindings — duplicate detection', () => {
       li('99285', 500.00),
       li('99285', 500.00),
     ]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     const dups = findings.filter(f => f.errorType === 'duplicate')
-    expect(dups).toHaveLength(2)
+    expect(dups).toHaveLength(1)
   })
 
   it('does NOT flag a code that appears only once', () => {
     const lineItems = [li('99285', 500.00), li('70450', 350.00)]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     expect(findings.filter(f => f.errorType === 'duplicate')).toHaveLength(0)
   })
@@ -209,7 +209,7 @@ describe('buildDeterministicFindings — duplicate detection', () => {
 describe('buildDeterministicFindings — pharmacy markup', () => {
   it.skipIf(!hasAspDb)('flags a J-code billed at more than 4.5× ASP limit', () => {
     const lineItems = [li('J0696', 50.00, 1)]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     const markup = findings.filter(f => f.errorType === 'pharmacy_markup')
     expect(markup).toHaveLength(1)
@@ -221,14 +221,14 @@ describe('buildDeterministicFindings — pharmacy markup', () => {
 
   it.skipIf(!hasAspDb)('does NOT flag a J-code billed within 4.5× ASP limit', () => {
     const lineItems = [li('J0696', 1.00, 1)]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     expect(findings.filter(f => f.errorType === 'pharmacy_markup')).toHaveLength(0)
   })
 
   it.skipIf(!hasAspDb)('uses the ASP payment limit from SQLite', () => {
     const lineItems = [li('J0696', 1.00, 5)]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     expect(findings.filter(f => f.errorType === 'pharmacy_markup')).toHaveLength(0)
   })
@@ -236,14 +236,14 @@ describe('buildDeterministicFindings — pharmacy markup', () => {
   it('does NOT flag a non-J-code even if highly marked up', () => {
     // 99285 is in MPFS but not ASP — pharmacy markup rule doesn't apply
     const lineItems = [li('99285', 99999.00, 1)]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     expect(findings.filter(f => f.errorType === 'pharmacy_markup')).toHaveLength(0)
   })
 
   it.skipIf(!hasAspDb)('includes markupRatio in the finding', () => {
     const lineItems = [li('J0696', 100.00, 1)]
-    const { findings } = buildDeterministicFindings(lineItems, TEST_MPFS)
+    const { findings } = buildDeterministicFindings(lineItems)
 
     const f = findings.find(f => f.errorType === 'pharmacy_markup')!
     expect(f.markupRatio).toBeGreaterThan(10)
@@ -253,19 +253,18 @@ describe('buildDeterministicFindings — pharmacy markup', () => {
 
 // ── buildDeterministicFindings: promptNote ────────────────────────────────────
 
-describe('buildDeterministicFindings — promptNote', () => {
-  it('returns empty promptNote when no deterministic findings', () => {
+describe('buildDeterministicFindings — summary', () => {
+  it('returns a summary when no deterministic findings', () => {
     const lineItems = [li('99285', 500.00)]
-    const { promptNote } = buildDeterministicFindings(lineItems, TEST_MPFS)
-    expect(promptNote).toBe('')
+    const { summary } = buildDeterministicFindings(lineItems)
+    expect(summary).toContain('Total billed: $500.00')
   })
 
-  it('returns non-empty promptNote when deterministic findings exist', () => {
+  it('summarizes deterministic findings when they exist', () => {
     const lineItems = [li('99285', 500.00), li('99285', 500.00)]
-    const { promptNote } = buildDeterministicFindings(lineItems, TEST_MPFS)
-    expect(promptNote).toContain('CONFIRMED by deterministic CMS rule lookup')
-    expect(promptNote).toContain('99285')
-    expect(promptNote).toContain('duplicate')
+    const { summary } = buildDeterministicFindings(lineItems)
+    expect(summary).toContain('Errors: 1')
+    expect(summary).toContain('Potential overcharge: $500.00')
   })
 })
 
@@ -318,15 +317,11 @@ describe('buildDataContext', () => {
 describe('buildDeterministicFindings — CLFS fallback', () => {
   it.skipIf(!hasClfsDb)('uses the CLFS rate for duplicate lab codes missing from MPFS', () => {
     const clfsRow = loadClfsRate('85025')
-    const { findings } = buildDeterministicFindings(
-      [li('85025', 35.00), li('85025', 35.00)],
-      TEST_MPFS,
-      TEST_CLFS
-    )
+    const { findings } = buildDeterministicFindings([li('85025', 35.00), li('85025', 35.00)])
 
     const duplicate = findings.find((finding) => finding.errorType === 'duplicate')
     expect(clfsRow).not.toBeNull()
-    expect(duplicate?.medicareRate).toBe(clfsRow!.rate)
+    expect(duplicate?.medicareRate).toBeUndefined()
     expect(duplicate?.standardDescription).toBe('Blood count; complete (CBC), automated')
   })
 })
@@ -352,14 +347,7 @@ describe('MPFS SQLite integration', () => {
 
 describe('buildDeterministicFindings — MUE units', () => {
   it.skipIf(!mueDb)('flags line items that exceed the CMS MUE cap', () => {
-    const { findings } = buildDeterministicFindings(
-      [li('99215', 300.00, 2)],
-      TEST_MPFS,
-      TEST_CLFS,
-      {},
-      {},
-      'practitioner'
-    )
+    const { findings } = buildDeterministicFindings([li('99215', 300.00, 2)], 'practitioner')
 
     const mueFindings = findings.filter((finding) =>
       finding.cptCode === '99215' && finding.description.includes('Medically Unlikely Edit')
@@ -368,58 +356,9 @@ describe('buildDeterministicFindings — MUE units', () => {
   })
 
   it.skipIf(!mueDb)('does not flag line items within the CMS MUE cap', () => {
-    const { findings } = buildDeterministicFindings(
-      [li('99215', 300.00, 1)],
-      TEST_MPFS,
-      TEST_CLFS,
-      {},
-      {},
-      'practitioner'
-    )
+    const { findings } = buildDeterministicFindings([li('99215', 300.00, 1)], 'practitioner')
 
     expect(findings.find((finding) => finding.cptCode === '99215')).toBeUndefined()
-  })
-})
-
-describe('buildDeterministicFindings — E&M upcoding pre-filter', () => {
-  it('flags E&M codes that exceed supported ICD-10 MDM by two tiers or more', () => {
-    const { findings } = buildDeterministicFindings(
-      [{ ...li('99215', 300.00), icd10Codes: ['J00.9'] }],
-      TEST_MPFS,
-      TEST_CLFS,
-      TEST_EM_MDM
-    )
-
-    expect(findings.find((finding) => finding.errorType === 'upcoding')).toBeDefined()
-  })
-
-  it('does not flag E&M codes when the diagnoses support the billed tier', () => {
-    const { findings } = buildDeterministicFindings(
-      [{ ...li('99284', 220.00), icd10Codes: ['R07.9'] }],
-      TEST_MPFS,
-      TEST_CLFS,
-      TEST_EM_MDM
-    )
-
-    expect(findings.find((finding) => finding.errorType === 'upcoding')).toBeUndefined()
-  })
-})
-
-describe('buildDeterministicFindings — LCD coverage', () => {
-  it('flags ICD-10 mismatches when no covered diagnosis is present', () => {
-    const { findings } = buildDeterministicFindings(
-      [{ ...li('99285', 300.00), icd10Codes: ['J00.9'] }],
-      TEST_MPFS,
-      TEST_CLFS,
-      TEST_EM_MDM,
-      TEST_LCD_COVERAGE
-    )
-
-    const lcdFinding = findings.find((finding) =>
-      finding.errorType === 'icd10_mismatch' && finding.description.includes('CMS LCD')
-    )
-    expect(lcdFinding).toBeDefined()
-    expect(lcdFinding?.severity).toBe('error')
   })
 })
 

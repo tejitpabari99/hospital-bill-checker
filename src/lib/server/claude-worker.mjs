@@ -1,70 +1,29 @@
 /**
- * Standalone script: reads JSON { prompt } from stdin,
- * calls Gemini API, writes JSON { text } or { error } to stdout.
- * Runs as a child process so SDK fatal signals don't affect the main server.
+ * claude-worker.mjs
+ * Child process: receives audit context + deterministic findings via stdin,
+ * calls Gemini to generate a dispute letter.
+ * Writes { text } or { error } to stdout.
  */
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { createServerLogger, serializeError } from './logger.js'
 
 let inputData = ''
 process.stdin.setEncoding('utf8')
 process.stdin.on('data', chunk => { inputData += chunk })
 process.stdin.on('end', async () => {
   try {
-    const { prompt, contents, tools, traceId } = JSON.parse(inputData.trim())
-    const log = createServerLogger('audit-worker', traceId)
+    const { prompt } = JSON.parse(inputData.trim())
+
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    // pro first for audit quality; flash as 503 fallback only
-    const models = ['gemini-2.5-pro', 'gemini-2.5-flash']
-    let lastError = null
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { temperature: 0.3 },
+    })
 
-    for (const modelName of models) {
-      try {
-        log.info('model-attempt', {
-          modelName,
-          hasPrompt: Boolean(prompt),
-          contentsCount: Array.isArray(contents) ? contents.length : 0,
-          toolCount: Array.isArray(tools) ? tools.length : 0,
-        })
-        const modelConfig = {
-          model: modelName,
-          generationConfig: { temperature: 0 },  // deterministic output
-        }
-        if (tools?.length) {
-          modelConfig.tools = [{ functionDeclarations: tools }]
-        }
-
-        const model = genAI.getGenerativeModel(modelConfig)
-        const result = await model.generateContent(contents ? { contents } : prompt)
-        const response = result.response
-        const candidateParts = response?.candidates?.[0]?.content?.parts ?? []
-        const functionCalls = typeof response.functionCalls === 'function'
-          ? response.functionCalls()
-          : candidateParts.filter((part) => part?.functionCall).map((part) => part.functionCall)
-        const text = functionCalls?.length ? '' : response.text()
-        log.info('model-success', {
-          modelName,
-          functionCallCount: functionCalls?.length ?? 0,
-          textLength: text.length,
-          partCount: candidateParts.length,
-        })
-        process.stdout.write(JSON.stringify({ text, functionCalls, parts: candidateParts, model: modelName }))
-        process.exit(0)
-      } catch (err) {
-        lastError = err
-        const message = err?.message ?? String(err)
-        log.error('model-error', { modelName, message })
-        const lower = message.toLowerCase()
-        if (!lower.includes('503') && !lower.includes('high demand') && !lower.includes('service unavailable')) {
-          throw err
-        }
-      }
-    }
-
-    throw lastError ?? new Error('Gemini returned no response')
+    const result = await model.generateContent(prompt)
+    const text = result.response.text()
+    process.stdout.write(JSON.stringify({ text }))
+    process.exit(0)
   } catch (err) {
-    const log = createServerLogger('audit-worker')
-    log.error('fatal-error', { error: serializeError(err) })
     process.stdout.write(JSON.stringify({ error: err?.message ?? String(err) }))
     process.exit(0)
   }
