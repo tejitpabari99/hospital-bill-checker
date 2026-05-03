@@ -2,6 +2,8 @@
 
 Generated from code review of commits `9ac2a7d` → `2edf889`.
 
+> **Round 2 review (2026-05-03):** Fixes 01–06 were implemented and verified. Fixes 07–10 address domain correctness bugs found in the second review pass.
+
 ## Fix Order
 
 | Fix | File | Description | Priority |
@@ -12,6 +14,10 @@ Generated from code review of commits `9ac2a7d` → `2edf889`.
 | 04 | fix-04-trilliant-robustness.md | Trilliant: atomic writes, phone dedup, column mapping | HIGH |
 | 05 | fix-05-frontend-ui-fixes.md | UI: garbled text, wrong numbering, input validation | MEDIUM |
 | 06 | fix-06-test-improvements.md | Tests: assertions, missing edge cases, fixture consistency | MEDIUM |
+| 07 | fix-07-ncci-severity.md | NCCI indicator=1 severity (warning not error); skip indicator=9 | CRITICAL |
+| 08 | fix-08-asp-per-unit.md | ASP overcharge uses per-unit billed amount (fixes false positives for multi-unit drugs) | CRITICAL |
+| 09 | fix-09-audit-engine-domain.md | MPFS 2× threshold; skip Check 9 for inpatient; flag 0-unit lines | CRITICAL |
+| 10 | fix-10-remaining-gaps.md | DMEPOS idempotency; OPPS Addendum A header; missing skip-path tests | HIGH |
 
 ## Implementation Notes
 

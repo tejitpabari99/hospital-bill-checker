@@ -148,7 +148,7 @@ describe('buildDeterministicFindings — NCCI unbundling', () => {
   it.skipIf(!ncciDb)('skips a modifiable pair when modifier -59 is present', () => {
     const lineItems = [
       li('93000', 250.00),
-      li('93010', 45.00, 1, ['-59']),  // has modifier -59; 93010/93000 is modifiable
+      li('93010', 45.00, 1, ['59']),  // API sanitizer strips leading dash; audit engine sees '59'
     ]
     const { findings } = buildDeterministicFindings(lineItems)
 
@@ -296,7 +296,7 @@ describe('buildDeterministicFindings — SQLite audit routes', () => {
     })
     expect(finding?.description).toContain('APC 5025: Level 5 Type A ED Visits')
     expect(summary).toContain('Bill type: outpatient')
-    expect(summary).toContain('Warnings: 2')
+    expect(summary).toContain('Warnings: 1')
   })
 
   it.skipIf(!hasIppsDb)('emits a concrete inpatient DRG informational finding', () => {
@@ -663,20 +663,21 @@ describe('audit-rules edge-case regressions', () => {
     expect(ambulanceFindings).toHaveLength(0)
   })
 
-  it('A0428 (BLS ambulance) code DOES trigger ambulance check when applicable', () => {
+  it.skipIf(!hasAmbulanceDb)('A0428 (BLS ambulance) code DOES produce ambulance_benchmark finding when billed at extreme markup', () => {
     const lineItems = [
       { cpt: 'A0428', description: 'BLS transport', units: 1, billedAmount: 50_000, modifiers: [], icd10Codes: [] },
     ]
-    expect(() => {
-      buildDeterministicFindings(
-        lineItems,
-        'practitioner',
-        '2025-01-01',
-        undefined,
-        undefined,
-        '78701'
-      )
-    }).not.toThrow()
+    const { findings } = buildDeterministicFindings(
+      lineItems,
+      'practitioner',
+      '2025-01-01',
+      undefined,
+      undefined,
+      '78701'
+    )
+    const ambulanceFindings = findings.filter(f => f.errorType === 'ambulance_benchmark')
+    expect(ambulanceFindings.length).toBeGreaterThan(0)
+    expect(ambulanceFindings[0].cptCode).toBe('A0428')
   })
 
   it('checkMueExceeded fires when mai is integer 3 (not string)', () => {

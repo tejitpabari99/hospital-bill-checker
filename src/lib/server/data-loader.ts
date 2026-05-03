@@ -66,7 +66,7 @@ export function loadNcciPairs(
 
 export type MueRow = {
   hcpcs_code: string
-  mue_value: number
+  mue_value: number | null  // null when CMS suppresses the public limit ("*" in source file)
   mue_adjudication_indicator: string  // '1' | '2' | '3'
   mue_rationale: string | null
 }

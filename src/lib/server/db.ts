@@ -8,7 +8,10 @@ function openDb(filename: string): Database.Database | null {
   const path = join(DATA_DIR, filename)
   if (!existsSync(path)) return null
   try {
-    return new Database(path, { readonly: true })
+    const db = new Database(path, { readonly: true })
+    // Probe the file — catches LFS pointer files that pass construction but fail on use
+    db.prepare('SELECT 1').get()
+    return db
   } catch (err) {
     console.warn(`[db] Failed to open ${filename}:`, err)
     return null

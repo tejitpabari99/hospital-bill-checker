@@ -223,7 +223,10 @@ export async function auditBill(
       aboveHospitalListCount: aboveHospitalFindings.length || undefined,
       aboveHospitalListTotal: aboveHospitalFindings.reduce((s, f) => s + (billInput.lineItems[f.lineItemIndex]?.billedAmount ?? 0), 0) || undefined,
       hospitalName: hospitalPrices?.hospitalName,
-      hospitalMrfUrl: hospitalPrices?.mrfUrl,
+      hospitalMrfUrl: (() => {
+        const u = hospitalPrices?.mrfUrl
+        return u && /^https:\/\/[a-zA-Z0-9.\-_/?=%&#+:@]+$/.test(u) ? u : undefined
+      })(),
     },
     extractedMeta: {
       hospitalName: billInput.hospitalName,

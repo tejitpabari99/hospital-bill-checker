@@ -69,7 +69,7 @@ const MODIFIER_59_FAMILY = ['59', 'XE', 'XP', 'XS', 'XU']
 // Explicit set of ambulance transport HCPCS codes eligible for the ambulance fee schedule check.
 // Do NOT use a regex — A03xx codes are drug administration, not ambulance transport.
 const AMBULANCE_TRANSPORT_CODES = new Set([
-  'A0424', 'A0426', 'A0427', 'A0428', 'A0429',
+  'A0424', 'A0425', 'A0426', 'A0427', 'A0428', 'A0429',
   'A0430', 'A0431', 'A0432', 'A0433', 'A0434',
   'A0435', 'A0436',
 ])
@@ -466,7 +466,8 @@ export function buildDeterministicFindings(
       if (alreadyFlaggedCodes.has(code)) continue
 
       const oppsRow = loadOppsRate(code)
-      if (!oppsRow || oppsRow.payment_rate == null) continue
+      // payment_rate = 0 means packaged/bundled into another APC — not separately payable
+      if (!oppsRow || oppsRow.payment_rate == null || oppsRow.payment_rate === 0) continue
 
       const billed = lineItems[i].billedAmount
       const benchmark = oppsRow.payment_rate
