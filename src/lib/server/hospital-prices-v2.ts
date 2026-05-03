@@ -3,11 +3,28 @@ import { promisify } from 'util'
 import { join } from 'path'
 import { existsSync, statSync } from 'fs'
 import { getHospitalCacheDb } from './db'
-import type { HospitalChargeRecord, HospitalPriceResult } from './hospital-prices'
 
 const execFileAsync = promisify(execFile)
 const FETCH_SCRIPT = join(process.cwd(), 'scripts', 'fetch_hospital_trilliant.py')
 const FETCH_TIMEOUT_MS = 90_000
+
+export interface HospitalChargeRecord {
+  code: string
+  description: string
+  grossCharge: number | null
+  discountedCash: number | null
+  minNegotiated: number | null
+  maxNegotiated: number | null
+  setting: string
+}
+
+export interface HospitalPriceResult {
+  hospitalName: string
+  mrfUrl: string
+  fetchedAt: string
+  charges: Record<string, HospitalChargeRecord>
+  dataNote?: string
+}
 
 async function ensureTrilliantCache(
   hospitalName: string,
@@ -105,5 +122,6 @@ export async function lookupHospitalPricesV2(
     mrfUrl: metaObj.source ?? '',
     fetchedAt: metaObj.converted_at ?? new Date().toISOString(),
     charges,
+    dataNote: 'Hospital pricing data sourced from Trilliant Health (Oria). Updated when last requested; may be up to 7 days old.',
   }
 }

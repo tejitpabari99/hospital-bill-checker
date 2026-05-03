@@ -73,10 +73,6 @@ vi.mock('child_process', () => ({
   },
 }))
 
-vi.mock('./hospital-prices', () => ({
-  lookupHospitalPrices: vi.fn(async () => null),
-}))
-
 vi.mock('./hospital-prices-v2', () => ({
   lookupHospitalPricesV2: vi.fn(async () => null),
 }))

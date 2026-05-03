@@ -123,45 +123,49 @@ export async function auditBill(
 
   // --- Step 2: Hospital price comparison ---
   let hospitalPrices: Awaited<ReturnType<typeof lookupHospitalPricesV2>> = null
-  if (billInput.hospitalName && billInput.hospitalAddress) {
-    const stateMatch = billInput.hospitalAddress.match(/\b([A-Z]{2})\b/)
-    const state = stateMatch?.[1] ?? billInput.patientState ?? ''
-    try {
-      hospitalPrices = await lookupHospitalPricesV2(
-        billInput.hospitalName,
-        state,
-        billInput.lineItems.map(li => li.cpt),
-        billInput.hospitalPhone
-      )
+  if (billInput.hospitalName) {
+    const stateFromAddr = billInput.hospitalAddress?.match(/\b([A-Z]{2})\b/)?.[1]
+    const stateFromName = billInput.hospitalName?.match(/\b([A-Z]{2})\b/)?.[1]
+    const state = stateFromAddr ?? stateFromName ?? billInput.patientState ?? ''
 
-      // Add hospital list price findings
-      if (hospitalPrices) {
-        for (let i = 0; i < billInput.lineItems.length; i++) {
-          const li = billInput.lineItems[i]
-          const charge = hospitalPrices.charges[li.cpt]
-          if (!charge?.grossCharge) continue
-          if (li.billedAmount > charge.grossCharge) {
-            allFindings.push({
-              lineItemIndex: i,
-              cptCode: li.cpt,
-              severity: 'error',
-              errorType: 'above_hospital_list_price',
-              confidence: 'high',
-              description: `CPT ${li.cpt} is billed at $${li.billedAmount.toFixed(2)}, which exceeds ${billInput.hospitalName}'s own published gross charge of $${charge.grossCharge.toFixed(2)}.`,
-              standardDescription: CPT_DESCRIPTIONS[li.cpt],
-              recommendation: `Request explanation for why the billed amount exceeds the hospital's own published price. You may cite the hospital's CMS Machine-Readable File.`,
-              medicareRate: undefined,
-              markupRatio: undefined,
-              ncciBundledWith: undefined,
-              hospitalGrossCharge: charge.grossCharge,
-              hospitalCashPrice: charge.discountedCash ?? undefined,
-              hospitalPriceSource: hospitalPrices.mrfUrl,
-            })
+    if (state && state.length === 2) {
+      try {
+        hospitalPrices = await lookupHospitalPricesV2(
+          billInput.hospitalName,
+          state,
+          billInput.lineItems.map(li => li.cpt),
+          billInput.hospitalPhone
+        )
+
+        // Add hospital list price findings
+        if (hospitalPrices) {
+          for (let i = 0; i < billInput.lineItems.length; i++) {
+            const li = billInput.lineItems[i]
+            const charge = hospitalPrices.charges[li.cpt]
+            if (!charge?.grossCharge) continue
+            if (li.billedAmount > charge.grossCharge) {
+              allFindings.push({
+                lineItemIndex: i,
+                cptCode: li.cpt,
+                severity: 'error',
+                errorType: 'above_hospital_list_price',
+                confidence: 'high',
+                description: `CPT ${li.cpt} is billed at $${li.billedAmount.toFixed(2)}, which exceeds ${billInput.hospitalName}'s own published gross charge of $${charge.grossCharge.toFixed(2)}.`,
+                standardDescription: CPT_DESCRIPTIONS[li.cpt],
+                recommendation: `Request explanation for why the billed amount exceeds the hospital's own published price. You may cite the hospital's CMS Machine-Readable File.`,
+                medicareRate: undefined,
+                markupRatio: undefined,
+                ncciBundledWith: undefined,
+                hospitalGrossCharge: charge.grossCharge,
+                hospitalCashPrice: charge.discountedCash ?? undefined,
+                hospitalPriceSource: hospitalPrices.mrfUrl,
+              })
+            }
           }
         }
+      } catch (err) {
+        log.warn('hospital-price-lookup-failed', { error: serializeError(err as Error) })
       }
-    } catch (err) {
-      log.warn('hospital-price-lookup-failed', { error: serializeError(err as Error) })
     }
   }
 

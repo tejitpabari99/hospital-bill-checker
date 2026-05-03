@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mkdirSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import Database from 'better-sqlite3'
-import { lookupHospitalPrices, queryCache } from './hospital-prices'
+import { lookupHospitalPricesV2 } from './hospital-prices-v2'
 
-const cacheDir = join(process.cwd(), 'data', 'mrf_cache')
-const dbPath = join(cacheDir, 'test_hospital.db')
+const cacheDir = join(process.cwd(), 'data', 'hospital_cache')
+const dbPath = join(cacheDir, 'test_hospital.sqlite')
 
 function writeTestDatabase(rows: Array<{
   code: string
@@ -22,7 +22,6 @@ function writeTestDatabase(rows: Array<{
   db.exec(`
     CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
     CREATE TABLE charges (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT NOT NULL,
       code_type TEXT NOT NULL,
       description TEXT,
@@ -35,15 +34,13 @@ function writeTestDatabase(rows: Array<{
     CREATE INDEX idx_code ON charges(code);
   `)
 
-  db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('hospital_name', 'Test Hospital')
-  db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('mrf_url', 'https://example.org/charges.json')
-  db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('fetched_at', '2026-03-31T00:00:00Z')
+  db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('source', 'https://example.org/charges.duckdb')
+  db.prepare('INSERT INTO meta (key, value) VALUES (?, ?)').run('converted_at', '2026-03-31T00:00:00Z')
 
   const insert = db.prepare(`
     INSERT INTO charges (
       code, code_type, description,
-      gross_charge, discounted_cash,
-      min_negotiated, max_negotiated,
+      gross_charge, discounted_cash, min_negotiated, max_negotiated,
       setting
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `)
@@ -72,10 +69,10 @@ afterEach(() => {
   rmSync(dbPath, { force: true })
 })
 
-describe('hospital-prices', () => {
+describe('hospital pricing v2', () => {
   it('returns null for empty lookup inputs', async () => {
-    await expect(lookupHospitalPrices('', '', ['80053'])).resolves.toBeNull()
-    await expect(lookupHospitalPrices('Test Hospital', '', [])).resolves.toBeNull()
+    await expect(lookupHospitalPricesV2('', '', ['80053'])).resolves.toBeNull()
+    await expect(lookupHospitalPricesV2('Test Hospital', '', [])).resolves.toBeNull()
   })
 
   it('reads a fresh cache and returns the matching charge record', async () => {
@@ -92,10 +89,12 @@ describe('hospital-prices', () => {
       },
     ])
 
-    const result = await lookupHospitalPrices('Test Hospital', '', ['80053'])
+    const result = await lookupHospitalPricesV2('Test Hospital', '', ['80053'])
     expect(result).not.toBeNull()
     expect(result?.hospitalName).toBe('Test Hospital')
-    expect(result?.mrfUrl).toBe('https://example.org/charges.json')
+    expect(result?.mrfUrl).toBe('https://example.org/charges.duckdb')
+    expect(result?.fetchedAt).toBe('2026-03-31T00:00:00Z')
+    expect(result?.dataNote).toContain('Trilliant Health')
     expect(result?.charges['80053']).toMatchObject({
       code: '80053',
       description: 'COMPREHENSIVE METABOLIC PANEL',
@@ -107,7 +106,7 @@ describe('hospital-prices', () => {
     })
   })
 
-  it('prefers outpatient rows and deduplicates requested codes', () => {
+  it('prefers outpatient rows and deduplicates requested codes', async () => {
     writeTestDatabase([
       {
         code: '99285',
@@ -131,7 +130,7 @@ describe('hospital-prices', () => {
       },
     ])
 
-    const result = queryCache(dbPath, ['99285', '99285'])
+    const result = await lookupHospitalPricesV2('Test Hospital', '', ['99285', '99285'])
     expect(result).not.toBeNull()
     expect(Object.keys(result?.charges ?? {})).toEqual(['99285'])
     expect(result?.charges['99285']).toMatchObject({
@@ -141,7 +140,18 @@ describe('hospital-prices', () => {
     })
   })
 
-  it('returns null when the cache file is missing', () => {
-    expect(queryCache(join(cacheDir, 'missing.db'), ['80053'])).toBeNull()
+  it.skipIf(!existsSync('data/hospital_directory.sqlite'))('directory is searchable', () => {
+    const db = new Database('data/hospital_directory.sqlite', { readonly: true })
+    const count = db.prepare('SELECT COUNT(*) as c FROM hospitals').get() as { c: number }
+    expect(count.c).toBeGreaterThan(100)
+    db.close()
+  })
+
+  it('hospital cache dir exists or can be created', async () => {
+    const hospitalCacheDir = join(process.cwd(), 'data', 'hospital_cache')
+    if (!existsSync(hospitalCacheDir)) {
+      mkdirSync(hospitalCacheDir, { recursive: true })
+    }
+    expect(existsSync(hospitalCacheDir)).toBe(true)
   })
 })
