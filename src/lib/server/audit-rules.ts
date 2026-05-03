@@ -89,6 +89,163 @@ export function getMpfsRate(entry: MpfsEntry | undefined): number | undefined {
   return entry.rate
 }
 
+type RuleFinding = {
+  findingType: string
+  lineItemIndex?: number
+  cptCode?: string
+}
+
+function hasModifier59Family(lineItem: LineItem): boolean {
+  return (lineItem.modifiers ?? [])
+    .map(modifier => modifier.trim().toUpperCase())
+    .some(modifier => MODIFIER_59_FAMILY.includes(modifier))
+}
+
+export function checkNcciBundling(
+  lineItems: LineItem[],
+  pairs: Array<{ col1_code: string; col2_code?: string; modifier_indicator: string | number }>
+): RuleFinding[] {
+  const normalizedCodes = lineItems.map(lineItem => lineItem.cpt.trim().toUpperCase())
+  const codeSet = new Set(normalizedCodes)
+  const findings: RuleFinding[] = []
+
+  for (const pair of pairs) {
+    const col1 = pair.col1_code.trim().toUpperCase()
+    const col2 = pair.col2_code?.trim().toUpperCase()
+    if (!codeSet.has(col1)) continue
+
+    const col2Index = col2
+      ? normalizedCodes.findIndex(code => code === col2)
+      : normalizedCodes.findIndex(code => code !== col1)
+
+    if (col2Index < 0) continue
+
+    const modifierCanOverride = String(pair.modifier_indicator) !== '0'
+    if (modifierCanOverride && hasModifier59Family(lineItems[col2Index])) continue
+
+    findings.push({
+      findingType: 'ncci_bundling',
+      lineItemIndex: col2Index,
+      cptCode: normalizedCodes[col2Index],
+    })
+  }
+
+  return findings
+}
+
+export function checkMueExceeded(
+  lineItems: LineItem[],
+  edits: Array<{ hcpcs_code: string; mue_value: number }>
+): RuleFinding[] {
+  const editByCode = new Map(edits.map(edit => [edit.hcpcs_code.trim().toUpperCase(), edit]))
+
+  return lineItems.flatMap((lineItem, index) => {
+    const code = lineItem.cpt.trim().toUpperCase()
+    const edit = editByCode.get(code)
+    const units = lineItem.units ?? lineItem.quantity ?? 1
+    if (!edit || units <= edit.mue_value) return []
+    return [{ findingType: 'mue_exceeded', lineItemIndex: index, cptCode: code }]
+  })
+}
+
+export function checkMpfsBenchmark(
+  lineItems: LineItem[],
+  rates: Array<{ hcpcs_code: string; nonfac_rate: number | null }>
+): RuleFinding[] {
+  const rateByCode = new Map(rates.map(rate => [rate.hcpcs_code.trim().toUpperCase(), rate]))
+
+  return lineItems.flatMap((lineItem, index) => {
+    const code = lineItem.cpt.trim().toUpperCase()
+    const rate = rateByCode.get(code)?.nonfac_rate
+    if (rate == null || rate <= 0 || lineItem.billedAmount <= rate * 2) return []
+    return [{ findingType: 'mpfs_overcharge', lineItemIndex: index, cptCode: code }]
+  })
+}
+
+export function checkClfsBenchmark(
+  lineItems: LineItem[],
+  rates: Array<{ hcpcs_code: string; rate?: number | null; payment_limit?: number | null }>
+): RuleFinding[] {
+  const rateByCode = new Map(rates.map(rate => [rate.hcpcs_code.trim().toUpperCase(), rate]))
+
+  return lineItems.flatMap((lineItem, index) => {
+    const code = lineItem.cpt.trim().toUpperCase()
+    const rate = rateByCode.get(code)
+    const benchmark = rate?.rate ?? rate?.payment_limit
+    if (benchmark == null || benchmark <= 0 || lineItem.billedAmount <= benchmark * 2) return []
+    return [{ findingType: 'clfs_overcharge', lineItemIndex: index, cptCode: code }]
+  })
+}
+
+export function checkAspDrugOvercharge(
+  lineItems: LineItem[],
+  limits: Array<{ hcpcs_code: string; payment_limit?: number | null; asp_payment_limit?: number | null }>
+): RuleFinding[] {
+  const limitByCode = new Map(limits.map(limit => [limit.hcpcs_code.trim().toUpperCase(), limit]))
+
+  return lineItems.flatMap((lineItem, index) => {
+    const code = lineItem.cpt.trim().toUpperCase()
+    const limit = limitByCode.get(code)
+    const benchmark = limit?.payment_limit ?? limit?.asp_payment_limit
+    if (benchmark == null || benchmark <= 0 || lineItem.billedAmount <= benchmark * 4.5) return []
+    return [{ findingType: 'asp_overcharge', lineItemIndex: index, cptCode: code }]
+  })
+}
+
+export function checkOppsBenchmark(
+  lineItems: LineItem[],
+  rates: Array<{ hcpcs_code: string; payment_rate: number | null }>
+): RuleFinding[] {
+  const rateByCode = new Map(rates.map(rate => [rate.hcpcs_code.trim().toUpperCase(), rate]))
+
+  return lineItems.flatMap((lineItem, index) => {
+    const code = lineItem.cpt.trim().toUpperCase()
+    const rate = rateByCode.get(code)?.payment_rate
+    if (rate == null || rate <= 0 || lineItem.billedAmount <= rate * 2.5) return []
+    return [{ findingType: 'opps_overcharge', lineItemIndex: index, cptCode: code }]
+  })
+}
+
+export function checkIppsDrg(
+  drgCode: string | undefined,
+  rates: Array<{ ms_drg?: string; drg_code?: string; relative_weight: number | null }>
+): RuleFinding[] {
+  if (!drgCode) return []
+  const normalizedDrg = drgCode.trim().replace(/[^0-9]/g, '').padStart(3, '0')
+  const match = rates.find(rate => (rate.ms_drg ?? rate.drg_code) === normalizedDrg)
+  return match ? [{ findingType: 'ipps_drg', cptCode: `DRG-${normalizedDrg}` }] : []
+}
+
+export function checkDmeposBenchmark(
+  lineItems: LineItem[],
+  rates: Array<{ hcpcs_code: string; fee_amount?: number | null; rental_rate?: number | null }>
+): RuleFinding[] {
+  const rateByCode = new Map(rates.map(rate => [rate.hcpcs_code.trim().toUpperCase(), rate]))
+
+  return lineItems.flatMap((lineItem, index) => {
+    const code = lineItem.cpt.trim().toUpperCase()
+    const rate = rateByCode.get(code)
+    const benchmark = rate?.fee_amount ?? rate?.rental_rate
+    if (benchmark == null || benchmark <= 0 || lineItem.billedAmount <= benchmark * 2) return []
+    return [{ findingType: 'dmepos_overcharge', lineItemIndex: index, cptCode: code }]
+  })
+}
+
+export function checkAmbulanceBenchmark(
+  lineItems: LineItem[],
+  rates: Array<{ hcpcs_code: string; rate_amount?: number | null; base_rate?: number | null }>
+): RuleFinding[] {
+  const rateByCode = new Map(rates.map(rate => [rate.hcpcs_code.trim().toUpperCase(), rate]))
+
+  return lineItems.flatMap((lineItem, index) => {
+    const code = lineItem.cpt.trim().toUpperCase()
+    const rate = rateByCode.get(code)
+    const benchmark = rate?.rate_amount ?? rate?.base_rate
+    if (benchmark == null || benchmark <= 0 || lineItem.billedAmount <= benchmark * 2.5) return []
+    return [{ findingType: 'ambulance_overcharge', lineItemIndex: index, cptCode: code }]
+  })
+}
+
 // ── Core functions ────────────────────────────────────────────────────────────
 
 /**

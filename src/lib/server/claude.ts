@@ -6,7 +6,7 @@ import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/type
 import { lookupHospitalPricesV2 } from './hospital-prices-v2'
 import { createServerLogger, serializeError } from './logger.js'
 import {
-  buildDeterministicFindings,
+  buildDeterministicFindings as buildAuditDeterministicFindings,
   buildArithmeticFindings,
   buildDateFindings,
   buildGfeFindings,
@@ -15,6 +15,12 @@ import {
 import { toServiceDateInt } from './data-loader'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
+
+export function buildDeterministicFindings(
+  ...args: Parameters<typeof buildAuditDeterministicFindings>
+): AuditFinding[] {
+  return buildAuditDeterministicFindings(...args).findings
+}
 
 function createAuditLogger(traceId?: string) {
   return createServerLogger('audit-core', traceId)
@@ -100,7 +106,7 @@ export async function auditBill(
 
   // --- Step 1: Deterministic findings from SQLite ---
   const serviceDateStr = billInput.dateOfService ?? billInput.admissionDate
-  const { findings: deterministicFindings, summary } = buildDeterministicFindings(
+  const { findings: deterministicFindings, summary } = buildAuditDeterministicFindings(
     billInput.lineItems,
     billInput.billType ?? 'unknown',
     serviceDateStr,

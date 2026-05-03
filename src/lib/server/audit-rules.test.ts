@@ -23,6 +23,9 @@ import {
   buildDateFindings,
   buildGfeFindings,
   getMpfsRate,
+  checkNcciBundling,
+  checkMueExceeded,
+  checkMpfsBenchmark,
 } from './audit-rules'
 import type { MpfsData, ClfsData, EmMdmTierData, LcdCoverageData } from './audit-rules'
 import type { LineItem } from '$lib/types'
@@ -426,5 +429,68 @@ describe('MUE SQLite integration', () => {
     if (entry) {
       expect(entry.mue_value).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('audit-rules edge cases', () => {
+  it('checkNcciBundling: modifier 59 bypasses indicator=1 edit', () => {
+    const lineItems = [
+      { cpt: 'A', description: '', units: 1, billedAmount: 100, modifiers: [], icd10Codes: [] },
+      { cpt: 'B', description: '', units: 1, billedAmount: 100, modifiers: ['59'], icd10Codes: [] },
+    ]
+    const pairs = [
+      { col1_code: 'A', col2_code: 'B', modifier_indicator: 1, bill_type: 'practitioner' as const },
+    ]
+    const findings = checkNcciBundling(lineItems, pairs)
+    expect(findings.length).toBe(0)
+  })
+
+  it('checkNcciBundling: no modifier does NOT bypass indicator=1 edit', () => {
+    const lineItems = [
+      { cpt: 'A', description: '', units: 1, billedAmount: 100, modifiers: [], icd10Codes: [] },
+      { cpt: 'B', description: '', units: 1, billedAmount: 100, modifiers: [], icd10Codes: [] },
+    ]
+    const pairs = [
+      { col1_code: 'A', col2_code: 'B', modifier_indicator: 1, bill_type: 'practitioner' as const },
+    ]
+    const findings = checkNcciBundling(lineItems, pairs)
+    expect(findings.length).toBe(1)
+  })
+
+  it('checkMueExceeded: exactly at limit is not flagged', () => {
+    const lineItems = [
+      { cpt: '99213', description: '', units: 1, billedAmount: 100, modifiers: [], icd10Codes: [] },
+    ]
+    const edits = [{ hcpcs_code: '99213', mue_value: 1, mai: 3, bill_type: 'practitioner' }]
+    const findings = checkMueExceeded(lineItems, edits)
+    expect(findings.length).toBe(0)
+  })
+
+  it('checkMpfsBenchmark: exactly at 2x threshold is not flagged', () => {
+    const lineItems = [
+      { cpt: '99213', description: '', units: 1, billedAmount: 200, modifiers: [], icd10Codes: [] },
+    ]
+    const rates = [{ hcpcs_code: '99213', nonfac_rate: 100 }]
+    const findings = checkMpfsBenchmark(lineItems, rates)
+    expect(findings.length).toBe(0)
+  })
+
+  it('checkMpfsBenchmark: above 2x threshold is flagged', () => {
+    const lineItems = [
+      { cpt: '99213', description: '', units: 1, billedAmount: 201, modifiers: [], icd10Codes: [] },
+    ]
+    const rates = [{ hcpcs_code: '99213', nonfac_rate: 100 }]
+    const findings = checkMpfsBenchmark(lineItems, rates)
+    expect(findings.length).toBe(1)
+  })
+
+  it('unknown bill type skips bill-type-specific checks', async () => {
+    const { buildDeterministicFindings } = await import('./claude')
+    const lineItems = [
+      { cpt: '99213', description: '', units: 1, billedAmount: 200, modifiers: [], icd10Codes: [] },
+    ]
+    // Should not throw even with unknown bill type and no DBs present
+    const findings = await buildDeterministicFindings(lineItems, 'unknown', '2025-01-01', undefined, undefined, undefined)
+    expect(Array.isArray(findings)).toBe(true)
   })
 })
