@@ -66,6 +66,13 @@ export const CPT_DESCRIPTIONS: Record<string, string> = {
 // '-59' is intentionally excluded: the sanitizer in +server.ts strips leading dashes
 // (see sanitizeStringList → replace(/^-/, '')), so '-59' never appears in modifiers[].
 const MODIFIER_59_FAMILY = ['59', 'XE', 'XP', 'XS', 'XU']
+// Explicit set of ambulance transport HCPCS codes eligible for the ambulance fee schedule check.
+// Do NOT use a regex — A03xx codes are drug administration, not ambulance transport.
+const AMBULANCE_TRANSPORT_CODES = new Set([
+  'A0424', 'A0426', 'A0427', 'A0428', 'A0429',
+  'A0430', 'A0431', 'A0432', 'A0433', 'A0434',
+  'A0435', 'A0436',
+])
 const TIER_RANK: Record<EmMdmTier, number> = { S: 0, L: 1, M: 2, H: 3 }
 const TIER_NAMES: Record<EmMdmTier, string> = {
   S: 'straightforward',
@@ -316,7 +323,7 @@ export function buildDataContext(
 }
 
 export function buildDeterministicFindings(
-  lineItems: LineItem[],
+  rawLineItems: LineItem[],
   billType: BillType = 'unknown',
   serviceDateStr?: string,
   drgCode?: string,
@@ -324,6 +331,12 @@ export function buildDeterministicFindings(
   serviceZip?: string
 ): { findings: AuditFinding[]; summary: string } {
   const serviceDateInt = toServiceDateInt(serviceDateStr)
+  // Coerce billedAmount — LLM may return "$1,234.56" as a string; NaN silently skips all findings.
+  const lineItems = rawLineItems.map(li => {
+    if (typeof li.billedAmount === 'number') return li
+    const parsed = parseFloat(String(li.billedAmount).replace(/[$,\s]/g, ''))
+    return { ...li, billedAmount: Number.isFinite(parsed) && parsed >= 0 ? parsed : 0 }
+  })
   const codes = lineItems.map(li => li.cpt.trim().toUpperCase())
   const codeSet = new Set(codes)
   const findings: AuditFinding[] = []
@@ -392,7 +405,7 @@ export function buildDeterministicFindings(
     if (!mueEntry) continue
 
     const maxUnits = mueEntry.mue_value
-    const mai = mueEntry.mue_adjudication_indicator
+    const mai = String(mueEntry.mue_adjudication_indicator ?? '')
 
     if (mai === '3' && unitsBilled > maxUnits) {
       findings.push({
@@ -469,6 +482,7 @@ export function buildDeterministicFindings(
           markupRatio: billed / benchmark,
           ncciBundledWith: undefined,
         })
+        alreadyFlaggedCodes.add(code)
       }
     }
   }
@@ -521,6 +535,20 @@ export function buildDeterministicFindings(
         })
       }
     }
+  } else if (billType === 'dme' && !patientState) {
+    findings.push({
+      lineItemIndex: -1,
+      cptCode: 'DMEPOS-SKIP',
+      severity: 'info',
+      errorType: 'dmepos_skipped',
+      confidence: 'high',
+      description: 'DMEPOS fee schedule check was skipped because no patient state was provided. State is required to look up the correct DMEPOS fee schedule locality.',
+      standardDescription: undefined,
+      recommendation: 'Re-submit the bill with your state of residence to enable DMEPOS rate comparison.',
+      medicareRate: undefined,
+      markupRatio: undefined,
+      ncciBundledWith: undefined,
+    })
   }
 
   // Check 7: Ambulance fee schedule
@@ -528,7 +556,7 @@ export function buildDeterministicFindings(
     for (let i = 0; i < lineItems.length; i++) {
       const code = codes[i]
       if (alreadyFlaggedCodes.has(code)) continue
-      if (!/^A0(4|3)\d{2}$/.test(code)) continue
+      if (!AMBULANCE_TRANSPORT_CODES.has(code)) continue
 
       const ambulanceRow = loadAmbulanceRate(code, serviceZip)
       const benchmark = ambulanceRow?.rate_amount ?? ambulanceRow?.base_rate
@@ -552,9 +580,23 @@ export function buildDeterministicFindings(
         ncciBundledWith: undefined,
       })
     }
+  } else if (lineItems.some((_, i) => AMBULANCE_TRANSPORT_CODES.has(codes[i]))) {
+    findings.push({
+      lineItemIndex: -1,
+      cptCode: 'AMBULANCE-SKIP',
+      severity: 'info',
+      errorType: 'ambulance_skipped',
+      confidence: 'high',
+      description: 'Ambulance fee schedule check was skipped because no service ZIP code was found on the bill. ZIP code is required to determine the correct ambulance fee schedule locality.',
+      standardDescription: undefined,
+      recommendation: 'Re-submit the bill with the service ZIP code to enable ambulance rate comparison.',
+      medicareRate: undefined,
+      markupRatio: undefined,
+      ncciBundledWith: undefined,
+    })
   }
 
-  // Check 7: Exact duplicate billing
+  // Check 8: Exact duplicate billing
   const seenCodes = new Map<string, number>()
   for (let i = 0; i < lineItems.length; i++) {
     const code = codes[i]
@@ -579,7 +621,7 @@ export function buildDeterministicFindings(
     seenCodes.set(code, i)
   }
 
-  // Check 8: Rate comparison (upcoding check)
+  // Check 9: Rate comparison (upcoding check)
   // For each code not already flagged, compare billed to Medicare benchmark
   const HIGH_MARKUP_THRESHOLD = 5.0
   const MODERATE_MARKUP_THRESHOLD = 2.5
@@ -600,6 +642,10 @@ export function buildDeterministicFindings(
         benchmark = oppsRow.payment_rate
         benchmarkSource = `CMS OPPS (APC ${oppsRow.apc})`
       }
+      // For outpatient bills: if OPPS rate is null, do NOT fall through to MPFS.
+      // MPFS is the physician fee schedule — it measures physician work, not facility costs.
+      // Using MPFS as a facility benchmark would produce misleading comparisons.
+      if (benchmark == null) continue
     }
 
     if (benchmark == null) {

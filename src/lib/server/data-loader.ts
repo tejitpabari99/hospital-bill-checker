@@ -102,6 +102,12 @@ export type MpfsRow = {
   fac_rate: number | null
 }
 
+// IMPORTANT: nonfac_rate and fac_rate MUST be stored in dollars (not raw RVU totals).
+// If build_mpfs_sqlite.py stores raw RVU values without converting via the Conversion Factor,
+// the 2x and 5x thresholds in audit-rules.ts will fire on almost every bill.
+// build_mpfs_sqlite.py must multiply: total_rvu * conversion_factor = dollar_amount.
+// The CY2026 Conversion Factor is $32.3465. Verify: loadMpfsRate('99213')?.nonfac_rate
+// should be approximately $68-$80, not 2.11 (raw RVU).
 export function loadMpfsRate(hcpcsCode: string): MpfsRow | null {
   const db = getMpfsDb()
   if (!db) return null
