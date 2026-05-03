@@ -456,6 +456,33 @@ describe('buildDeterministicFindings — audit engine domain correctness', () =>
   })
 })
 
+describe('buildDeterministicFindings — skipped-check info findings', () => {
+  it('emits a dmepos_skipped info finding when a DME bill has no patientState', () => {
+    const { findings } = buildDeterministicFindings([li('E0601', 5000)], 'dme')
+
+    const skipped = findings.find(finding => finding.errorType === 'dmepos_skipped')
+    expect(skipped).toBeDefined()
+    expect(skipped?.severity).toBe('info')
+    expect(skipped?.description.toLowerCase()).toContain('patient state')
+  })
+
+  it('emits an ambulance_skipped info finding when an ambulance code has no serviceZip', () => {
+    const { findings } = buildDeterministicFindings([li('A0428', 2000)], 'practitioner')
+
+    const skipped = findings.find(finding => finding.errorType === 'ambulance_skipped')
+    expect(skipped).toBeDefined()
+    expect(skipped?.severity).toBe('info')
+    expect(skipped?.description.toLowerCase()).toContain('zip')
+  })
+
+  it('handles an empty lineItems array without throwing', () => {
+    const { findings, summary } = buildDeterministicFindings([])
+
+    expect(findings).toHaveLength(0)
+    expect(summary).toContain('$0.00')
+  })
+})
+
 describe('buildDeterministicFindings — SQLite audit routes', () => {
   it.skipIf(!hasOppsDb)('emits a concrete outpatient OPPS benchmark finding', () => {
     const { findings, summary } = buildDeterministicFindings(

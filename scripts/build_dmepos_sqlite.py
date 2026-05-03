@@ -99,6 +99,14 @@ def create_schema(conn: sqlite3.Connection) -> None:
     """)
 
 
+def wipe_existing_rows(conn: sqlite3.Connection) -> None:
+    # Wipe existing rows so re-runs are idempotent.
+    # dmepos_state_rates must be deleted first due to the FK constraint on dmepos_base.hcpcs_code.
+    conn.execute("DELETE FROM dmepos_state_rates")
+    conn.execute("DELETE FROM dmepos_base")
+    conn.commit()
+
+
 def safe_float(val) -> float | None:
     if val is None:
         return None
@@ -248,7 +256,9 @@ def main() -> None:
         fname = xlsx_files[0]
         print(f"Parsing {fname} ...")
         base_rows, state_data = parse_dmepos_xlsx(archive.read(fname), fname)
-        print(f"Parsed {len(base_rows):,} DMEPOS base rows")
+    print(f"Parsed {len(base_rows):,} DMEPOS base rows")
+
+    wipe_existing_rows(conn)
 
     inserted_base = 0
     dmepos_ids: list[int] = []

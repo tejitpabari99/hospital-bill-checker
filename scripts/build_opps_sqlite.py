@@ -257,9 +257,17 @@ def parse_addendum_a(xlsx_bytes: bytes, source_file: str) -> list[tuple]:
 
     for row in ws.iter_rows(values_only=True):
         if not data_started:
-            if row == tuple(header_row):
-                data_started = True
-            continue
+            # Detect data start by APC column position instead of exact header row equality.
+            # This keeps parsing stable if CMS adds or renames unrelated columns.
+            if apc_col is not None and apc_col < len(row) and row[apc_col] is not None:
+                candidate = str(row[apc_col]).strip()
+                if re.match(r"^[0-9]{4}$", candidate):
+                    data_started = True
+                    # Fall through — process this row as data.
+                else:
+                    continue
+            else:
+                continue
 
         if apc_col is None or apc_col >= len(row):
             continue
