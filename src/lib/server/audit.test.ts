@@ -77,6 +77,10 @@ vi.mock('./hospital-prices', () => ({
   lookupHospitalPrices: vi.fn(async () => null),
 }))
 
+vi.mock('./hospital-prices-v2', () => ({
+  lookupHospitalPricesV2: vi.fn(async () => null),
+}))
+
 vi.mock('$lib/data/ncci.json', () => ({
   default: {
     '93010': { bundledInto: ['93000'], modifierCanOverride: true },
@@ -149,8 +153,8 @@ describe('auditBill', () => {
   })
 
   it('passes above_hospital_list_price findings into the dispute-letter prompt', async () => {
-    const { lookupHospitalPrices } = await import('./hospital-prices')
-    vi.mocked(lookupHospitalPrices).mockResolvedValue({
+    const { lookupHospitalPricesV2 } = await import('./hospital-prices-v2')
+    vi.mocked(lookupHospitalPricesV2).mockResolvedValue({
       hospitalName: 'Test Hospital',
       mrfUrl: 'https://example.com/mrf.json',
       fetchedAt: '2026-03-31T00:00:00Z',

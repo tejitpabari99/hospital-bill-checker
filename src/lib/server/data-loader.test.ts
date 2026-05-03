@@ -136,3 +136,21 @@ describe('Ambulance SQLite integration', () => {
     expect(row === null || row.hcpcs_code === 'A0427').toBe(true)
   })
 })
+
+describe('hospital directory sqlite', () => {
+  it.skipIf(!existsSync('data/hospital_directory.sqlite'))('has hospitals', () => {
+    const db = new Database('data/hospital_directory.sqlite', { readonly: true })
+    const count = db.prepare('SELECT COUNT(*) as c FROM hospitals').get() as { c: number }
+    expect(count.c).toBeGreaterThan(1000)
+    db.close()
+  })
+
+  it.skipIf(!existsSync('data/hospital_directory.sqlite'))('can search by name', () => {
+    const db = new Database('data/hospital_directory.sqlite', { readonly: true })
+    const rows = db.prepare(
+      'SELECT hospital_name FROM hospitals WHERE normalized_name LIKE ? LIMIT 3'
+    ).all('%general%') as Array<{ hospital_name: string }>
+    expect(rows.length).toBeGreaterThan(0)
+    db.close()
+  })
+})

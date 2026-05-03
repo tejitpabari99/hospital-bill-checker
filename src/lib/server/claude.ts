@@ -3,8 +3,8 @@ import { join } from 'path'
 import { GEMINI_API_KEY } from '$env/static/private'
 import type { BillInput, AuditResult, ConfidenceLevel } from '$lib/types'
 import { AuditRefusalError, AuditParseError, AuditTimeoutError } from '$lib/types'
-import { lookupHospitalPrices } from './hospital-prices'
 import type { HospitalPriceResult } from './hospital-prices'
+import { lookupHospitalPricesV2 } from './hospital-prices-v2'
 import { createServerLogger, serializeError } from './logger.js'
 import { AUDIT_TOOL_DECLARATIONS } from './audit-tools.mjs'
 import {
@@ -556,7 +556,7 @@ Respond ONLY with valid JSON:
 
   let hospitalPrices: HospitalPriceResult | null = null
   try {
-    hospitalPrices = await lookupHospitalPrices(hospitalName, state, allCodes, hospitalPhone ?? undefined)
+    hospitalPrices = await lookupHospitalPricesV2(hospitalName, state, allCodes, hospitalPhone ?? undefined)
   } catch (error) {
     log.error('hospital-price-lookup-failed', {
       error: serializeError(error),
