@@ -130,7 +130,7 @@ function sanitizeLineItem(value: unknown, index: number): LineItem {
   }
 }
 
-export function validateAuditInput(body: unknown): BillInput {
+function validateAuditInput(body: unknown): BillInput {
   if (!isObject(body) || !Array.isArray(body.lineItems)) {
     throw error(400, 'lineItems array required')
   }
