@@ -345,6 +345,23 @@ export function buildDeterministicFindings(
   const findings: AuditFinding[] = []
   const alreadyFlaggedCodes = new Set<string>()
 
+  // Emit a data-quality info finding for any line with zero units billed.
+  // units=0 with a non-zero charge is a billing anomaly — the MUE check passes
+  // (0 <= maxUnits) so it would otherwise be silently ignored.
+  const zeroUnitFindings: AuditFinding[] = lineItems
+    .map((li, i) => ({ li, i }))
+    .filter(({ li }) => (li.units ?? li.quantity ?? 1) === 0)
+    .map(({ li, i }) => ({
+      lineItemIndex: i,
+      cptCode: li.cpt,
+      severity: 'info' as const,
+      errorType: 'other' as const,
+      confidence: 'high' as const,
+      description: `CPT ${li.cpt} has 0 units billed. This is a data anomaly — units must be a positive integer.`,
+      recommendation: 'Request a corrected claim with a valid unit quantity. A charge with zero units is not a valid billing entry.',
+    }))
+  findings.push(...zeroUnitFindings)
+
   // Rate lookup — MPFS first, CLFS fallback (step 04 adds CLFS).
   function getEffectiveRate(code: string): { rate: number; source: string } | null {
     const mpfsRow = loadMpfsRate(code)
@@ -635,82 +652,87 @@ export function buildDeterministicFindings(
     seenCodes.set(code, i)
   }
 
-  // Check 9: Rate comparison (upcoding check)
-  // For each code not already flagged, compare billed to Medicare benchmark
+  // Check 9: Rate-based upcoding (outpatient / practitioner bills only)
+  // For inpatient DRG-based payment, individual CPT line items are bundled into the
+  // DRG global payment. Comparing them to MPFS physician rates produces false positives.
   const HIGH_MARKUP_THRESHOLD = 5.0
-  const MODERATE_MARKUP_THRESHOLD = 2.5
+  // 2.0× is the correct boundary per the billing spec; charges between 2× and HIGH_MARKUP_THRESHOLD
+  // are a 'warning', charges above HIGH_MARKUP_THRESHOLD are an 'error'.
+  const MODERATE_MARKUP_THRESHOLD = 2.0
 
-  for (let i = 0; i < lineItems.length; i++) {
-    const code = codes[i]
-    if (alreadyFlaggedCodes.has(code)) continue
+  if (billType !== 'inpatient') {
+    for (let i = 0; i < lineItems.length; i++) {
+      const code = codes[i]
+      if (alreadyFlaggedCodes.has(code)) continue
 
-    const billed = lineItems[i].billedAmount
-    if (!billed || billed <= 0) continue
+      const billed = lineItems[i].billedAmount
+      if (!billed || billed <= 0) continue
 
-    let benchmark: number | null = null
-    let benchmarkSource = ''
+      let benchmark: number | null = null
+      let benchmarkSource = ''
 
-    if (billType === 'outpatient') {
-      const oppsRow = loadOppsRate(code)
-      if (oppsRow?.payment_rate) {
-        benchmark = oppsRow.payment_rate
-        benchmarkSource = `CMS OPPS (APC ${oppsRow.apc})`
+      if (billType === 'outpatient') {
+        const oppsRow = loadOppsRate(code)
+        if (oppsRow?.payment_rate) {
+          benchmark = oppsRow.payment_rate
+          benchmarkSource = `CMS OPPS (APC ${oppsRow.apc})`
+        }
+        // For outpatient bills: if OPPS rate is null, do NOT fall through to MPFS.
+        // MPFS is the physician fee schedule — it measures physician work, not facility costs.
+        // Using MPFS as a facility benchmark would produce misleading comparisons.
+        if (benchmark == null) continue
       }
-      // For outpatient bills: if OPPS rate is null, do NOT fall through to MPFS.
-      // MPFS is the physician fee schedule — it measures physician work, not facility costs.
-      // Using MPFS as a facility benchmark would produce misleading comparisons.
-      if (benchmark == null) continue
-    }
 
-    if (benchmark == null) {
-      const mpfsRow = loadMpfsRate(code)
-      if (mpfsRow?.nonfac_rate) {
-        benchmark = mpfsRow.nonfac_rate
-        benchmarkSource = 'CMS MPFS'
+      if (benchmark == null) {
+        const mpfsRow = loadMpfsRate(code)
+        if (mpfsRow?.nonfac_rate) {
+          benchmark = mpfsRow.nonfac_rate
+          benchmarkSource = 'CMS MPFS'
+        }
       }
-    }
 
-    if (benchmark == null) {
-      const clfsRow = loadClfsRate(code)
-      if (clfsRow?.rate) {
-        benchmark = clfsRow.rate
-        benchmarkSource = 'CMS CLFS'
+      if (benchmark == null) {
+        const clfsRow = loadClfsRate(code)
+        if (clfsRow?.rate) {
+          benchmark = clfsRow.rate
+          benchmarkSource = 'CMS CLFS'
+        }
       }
-    }
 
-    if (benchmark == null || benchmark <= 0) continue
+      if (benchmark == null || benchmark <= 0) continue
 
-    const ratio = billed / benchmark
+      const ratio = billed / benchmark
 
-    if (ratio >= HIGH_MARKUP_THRESHOLD) {
-      findings.push({
-        lineItemIndex: i,
-        cptCode: code,
-        severity: 'error',
-        errorType: 'upcoding',
-        confidence: 'high',
-        description: `CPT ${code} is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the Medicare benchmark of $${benchmark.toFixed(2)} (${benchmarkSource}).`,
-        standardDescription: CPT_DESCRIPTIONS[code],
-        recommendation: `Request itemized justification. Medicare pays $${benchmark.toFixed(2)} for this service; your bill is ${ratio.toFixed(1)}× that amount.`,
-        medicareRate: benchmark,
-        markupRatio: ratio,
-        ncciBundledWith: undefined,
-      })
-      alreadyFlaggedCodes.add(code)
-    } else if (ratio >= MODERATE_MARKUP_THRESHOLD) {
-      findings.push({
-        lineItemIndex: i,
-        cptCode: code,
-        severity: 'warning',
-        errorType: 'upcoding',
-        confidence: 'medium',
-        description: `CPT ${code} is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the Medicare benchmark of $${benchmark.toFixed(2)} (${benchmarkSource}).`,
-        standardDescription: CPT_DESCRIPTIONS[code],
-        recommendation: `Compare against your EOB from insurance. Medicare benchmark is $${benchmark.toFixed(2)}.`,
-        medicareRate: benchmark,
-        markupRatio: ratio,
-        ncciBundledWith: undefined,
-      })
+      if (ratio >= HIGH_MARKUP_THRESHOLD) {
+        findings.push({
+          lineItemIndex: i,
+          cptCode: code,
+          severity: 'error',
+          errorType: 'upcoding',
+          confidence: 'high',
+          description: `CPT ${code} is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the Medicare benchmark of $${benchmark.toFixed(2)} (${benchmarkSource}).`,
+          standardDescription: CPT_DESCRIPTIONS[code],
+          recommendation: `Request itemized justification. Medicare pays $${benchmark.toFixed(2)} for this service; your bill is ${ratio.toFixed(1)}× that amount.`,
+          medicareRate: benchmark,
+          markupRatio: ratio,
+          ncciBundledWith: undefined,
+        })
+        alreadyFlaggedCodes.add(code)
+      } else if (ratio >= MODERATE_MARKUP_THRESHOLD) {
+        findings.push({
+          lineItemIndex: i,
+          cptCode: code,
+          severity: 'warning',
+          errorType: 'upcoding',
+          confidence: 'medium',
+          description: `CPT ${code} is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the Medicare benchmark of $${benchmark.toFixed(2)} (${benchmarkSource}).`,
+          standardDescription: CPT_DESCRIPTIONS[code],
+          recommendation: `Compare against your EOB from insurance. Medicare benchmark is $${benchmark.toFixed(2)}.`,
+          medicareRate: benchmark,
+          markupRatio: ratio,
+          ncciBundledWith: undefined,
+        })
+      }
     }
   }
 

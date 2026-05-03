@@ -411,6 +411,51 @@ describe('buildDeterministicFindings — summary', () => {
   })
 })
 
+describe('buildDeterministicFindings — audit engine domain correctness', () => {
+  it.skipIf(!hasMpfsDb)('bills at 2.1× Medicare rate produce a warning finding (moderate overcharge)', () => {
+    const mpfsRow = loadMpfsRate('99213')
+    expect(mpfsRow?.nonfac_rate).toBeGreaterThan(0)
+
+    const billed = mpfsRow!.nonfac_rate! * 2.1
+    const { findings } = buildDeterministicFindings([li('99213', billed)], 'practitioner')
+
+    const upcodingFinding = findings.find(
+      f => f.cptCode === '99213' && f.errorType === 'upcoding'
+    )
+    expect(upcodingFinding).toBeDefined()
+    expect(upcodingFinding?.severity).toBe('warning')
+    expect(upcodingFinding?.markupRatio).toBeCloseTo(2.1)
+  })
+
+  it('inpatient bill does not produce MPFS upcoding findings for individual CPT lines', () => {
+    const lineItems = [li('99213', 500)]
+    const { findings } = buildDeterministicFindings(lineItems, 'inpatient')
+    const upcodingFindings = findings.filter(
+      f => ['upcoding', 'mpfs_benchmark'].includes(f.errorType)
+    )
+    expect(upcodingFindings).toHaveLength(0)
+  })
+
+  it('line item with units=0 produces an info/other finding', () => {
+    const lineItems = [{ ...li('99213', 200), units: 0 }]
+    const { findings } = buildDeterministicFindings(lineItems)
+    const zeroUnitFinding = findings.find(
+      f => f.errorType === 'other' && f.description?.includes('0 units')
+    )
+    expect(zeroUnitFinding).toBeDefined()
+    expect(zeroUnitFinding?.severity).toBe('info')
+  })
+
+  it('line item with units=1 does NOT produce a zero-unit finding', () => {
+    const lineItems = [li('99213', 200)]
+    const { findings } = buildDeterministicFindings(lineItems)
+    const zeroUnitFinding = findings.find(
+      f => f.errorType === 'other' && f.description?.includes('0 units')
+    )
+    expect(zeroUnitFinding).toBeUndefined()
+  })
+})
+
 describe('buildDeterministicFindings — SQLite audit routes', () => {
   it.skipIf(!hasOppsDb)('emits a concrete outpatient OPPS benchmark finding', () => {
     const { findings, summary } = buildDeterministicFindings(
