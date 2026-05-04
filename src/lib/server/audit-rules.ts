@@ -26,43 +26,6 @@ export type LcdCoverageEntry = {
 }
 export type LcdCoverageData = Record<string, LcdCoverageEntry>
 
-// ── Known CPT descriptions ────────────────────────────────────────────────────
-
-export const CPT_DESCRIPTIONS: Record<string, string> = {
-  '70450': 'CT head or brain without contrast',
-  '70460': 'CT head or brain with contrast',
-  '70470': 'CT head or brain without and with contrast',
-  '70486': 'CT maxillofacial area without contrast',
-  '70487': 'CT maxillofacial area with contrast',
-  '70488': 'CT maxillofacial area without and with contrast',
-  '70490': 'CT soft tissue neck without contrast',
-  '70491': 'CT soft tissue neck with contrast',
-  '70551': 'MRI brain without contrast',
-  '70553': 'MRI brain without and with contrast',
-  '71046': 'Chest X-ray, 2 views',
-  '71250': 'CT thorax without contrast',
-  '72148': 'MRI lumbar spine without contrast',
-  '72141': 'MRI cervical spine without contrast',
-  '73721': 'MRI joint of lower extremity without contrast',
-  '74177': 'CT abdomen and pelvis without contrast',
-  '74178': 'CT abdomen and pelvis without and with contrast',
-  '93000': 'Electrocardiogram, routine ECG with at least 12 leads',
-  '93005': 'Electrocardiogram, tracing only',
-  '93010': 'Electrocardiogram, interpretation and report only',
-  '85025': 'Blood count; complete (CBC), automated',
-  '80053': 'Comprehensive metabolic panel',
-  '36415': 'Collection of venous blood by venipuncture',
-  '36410': 'Venipuncture, necessitating physician skill',
-  '27447': 'Total knee arthroplasty',
-  '27370': 'Injection, knee joint',
-  '99285': 'Emergency department visit, high medical decision making complexity',
-  '99284': 'Emergency department visit, high complexity',
-  '99283': 'Emergency department visit, moderate complexity',
-  '99213': 'Office/outpatient visit, established patient, low complexity',
-  '99214': 'Office/outpatient visit, established patient, moderate complexity',
-  '99215': 'Office/outpatient visit, established patient, high complexity',
-}
-
 // '-59' is intentionally excluded: the sanitizer in +server.ts strips leading dashes
 // (see sanitizeStringList → replace(/^-/, '')), so '-59' never appears in modifiers[].
 const MODIFIER_59_FAMILY = ['59', 'XE', 'XP', 'XS', 'XU']
@@ -96,6 +59,52 @@ export function getMpfsRate(entry: MpfsEntry | undefined): number | undefined {
   if (entry === undefined) return undefined
   if (typeof entry === 'number') return entry
   return entry.rate
+}
+
+type DescriptionLookupContext = {
+  lineItem?: Pick<LineItem, 'description'>
+  billType?: BillType
+  patientState?: string
+  serviceZip?: string
+}
+
+function normalizeDescription(description: string | null | undefined): string | undefined {
+  const trimmed = description?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+export function resolveProcedureDescription(
+  hcpcsCode: string,
+  context: DescriptionLookupContext = {}
+): string | undefined {
+  const code = hcpcsCode.trim().toUpperCase()
+  if (!code) return normalizeDescription(context.lineItem?.description)
+
+  if (context.billType === 'outpatient') {
+    const oppsDescription = normalizeDescription(loadOppsRate(code)?.short_descriptor)
+    if (oppsDescription) return oppsDescription
+  }
+
+  const mpfsDescription = normalizeDescription(loadMpfsRate(code)?.description)
+  if (mpfsDescription) return mpfsDescription
+
+  const clfsDescription = normalizeDescription(loadClfsRate(code)?.description)
+  if (clfsDescription) return clfsDescription
+
+  const aspDescription = normalizeDescription(loadAspLimit(code)?.description)
+  if (aspDescription) return aspDescription
+
+  if (context.patientState) {
+    const dmeposDescription = normalizeDescription(loadDmeposRate(code, context.patientState)?.description)
+    if (dmeposDescription) return dmeposDescription
+  }
+
+  if (context.serviceZip && AMBULANCE_TRANSPORT_CODES.has(code)) {
+    const ambulanceDescription = normalizeDescription(loadAmbulanceRate(code, context.serviceZip)?.short_description)
+    if (ambulanceDescription) return ambulanceDescription
+  }
+
+  return normalizeDescription(context.lineItem?.description)
 }
 
 type RuleFinding = {
@@ -276,14 +285,6 @@ export function buildDataContext(
   const ncciHits: string[] = []
   const mpfsRates: string[] = []
   const aspRates: string[] = []
-  const RADIOLOGY_BUNDLE_RULES = [
-    ['70486', '70450', 'CT maxillofacial (70486) is bundled into CT head (70450) — billing both requires modifier -59 with documented distinct clinical indications'],
-    ['70491', '70490', 'CT neck with contrast (70491) is bundled into CT neck without contrast (70490) when both are billed'],
-    ['70553', '70551', 'MRI brain with contrast (70553) is bundled into MRI brain without contrast (70551) when billed together'],
-    ['74178', '74177', 'CT abdomen/pelvis with and without contrast (74178) supersedes CT abdomen/pelvis without contrast only (74177)'],
-    ['71271', '71250', 'Low-dose CT chest (71271) is bundled into standard CT thorax (71250) when both appear'],
-  ] as const
-  const radHits: string[] = []
 
   for (const rawCode of codes) {
     const code = rawCode.trim().toUpperCase()
@@ -311,17 +312,10 @@ export function buildDataContext(
     if (aspRow) aspRates.push(`${code}: CMS ASP limit $${aspRow.payment_limit.toFixed(2)}`)
   }
 
-  for (const [col2, col1, rule] of RADIOLOGY_BUNDLE_RULES) {
-    if (codeSet.has(col2) && codeSet.has(col1)) {
-      radHits.push(rule)
-    }
-  }
-
   return [
     ncciHits.length ? `NCCI bundling violations detected on this bill:\n${ncciHits.join('\n')}` : '',
     mpfsRates.length ? `Medicare rates (MPFS 2026):\n${mpfsRates.join('\n')}` : '',
     aspRates.length ? `CMS ASP drug limits:\n${aspRates.join('\n')}` : '',
-    radHits.length ? `Radiology bundling rules (NCCI):\n${radHits.join('\n')}` : '',
   ].filter(Boolean).join('\n\n')
 }
 
@@ -344,6 +338,12 @@ export function buildDeterministicFindings(
   const codeSet = new Set(codes)
   const findings: AuditFinding[] = []
   const alreadyFlaggedCodes = new Set<string>()
+  const descriptionFor = (code: string, lineItem: LineItem) => resolveProcedureDescription(code, {
+    lineItem,
+    billType,
+    patientState,
+    serviceZip,
+  })
 
   // Emit a data-quality info finding for any line with zero units billed.
   // units=0 with a non-zero charge is a billing anomaly — the MUE check passes
@@ -411,7 +411,7 @@ export function buildDeterministicFindings(
         errorType: 'unbundling',
         confidence: 'high' as ConfidenceLevel,
         description: `CPT ${code} is bundled into CPT ${pair.col1_code} per CMS NCCI PTP edits. Both codes should not be billed separately on the same claim ${modNote}.`,
-        standardDescription: CPT_DESCRIPTIONS[code],
+        standardDescription: descriptionFor(code, lineItems[i]),
         recommendation,
         ncciBundledWith: pair.col1_code,
         medicareRate: getEffectiveRate(code)?.rate,
@@ -444,7 +444,7 @@ export function buildDeterministicFindings(
         errorType: 'mue_units',
         confidence: 'high' as ConfidenceLevel,
         description: `CPT ${code} has ${unitsBilled} units billed, which exceeds the CMS Medically Unlikely Edit (MUE) limit of ${maxUnits} units per date of service.`,
-        standardDescription: CPT_DESCRIPTIONS[code],
+        standardDescription: descriptionFor(code, lineItems[i]),
         recommendation: `Request itemized documentation for each unit of CPT ${code}. The MUE limit is ${maxUnits} unit(s).`,
         medicareRate: undefined,
         markupRatio: undefined,
@@ -641,7 +641,7 @@ export function buildDeterministicFindings(
         errorType: 'duplicate',
         confidence: 'high',
         description: `CPT ${code} appears ${lineItems.filter((_, idx) => codes[idx] === code).length} times at the same dollar amount on this bill.`,
-        standardDescription: CPT_DESCRIPTIONS[code],
+        standardDescription: descriptionFor(code, lineItems[i]),
         recommendation: 'Request itemized documentation showing why this service was billed multiple times.',
         medicareRate: undefined,
         markupRatio: undefined,
@@ -711,7 +711,7 @@ export function buildDeterministicFindings(
           errorType: 'upcoding',
           confidence: 'high',
           description: `CPT ${code} is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the Medicare benchmark of $${benchmark.toFixed(2)} (${benchmarkSource}).`,
-          standardDescription: CPT_DESCRIPTIONS[code],
+          standardDescription: descriptionFor(code, lineItems[i]),
           recommendation: `Request itemized justification. Medicare pays $${benchmark.toFixed(2)} for this service; your bill is ${ratio.toFixed(1)}× that amount.`,
           medicareRate: benchmark,
           markupRatio: ratio,
@@ -726,7 +726,7 @@ export function buildDeterministicFindings(
           errorType: 'upcoding',
           confidence: 'medium',
           description: `CPT ${code} is billed at $${billed.toFixed(2)}, which is ${ratio.toFixed(1)}× the Medicare benchmark of $${benchmark.toFixed(2)} (${benchmarkSource}).`,
-          standardDescription: CPT_DESCRIPTIONS[code],
+          standardDescription: descriptionFor(code, lineItems[i]),
           recommendation: `Compare against your EOB from insurance. Medicare benchmark is $${benchmark.toFixed(2)}.`,
           medicareRate: benchmark,
           markupRatio: ratio,
@@ -786,7 +786,10 @@ export function buildArithmeticFindings(
 export function buildDateFindings(
   lineItems: LineItem[],
   admissionDate?: string,
-  dischargeDate?: string
+  dischargeDate?: string,
+  billType: BillType = 'unknown',
+  patientState?: string,
+  serviceZip?: string
 ): AuditFinding[] {
   const findings: AuditFinding[] = []
 
@@ -805,7 +808,12 @@ export function buildDateFindings(
           errorType: 'date_error',
           confidence: 'high',
           description: `CPT ${lineItem.cpt} has a service date of ${lineItem.serviceDate}, which is outside your admission window (${admissionDate} - ${dischargeDate}).`,
-          standardDescription: CPT_DESCRIPTIONS[lineItem.cpt],
+          standardDescription: resolveProcedureDescription(lineItem.cpt, {
+            lineItem,
+            billType,
+            patientState,
+            serviceZip,
+          }),
           recommendation: 'Request an explanation for why this service was billed outside your stay dates. This may be a data entry error.',
           medicareRate: undefined,
           markupRatio: undefined,

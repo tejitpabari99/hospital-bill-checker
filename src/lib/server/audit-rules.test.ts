@@ -624,7 +624,7 @@ describe('buildDeterministicFindings — CLFS fallback', () => {
     const duplicate = findings.find((finding) => finding.errorType === 'duplicate')
     expect(clfsRow).not.toBeNull()
     expect(duplicate?.medicareRate).toBeUndefined()
-    expect(duplicate?.standardDescription).toBe('Blood count; complete (CBC), automated')
+    expect(duplicate?.standardDescription).toBe(clfsRow!.description)
   })
 })
 

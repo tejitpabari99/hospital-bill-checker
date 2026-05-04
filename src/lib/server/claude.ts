@@ -10,9 +10,8 @@ import {
   buildArithmeticFindings,
   buildDateFindings,
   buildGfeFindings,
-  CPT_DESCRIPTIONS,
+  resolveProcedureDescription,
 } from './audit-rules'
-import { toServiceDateInt } from './data-loader'
 
 const CLAUDE_WORKER = join(process.cwd(), 'src/lib/server/claude-worker.mjs')
 
@@ -117,7 +116,14 @@ export async function auditBill(
 
   // Arithmetic and date findings
   const arithmeticFindings = buildArithmeticFindings(billInput.lineItems, billInput.billTotal)
-  const dateFindings = buildDateFindings(billInput.lineItems, billInput.admissionDate, billInput.dischargeDate)
+  const dateFindings = buildDateFindings(
+    billInput.lineItems,
+    billInput.admissionDate,
+    billInput.dischargeDate,
+    billInput.billType ?? 'unknown',
+    billInput.patientState,
+    billInput.serviceZip
+  )
   const gfeFindings = buildGfeFindings(billInput.lineItems, billInput.goodFaithEstimate)
 
   const allFindings = [...deterministicFindings, ...arithmeticFindings, ...dateFindings, ...gfeFindings]
@@ -157,7 +163,12 @@ export async function auditBill(
                 errorType: 'above_hospital_list_price',
                 confidence: 'high',
                 description: `CPT ${li.cpt} is billed at $${li.billedAmount.toFixed(2)}, which exceeds ${billInput.hospitalName}'s own published gross charge of $${charge.grossCharge.toFixed(2)}.`,
-                standardDescription: CPT_DESCRIPTIONS[li.cpt],
+                standardDescription: resolveProcedureDescription(li.cpt, {
+                  lineItem: li,
+                  billType: billInput.billType ?? 'unknown',
+                  patientState: billInput.patientState,
+                  serviceZip: billInput.serviceZip,
+                }),
                 recommendation: `Request explanation for why the billed amount exceeds the hospital's own published price. You may cite the hospital's CMS Machine-Readable File.`,
                 medicareRate: undefined,
                 markupRatio: undefined,
@@ -264,6 +275,3 @@ I request a corrected statement within 30 days.
 Sincerely,
 [PATIENT NAME]`
 }
-
-// Re-export for compatibility
-export { CPT_DESCRIPTIONS }
